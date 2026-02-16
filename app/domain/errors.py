@@ -14,3 +14,7 @@ class ValidationError(DomainError):
 
 class ConflictError(DomainError):
     pass
+
+
+class BusinessRuleError(DomainError):
+    pass

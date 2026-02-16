@@ -1,6 +1,12 @@
 from fastapi import HTTPException, status
 
-from app.domain.errors import ConflictError, DomainError, NotFoundError, ValidationError
+from app.domain.errors import (
+    BusinessRuleError,
+    ConflictError,
+    DomainError,
+    NotFoundError,
+    ValidationError,
+)
 
 
 def domain_error_to_http(exc: DomainError) -> HTTPException:
@@ -16,7 +22,12 @@ def domain_error_to_http(exc: DomainError) -> HTTPException:
         )
     if isinstance(exc, ValidationError):
         return HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=exc.message,
+        )
+    if isinstance(exc, BusinessRuleError):
+        return HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=exc.message,
         )
     return HTTPException(

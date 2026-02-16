@@ -41,6 +41,9 @@ class StockMoveOut(SchemaBase):
     branch_id: int
     sku_id: int
     location_id: int | None
+    transfer_id: int | None = None
+    inventory_count_id: int | None = None
+    created_by: int | None = None
     move_type: MoveType
     qty: int
     occurred_at: datetime
@@ -54,5 +57,6 @@ class StockBalanceOut(SchemaBase):
     id: int
     branch_id: int
     sku_id: int
+    location_id: int | None
     on_hand: int
     updated_at: datetime

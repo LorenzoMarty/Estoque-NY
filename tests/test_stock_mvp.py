@@ -2,8 +2,12 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_stock_mvp_flow(client):
-    branch_response = await client.post("/branches", json={"name": "Matriz NY"})
+async def test_stock_mvp_flow(client, auth_headers):
+    branch_response = await client.post(
+        "/branches",
+        json={"name": "Matriz NY"},
+        headers=auth_headers,
+    )
     assert branch_response.status_code == 201
     branch_id = branch_response.json()["id"]
 
@@ -14,16 +18,14 @@ async def test_stock_mvp_flow(client):
             "name": "Estoque Principal",
             "type": "STOCK",
         },
+        headers=auth_headers,
     )
     assert location_response.status_code == 201
 
     product_response = await client.post(
         "/products",
-        json={
-            "name": "Camiseta Básica",
-            "brand": "NY",
-            "active": True,
-        },
+        json={"name": "Camiseta Basica", "brand": "NY", "active": True},
+        headers=auth_headers,
     )
     assert product_response.status_code == 201
     product_id = product_response.json()["id"]
@@ -33,9 +35,10 @@ async def test_stock_mvp_flow(client):
         json={
             "product_id": product_id,
             "sku_code": "TSHIRT-BASIC-NY",
-            "unit": "un",
+            "unit": "UN",
             "active": True,
         },
+        headers=auth_headers,
     )
     assert sku_response.status_code == 201
     sku_id = sku_response.json()["id"]
@@ -48,6 +51,7 @@ async def test_stock_mvp_flow(client):
             "qty": 10,
             "reason": "Entrada inicial",
         },
+        headers=auth_headers,
     )
     assert receipt_response.status_code == 201
     receipt_payload = receipt_response.json()
@@ -60,8 +64,9 @@ async def test_stock_mvp_flow(client):
             "branch_id": branch_id,
             "sku_id": sku_id,
             "qty": 3,
-            "reason": "Venda balcão",
+            "reason": "Venda balcao",
         },
+        headers=auth_headers,
     )
     assert issue_response.status_code == 201
     issue_payload = issue_response.json()
@@ -69,7 +74,8 @@ async def test_stock_mvp_flow(client):
     assert issue_payload["balance_after"] == 7
 
     balance_response = await client.get(
-        f"/stock/balances?branch_id={branch_id}&sku_id={sku_id}"
+        f"/stock/balances?branch_id={branch_id}&sku_id={sku_id}",
+        headers=auth_headers,
     )
     assert balance_response.status_code == 200
     balances = balance_response.json()
@@ -77,7 +83,8 @@ async def test_stock_mvp_flow(client):
     assert balances[0]["on_hand"] == 7
 
     moves_response = await client.get(
-        f"/stock/moves?branch_id={branch_id}&sku_id={sku_id}&limit=10&offset=0"
+        f"/stock/moves?branch_id={branch_id}&sku_id={sku_id}&limit=10&offset=0",
+        headers=auth_headers,
     )
     assert moves_response.status_code == 200
     moves = moves_response.json()
