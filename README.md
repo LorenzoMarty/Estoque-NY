@@ -1,8 +1,72 @@
-# Estoque NY API
+# Estoque NY
 
-Backend de estoque multi-filial em FastAPI + SQLAlchemy 2.0 async + Alembic + PostgreSQL.
+Projeto fullstack Python com:
 
-## Rodando local
+- Backend FastAPI + SQLAlchemy 2.0 async + Alembic + PostgreSQL
+- Frontend Streamlit (backoffice operacional)
+
+## Estrutura
+
+```text
+app/
+  main.py
+  core/
+    config.py
+    db.py
+    auth.py
+    security.py
+    pagination.py
+    middleware.py
+    logging.py
+    errors.py
+  db/
+    session.py
+  api/
+    router.py
+    routes/        # compatibilidade
+  modules/
+    auth/
+    branches/
+    locations/
+    catalog/
+    products/
+    skus/
+    stock/
+    transfers/
+    inventory/
+    reports/
+    audit/
+  domain/
+  models/
+  schemas/
+  services/
+
+streamlit_app/
+  app.py
+  pages/
+  lib/
+  requirements.txt
+```
+
+## Ambiente
+
+Use o arquivo raiz `.env` para API/DB e `streamlit_app/.env` para frontend.
+
+### Exemplo raiz (`.env.example`)
+
+```env
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:55432/inventory
+APP_ENV=local
+JWT_SECRET=change-me
+```
+
+### Exemplo frontend (`streamlit_app/.env.example`)
+
+```env
+API_BASE_URL=http://localhost:8000
+```
+
+## Rodando backend
 
 ```bash
 docker compose up -d
@@ -10,38 +74,30 @@ uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
 
+## Rodando frontend
+
+```bash
+pip install -r streamlit_app/requirements.txt
+streamlit run streamlit_app/app.py
+```
+
 ## Testes e qualidade
 
 ```bash
 uv run pytest
-uv run ruff check app tests
+uv run ruff check app tests streamlit_app
+uv run black --check app tests streamlit_app
 uv run mypy app tests
 ```
 
-## Fluxo de Transferência
+## Notas de refatoracao
 
-1. `POST /stock/transfers` cria pedido em `DRAFT`.
-2. `POST /stock/transfers/{id}/ship` baixa estoque da origem (`TRANSFER_SHIP`) e muda para `SHIPPED`.
-3. `POST /stock/transfers/{id}/receive` dá entrada no destino (`TRANSFER_RECEIVE`) e muda para `RECEIVED`.
-4. `POST /stock/transfers/{id}/cancel`:
-   - `DRAFT`: cancela.
-   - `SHIPPED` ou `RECEIVED`: bloqueado (necessário fluxo reverso explícito).
-
-## Fluxo de Inventory Count
-
-1. `POST /stock/inventory-counts` abre contagem `OPEN`.
-   - `scope=ALL`: cria linhas para SKUs com saldo na location.
-   - `scope=SKUS`: usa `sku_ids` informados.
-2. `PATCH /stock/inventory-counts/{id}/lines` registra `counted_qty`.
-3. `POST /stock/inventory-counts/{id}/close` fecha (`CLOSED`) sem lançar ajuste.
-4. `POST /stock/inventory-counts/{id}/post` aplica ajustes (`ADJUSTMENT`, reason `INVENTORY_COUNT`) para `diff_qty != 0` e muda para `POSTED`.
-5. `POST /stock/inventory-counts/{id}/cancel` cancela se ainda não `POSTED`.
-
-## Decisões do MVP hardening
-
-- Estoque negativo: **não permitido** por padrão (`allow_negative_stock=false`).
-- Idempotência: chave por `(Idempotency-Key + route)` com `request_hash`; reutilização com payload diferente retorna `409`.
-- POSTs críticos (movimentação/transferência/inventário): suportam idempotência com replay da mesma resposta.
-- Auth: JWT access + refresh com RBAC por permissão.
-- Auditoria: toda mutação relevante grava `audit_logs` com actor, ação, before/after e metadados de request.
-- Paginação padrão em listagens: `page`, `page_size`, `sort`, `order` e filtros por recurso.
+- Rotas permanecem retrocompativeis (mesmos endpoints HTTP).
+- Configuracao centralizada em `app/core/config.py` com shim em `app/core/settings.py`.
+- Sessao de banco centralizada em `app/db/session.py` com shim em `app/core/db.py`.
+- Erros padronizados com envelope:
+  - `{"error":{"code","message","details","request_id"}}`
+- Middleware unico com `request_id` + access log estruturado.
+- Roteamento modular via `app/modules/*`.
+- Novo endpoint de leitura de auditoria:
+  - `GET /audit-logs`

@@ -43,6 +43,8 @@ ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/versions/*.py" = ["E501", "I001", "UP007", "UP035"]
+"streamlit_app/*.py" = ["E501"]
+"streamlit_app/**/*.py" = ["E501"]
 
 [tool.black]
 line-length = 88

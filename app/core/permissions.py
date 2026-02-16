@@ -30,6 +30,7 @@ ALL_PERMISSIONS = [
     "stock.inventory.close",
     "stock.inventory.post",
     "stock.inventory.cancel",
+    "audit.read",
     "reports.read",
     "auth.user.manage",
 ]

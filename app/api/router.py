@@ -1,10 +1,13 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    health,
+)
+from app.modules import (
+    audit,
     auth,
     branches,
     catalog,
-    health,
     inventory,
     locations,
     products,
@@ -25,4 +28,5 @@ api_router.include_router(skus.router)
 api_router.include_router(stock.router)
 api_router.include_router(transfers.router)
 api_router.include_router(inventory.router)
+api_router.include_router(audit.router)
 api_router.include_router(reports.router)
