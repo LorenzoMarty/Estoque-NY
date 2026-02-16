@@ -1,5 +1,5 @@
 from app.models.base import Base
-from app.models.entities import Branch, Location, Product, SKU, StockBalance, StockMove
+from app.models.entities import SKU, Branch, Location, Product, StockBalance, StockMove
 
 __all__ = [
     "Base",
