@@ -1,11 +1,28 @@
 from fastapi import APIRouter
 
-from app.api.routes import branches, health, locations, products, skus, stock
+from app.api.routes import (
+    auth,
+    branches,
+    catalog,
+    health,
+    inventory,
+    locations,
+    products,
+    reports,
+    skus,
+    stock,
+    transfers,
+)
 
 api_router = APIRouter()
 api_router.include_router(health.router)
+api_router.include_router(auth.router)
 api_router.include_router(branches.router)
 api_router.include_router(locations.router)
+api_router.include_router(catalog.router)
 api_router.include_router(products.router)
 api_router.include_router(skus.router)
 api_router.include_router(stock.router)
+api_router.include_router(transfers.router)
+api_router.include_router(inventory.router)
+api_router.include_router(reports.router)

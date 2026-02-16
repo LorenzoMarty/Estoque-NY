@@ -64,3 +64,24 @@ async def client(app) -> AsyncIterator[AsyncClient]:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as ac:
             yield ac
+
+
+@pytest_asyncio.fixture
+async def auth_headers(client: AsyncClient) -> dict[str, str]:
+    register_response = await client.post(
+        "/auth/register",
+        json={
+            "name": "Admin",
+            "email": "admin@example.com",
+            "password": "supersecret123",
+        },
+    )
+    assert register_response.status_code in {201, 409}
+
+    login_response = await client.post(
+        "/auth/login",
+        json={"email": "admin@example.com", "password": "supersecret123"},
+    )
+    assert login_response.status_code == 200
+    access_token = login_response.json()["access_token"]
+    return {"Authorization": f"Bearer {access_token}"}
