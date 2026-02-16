@@ -1,4 +1,5 @@
 from functools import lru_cache
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +15,9 @@ class Settings(BaseSettings):
     jwt_expiration_minutes: int = 60
 
     # Banco de dados
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:55432/inventory"
+    database_url: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:55432/inventory"
+    )
 
     # CORS
     cors_origins: str = "*"
