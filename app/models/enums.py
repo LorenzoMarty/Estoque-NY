@@ -1,13 +1,13 @@
-from enum import Enum
+from enum import StrEnum
 
 
-class LocationType(str, Enum):
+class LocationType(StrEnum):
     STORE = "STORE"
     STOCK = "STOCK"
     DAMAGED = "DAMAGED"
 
 
-class MoveType(str, Enum):
+class MoveType(StrEnum):
     RECEIPT = "RECEIPT"
     ISSUE = "ISSUE"
     ADJUSTMENT = "ADJUSTMENT"

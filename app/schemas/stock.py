@@ -9,7 +9,7 @@ from app.schemas.base import SchemaBase
 class StockAdjustmentIn(SchemaBase):
     branch_id: int
     sku_id: int
-    qty_delta: int = Field(..., ne=0)
+    qty_delta: int
     location_id: int | None = None
     reason: str | None = None
     reference_id: str | None = None
