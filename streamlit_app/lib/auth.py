@@ -7,6 +7,7 @@ from typing import Any
 
 import streamlit as st
 from lib.api_client import ApiClient, ApiClientError
+from lib.i18n import t
 
 try:
     import jwt  # type: ignore[import-not-found]
@@ -87,7 +88,7 @@ def is_authenticated() -> bool:
 def login(email: str, password: str) -> tuple[bool, str]:
     base_url = get_api_base_url()
     if not base_url:
-        return False, "API_BASE_URL nao configurada."
+        return False, "URL da API nao configurada."
 
     client = ApiClient(base_url=base_url)
     try:
@@ -119,7 +120,7 @@ def login(email: str, password: str) -> tuple[bool, str]:
         except ApiClientError:
             me_payload = None
     st.session_state["current_user"] = me_payload
-    return True, "Login realizado com sucesso."
+    return True, "Acesso realizado com sucesso."
 
 
 def logout() -> None:
@@ -166,7 +167,7 @@ def can_show_menu(permission_key: str | None) -> bool:
 def require_auth() -> None:
     if is_authenticated():
         return
-    st.warning("Sessao expirada ou nao autenticada. Faca login.")
+    st.warning(t("token_invalid"))
     try:
         st.switch_page("pages/1_Login.py")
     except Exception:
