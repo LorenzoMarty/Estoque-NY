@@ -1,11 +1,14 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.middleware import request_id_middleware
 from app.api.router import api_router
-from app.core.db import dispose_engine, get_engine
+from app.core.errors import register_exception_handlers
+from app.core.logging import configure_logging
+from app.core.middleware import request_context_middleware
 from app.core.settings import get_settings
+from app.db.session import dispose_engine, get_engine
 
 settings = get_settings()
 
@@ -18,11 +21,20 @@ async def app_lifespan(_: FastAPI):
 
 
 def create_app() -> FastAPI:
+    configure_logging()
     app = FastAPI(
         title=settings.app_name,
         lifespan=app_lifespan,
     )
-    app.middleware("http")(request_id_middleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    app.middleware("http")(request_context_middleware)
+    register_exception_handlers(app)
     app.include_router(api_router)
 
     return app
