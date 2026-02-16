@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
@@ -10,49 +10,53 @@ from lib.auth import (
     is_authenticated,
     set_api_base_url,
 )
+from lib.i18n import t
+from lib.ui import apply_base_styles, page_header
 
 APP_DIR = Path(__file__).resolve().parent
 load_dotenv(APP_DIR / ".env")
 load_dotenv()
 
-st.set_page_config(page_title="Estoque ERP Backoffice", page_icon="ðŸ“¦", layout="wide")
+st.set_page_config(page_title=t("app_title"), page_icon="📦", layout="wide")
+apply_base_styles()
 init_session_state()
 
 with st.sidebar:
     st.subheader("Configuracao")
     api_base_input = st.text_input(
-        "API_BASE_URL",
+        t("api_url"),
         value=st.session_state.get("api_base_url", "http://localhost:8000"),
-        help="URL base da API FastAPI",
+        help="Informe o endereco base da API FastAPI.",
     )
     set_api_base_url(api_base_input.strip())
 
-st.title("Estoque ERP Backoffice")
-st.caption(
-    "Interface Streamlit basica para operar estoque, " "transferencias e inventario."
+page_header(
+    t("dashboard"),
+    descricao="Escolha uma area no menu para operar transferencias, contagens, cadastros e relatorios.",
+    icon="🏪",
 )
+st.caption(t("app_subtitle"))
 
 if not is_authenticated():
-    st.info("Voce nao esta autenticado.")
-    st.page_link("pages/1_Login.py", label="Ir para Login", icon="ðŸ”")
+    st.warning("Voce precisa entrar para continuar.")
+    st.page_link("pages/1_Login.py", label=t("login_title"), icon="🔐")
     st.stop()
 
 st.success("Sessao autenticada.")
 
 permission_map = {
-    "pages/2_Dashboard.py": None,
-    "pages/3_Transfers.py": "stock.transfer.read",
-    "pages/4_Inventory_Counts.py": "stock.inventory.create",
-    "pages/5_Products.py": "product.read",
-    "pages/6_SKUs.py": "sku.read",
-    "pages/7_Users_Roles.py": "auth.user.manage",
-    "pages/8_Reports.py": "reports.read",
-    "pages/9_Audit_Logs.py": "audit.read",
-    "pages/10_Stock_Explorer.py": "stock.balance.read",
+    "pages/2_Dashboard.py": (t("dashboard"), None),
+    "pages/3_Transfers.py": (t("transfers"), "stock.transfer.read"),
+    "pages/4_Inventory_Counts.py": (t("inventory_counts"), "stock.inventory.create"),
+    "pages/5_Products.py": (t("products"), "product.read"),
+    "pages/6_SKUs.py": (t("product_variations"), "sku.read"),
+    "pages/7_Users_Roles.py": (t("users_permissions"), "auth.user.manage"),
+    "pages/8_Reports.py": (t("reports"), "reports.read"),
+    "pages/9_Audit_Logs.py": (t("audit_logs"), "audit.read"),
+    "pages/10_Stock_Explorer.py": (t("stock_explorer"), "stock.balance.read"),
 }
 
 st.subheader("Navegacao")
-for page_path, permission in permission_map.items():
+for page_path, (label, permission) in permission_map.items():
     if can_show_menu(permission):
-        label = page_path.split("/")[-1].replace("_", " ").replace(".py", "")
         st.page_link(page_path, label=label)
