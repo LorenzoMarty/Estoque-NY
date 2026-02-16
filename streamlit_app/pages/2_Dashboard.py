@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any
 
@@ -6,21 +6,32 @@ import pandas as pd
 import streamlit as st
 from lib.api_client import build_params, extract_items, extract_meta
 from lib.auth import get_api_client, init_session_state, require_auth
+from lib.i18n import t
 from lib.ui import (
     api_call,
+    apply_base_styles,
+    empty_state,
     endpoint_unavailable,
+    info_card,
+    page_header,
     render_sidebar_context,
+    section,
     show_meta,
-    show_page_header,
+    status_badge,
 )
 
-st.set_page_config(page_title="Dashboard", page_icon="ðŸ“Š", layout="wide")
+st.set_page_config(page_title=t("dashboard"), page_icon="📊", layout="wide")
+apply_base_styles()
 init_session_state()
 require_auth()
 
 client = get_api_client()
 render_sidebar_context(client)
-show_page_header("Dashboard")
+page_header(
+    t("dashboard"),
+    descricao="Acompanhe os principais indicadores e as ultimas movimentacoes.",
+    icon="📊",
+)
 
 
 def _count_from_response(data: Any) -> int:
@@ -34,24 +45,34 @@ def _count_from_response(data: Any) -> int:
     return 0
 
 
-col1, col2 = st.columns(2)
+selected_branch = st.session_state.get("selected_branch_id")
+selected_location = st.session_state.get("selected_location_id")
+
 health_data = None
 health_db_data = None
-
 if not endpoint_unavailable(client, "GET", "/health"):
     health_data = api_call(client.get, "/health", expected_status=200)
 if not endpoint_unavailable(client, "GET", "/health/db"):
     health_db_data = api_call(client.get, "/health/db", expected_status=200)
 
-with col1:
-    st.subheader("API")
-    st.write(health_data or {"status": "indisponivel"})
-with col2:
-    st.subheader("DB")
-    st.write(health_db_data or {"status": "indisponivel"})
-
-selected_branch = st.session_state.get("selected_branch_id")
-selected_location = st.session_state.get("selected_location_id")
+section("Saude do sistema")
+health_col1, health_col2 = st.columns(2)
+with health_col1:
+    st.write(f"**{t('api_status')}**")
+    if isinstance(health_data, dict):
+        status_badge(health_data.get("status", "indisponivel"))
+        st.json(health_data)
+    else:
+        status_badge("CANCELLED")
+        st.caption("Servico indisponivel.")
+with health_col2:
+    st.write(f"**{t('db_status')}**")
+    if isinstance(health_db_data, dict):
+        status_badge(health_db_data.get("status", "indisponivel"))
+        st.json(health_db_data)
+    else:
+        status_badge("CANCELLED")
+        st.caption("Banco de dados indisponivel.")
 
 product_count = 0
 sku_count = 0
@@ -91,9 +112,10 @@ if client.has_endpoint("GET", "/stock/balances"):
         ),
         expected_status=200,
     )
-    if isinstance(balances, list):
+    rows = extract_items(balances) if isinstance(balances, dict) else (balances or [])
+    if rows:
         stock_total = int(
-            sum(int(row.get("on_hand", 0)) for row in balances if isinstance(row, dict))
+            sum(int(row.get("on_hand", 0)) for row in rows if isinstance(row, dict))
         )
 
 if client.has_endpoint("GET", "/stock/transfers"):
@@ -126,15 +148,20 @@ if client.has_endpoint("GET", "/stock/inventory-counts"):
     )
     open_counts = _count_from_response(counts) if counts is not None else 0
 
-metric_cols = st.columns(5)
-metric_cols[0].metric("Produtos", product_count)
-metric_cols[1].metric("SKUs", sku_count)
-metric_cols[2].metric("Saldo Total", stock_total)
-metric_cols[3].metric("Transfers DRAFT", pending_transfers)
-metric_cols[4].metric("Inventory OPEN", open_counts)
+section("Indicadores principais")
+metric_cols = st.columns(4)
+with metric_cols[0]:
+    info_card("Produtos cadastrados", product_count, icon="📦")
+with metric_cols[1]:
+    info_card("Variacoes cadastradas", sku_count, icon="🏷️")
+with metric_cols[2]:
+    info_card("Transferencias pendentes", pending_transfers, icon="🔁")
+with metric_cols[3]:
+    info_card("Contagens abertas", open_counts, icon="🧾")
 
-st.divider()
-st.subheader("Ultimas Movimentacoes")
+st.caption(f"Saldo total em estoque (unidades): {stock_total}")
+
+section(t("latest_movements"))
 if endpoint_unavailable(client, "GET", "/stock/moves"):
     st.stop()
 
@@ -151,15 +178,9 @@ moves = api_call(
     ),
     expected_status=200,
 )
-if isinstance(moves, list):
-    if moves:
-        st.dataframe(pd.DataFrame(moves), use_container_width=True)
-    else:
-        st.info("Sem movimentacoes recentes.")
-elif isinstance(moves, dict):
-    rows = extract_items(moves)
-    if rows:
-        st.dataframe(pd.DataFrame(rows), use_container_width=True)
-    else:
-        st.info("Sem movimentacoes recentes.")
-    show_meta(extract_meta(moves))
+rows = extract_items(moves) if isinstance(moves, dict) else (moves or [])
+if rows:
+    st.dataframe(pd.DataFrame(rows), use_container_width=True)
+else:
+    empty_state("Nenhuma movimentacao recente encontrada.")
+show_meta(extract_meta(moves))
