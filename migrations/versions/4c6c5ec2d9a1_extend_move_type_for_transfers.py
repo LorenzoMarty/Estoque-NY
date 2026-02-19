@@ -18,6 +18,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if bind.dialect.name != "postgresql":
+        return
+
     context = op.get_context()
     with context.autocommit_block():
         op.execute("ALTER TYPE move_type ADD VALUE IF NOT EXISTS 'TRANSFER_SHIP'")

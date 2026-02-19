@@ -18,10 +18,14 @@ def get_engine() -> AsyncEngine:
 
     if _engine is None:
         settings = get_settings()
-        _engine = create_async_engine(
-            settings.database_url,
-            pool_pre_ping=True,
-        )
+        engine_kwargs: dict = {
+            "future": True,
+            "pool_pre_ping": True,
+        }
+        if settings.database_url.startswith("sqlite+"):
+            engine_kwargs["connect_args"] = {"check_same_thread": False}
+
+        _engine = create_async_engine(settings.database_url, **engine_kwargs)
     return _engine
 
 
