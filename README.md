@@ -1,20 +1,20 @@
 # Estoque NY
 
-Backend FastAPI para ERP de estoque com SQLAlchemy async e Alembic.
+Projeto com backend FastAPI + frontend estatico para operacao de estoque.
 
-## Stack atual
+## Stack
 
 - API: FastAPI
-- ORM: SQLAlchemy 2.0 (async)
-- Migrações: Alembic
-- Banco produção: PostgreSQL (Render)
-- Banco local opcional: SQLite (somente quando `DATABASE_URL` estiver vazio)
+- ORM: SQLAlchemy async
+- Migracoes: Alembic
+- Banco em producao: PostgreSQL (Render)
+- Frontend: HTML/CSS/JS estatico em `frontend/`
 
-## Configuração de ambiente
+## Configuracao local
 
-Use `.env` na raiz (base em `.env.example`).
+Use `.env` na raiz com base no `.env.example`.
 
-### Variáveis principais
+Variaveis principais:
 
 ```env
 APP_ENV=local
@@ -26,10 +26,7 @@ JWT_EXPIRATION_MINUTES=60
 JWT_REFRESH_EXPIRATION_MINUTES=1440
 AUTH_ENABLED=true
 
-# Produção (Render): usar Internal Database URL aqui.
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:55432/inventory
-
-# Fallback local opcional (usado apenas se DATABASE_URL estiver vazio):
 SQLITE_URL=sqlite+aiosqlite:///./inventory.db
 
 ALLOW_NEGATIVE_STOCK=false
@@ -37,122 +34,126 @@ IDEMPOTENCY_REQUIRED_IN_PRODUCTION=true
 CORS_ORIGINS=*
 ```
 
-## Como rodar localmente
+### Rodar backend
 
-### Opção A: PostgreSQL (recomendado)
+Com Postgres local (recomendado):
 
-1. Subir banco:
 ```bash
 docker compose up -d
-```
-
-2. Aplicar migrações:
-```bash
 uv run alembic upgrade head
+uv run uvicorn app.main:app --reload
 ```
 
-3. Subir API:
+Fallback SQLite:
+
+1. Deixe `DATABASE_URL` vazio no `.env`.
+2. Rode:
+
 ```bash
 uv run uvicorn app.main:app --reload
 ```
 
-### Opção B: SQLite (fallback local)
+### Rodar frontend
 
-1. Deixe `DATABASE_URL` vazio e configure `SQLITE_URL` no `.env`.
-2. Rode API normalmente:
 ```bash
-uv run uvicorn app.main:app --reload
+cd frontend
+npm install
+npm run dev
 ```
 
-## Migrações de schema
+Scripts do frontend:
 
-Aplicar última versão:
+- `npm run dev`: servidor estatico local (`PORT` ou `8080`)
+- `npm run test`: validacao de sintaxe JS e assets
+- `npm run build`: alias para `npm run test`
+
+## Deploy no Render (API + frontend)
+
+Este repositorio ja inclui `render.yaml` para o backend.
+
+### 1) Deploy da API via Blueprint (recomendado)
+
+1. Faca push do repositorio no GitHub.
+2. No Render: **New +** -> **Blueprint**.
+3. Selecione o repo e confirme.
+4. O service `estoque-ny-api` sera criado com:
+   - Build command: `pip install -r requirements.txt`
+   - Start command: `sh -c "alembic upgrade head && gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"`
+   - Health check: `/health`
+
+### 2) Criar e conectar PostgreSQL no Render
+
+1. No Render: **New +** -> **PostgreSQL**.
+2. Copie o **Internal Database URL** do banco criado.
+3. No service `estoque-ny-api`, abra **Environment** e defina:
+
+```text
+DATABASE_URL=<Internal Database URL do Postgres do Render>
+```
+
+4. Salve e faca redeploy da API.
+
+Observacao: se a URL vier como `postgres://` ou `postgresql://`, a app converte
+automaticamente para `postgresql+asyncpg://`.
+
+### 3) Variaveis obrigatorias da API no Render
+
+- `APP_ENV=production`
+- `DATABASE_URL=<Internal Database URL>`
+- `JWT_SECRET=<segredo forte>`
+- `AUTH_ENABLED=true`
+- `LOG_LEVEL=INFO`
+- `CORS_ORIGINS=https://<seu-frontend>.onrender.com`
+
+Tambem recomendadas (ja no `render.yaml`):
+
+- `JWT_ALGORITHM=HS256`
+- `JWT_EXPIRATION_MINUTES=60`
+- `JWT_REFRESH_EXPIRATION_MINUTES=1440`
+- `ALLOW_NEGATIVE_STOCK=false`
+- `IDEMPOTENCY_REQUIRED_IN_PRODUCTION=true`
+
+### 4) Deploy do frontend no Render (Static Site)
+
+1. No Render: **New +** -> **Static Site**.
+2. Selecione o mesmo repo.
+3. Configure:
+   - Root Directory: `frontend`
+   - Build Command: `npm ci && npm run build`
+   - Publish Directory: `.`
+4. Antes de publicar, ajuste `frontend/js/api.js` para apontar para a API do Render:
+
+```js
+export const API_BASE_URL = "https://<nome-da-sua-api>.onrender.com";
+```
+
+5. Deploy.
+
+### 5) Checklist pos deploy
+
+- API respondendo: `https://<nome-da-sua-api>.onrender.com/health`
+- Frontend carregando sem tela em branco
+- Frontend fazendo requests para a URL da API no Render (na aba Network)
+- Sem erro de CORS no console do navegador
+
+## Migracoes
+
+Aplicar ultima migracao:
 
 ```bash
 uv run alembic upgrade head
 ```
 
-Gerar nova revisão (quando necessário):
+Gerar nova revisao:
 
 ```bash
 uv run alembic revision --autogenerate -m "descricao_da_mudanca"
 ```
 
-## Migração de dados SQLite -> PostgreSQL
-
-Script one-shot criado em:
-
-- `scripts/migrate_sqlite_to_postgres.py`
-
-Fluxo recomendado:
-
-1. Configure `DATABASE_URL` para o Postgres de destino.
-2. Execute:
-
-```bash
-uv run python scripts/migrate_sqlite_to_postgres.py --sqlite-path ./inventory.db
-```
-
-Opções úteis:
-
-- `--truncate-target`: limpa tabelas do destino antes de copiar
-- `--skip-migrations`: pula `alembic upgrade head`
-- `--batch-size 500`: tamanho de lote de insert
-- `--postgres-url ...`: sobrescreve `DATABASE_URL`
-- `--sqlite-url ...`: sobrescreve `--sqlite-path`
-
-## Deploy no Render (produção)
-
-Este repositório inclui `render.yaml` com configuração pronta.
-
-### 1) Criar Web Service
-
-- Runtime: Python
-- Build Command:
-```bash
-pip install -r requirements.txt
-```
-- Start Command:
-```bash
-sh -c "alembic upgrade head && gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
-```
-- Health Check Path:
-```text
-/health
-```
-
-### 2) Criar banco Render Postgres
-
-1. Crie um Postgres gerenciado no Render.
-2. Copie o **Internal Database URL**.
-3. Defina no Web Service:
-
-```text
-DATABASE_URL=<Internal Database URL do Render>
-```
-
-Observação:
-
-- Se o Render fornecer `postgres://...`, a aplicação converte automaticamente para `postgresql+asyncpg://...`.
-
-### 3) Variáveis mínimas no Render
-
-- `APP_ENV=production`
-- `DATABASE_URL=<Internal Database URL>`
-- `JWT_SECRET=<segredo forte>`
-- `LOG_LEVEL=INFO`
-- `AUTH_ENABLED=true`
-
-## Testes e qualidade
+## Qualidade
 
 ```bash
 uv run ruff check app scripts migrations
 uv run black --check app scripts migrations
 uv run mypy app
 ```
-
-## Compatibilidade
-
-- Endpoints e contratos HTTP foram mantidos.
-- Regras de negócio não foram alteradas.
-

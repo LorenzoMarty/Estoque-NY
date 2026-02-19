@@ -80,30 +80,9 @@ export function initTooltips(scope = document) {
 export function applyReveal(scope = document) {
   const nodes = Array.from(scope.querySelectorAll(".reveal"));
   if (!nodes.length) return;
-
-  if (!("IntersectionObserver" in window)) {
-    nodes.forEach((node) => node.classList.add("is-visible"));
-    return;
-  }
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    {
-      threshold: 0.15,
-      rootMargin: "0px 0px -8% 0px",
-    }
-  );
-
-  nodes.forEach((node, index) => {
-    node.style.transitionDelay = `${Math.min(index * 70, 320)}ms`;
-    observer.observe(node);
+  nodes.forEach((node) => {
+    node.style.transitionDelay = "0ms";
+    node.classList.add("is-visible");
   });
 }
 
