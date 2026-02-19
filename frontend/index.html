@@ -1,0 +1,84 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Estoque FreeShop | Operação</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+  <link rel="stylesheet" href="./css/app.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/luxon@3.5.0/build/global/luxon.min.js"></script>
+  <script defer src="https://unpkg.com/@popperjs/core@2"></script>
+  <script defer src="https://unpkg.com/tippy.js@6"></script>
+  <script defer src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+</head>
+<body class="scrollbar">
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar border-gradient" id="sidebar" aria-label="Menu lateral">
+      <div class="sidebar-header">
+        <a class="brand" href="#/dashboard" aria-label="Ir para Visão geral">
+          <span class="brand-mark"><i data-lucide="boxes"></i></span>
+          <span class="brand-text">Estoque FreeShop</span>
+        </a>
+        <button class="icon-btn desktop-only" id="sidebarCollapseBtn" aria-label="Recolher menu lateral">
+          <i data-lucide="panel-left-close"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav" id="sidebarNav" aria-label="Navegação principal"></nav>
+
+      <div class="sidebar-footer border-gradient">
+        <span class="sidebar-footer-label">Sistema</span>
+        <p class="sidebar-footer-text">Painel operacional de estoque</p>
+      </div>
+    </aside>
+
+    <button class="mobile-overlay" id="mobileOverlay" aria-label="Fechar menu"></button>
+
+    <div class="layout-main">
+      <header class="topbar border-gradient" id="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-only" id="sidebarToggleMobile" aria-label="Abrir menu lateral">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="topbar-brand mobile-only">Estoque FreeShop</div>
+          <label class="global-search" aria-label="Busca global">
+            <i data-lucide="search"></i>
+            <input
+              id="globalSearchInput"
+              type="search"
+              placeholder="Buscar produto ou código de barras"
+              aria-label="Buscar produto ou código de barras"
+            />
+            <span class="search-kbd">CTRL + K</span>
+          </label>
+        </div>
+
+        <div class="topbar-actions">
+          <button class="icon-btn" id="notificationsBtn" aria-label="Notificações">
+            <i data-lucide="bell"></i>
+            <span class="dot"></span>
+          </button>
+          <button class="profile-chip" id="profileBtn" aria-label="Perfil do usuário">
+            <span class="avatar">OF</span>
+            <span class="profile-meta">
+              <strong>Operador FreeShop</strong>
+              <small>Estoque Central</small>
+            </span>
+          </button>
+        </div>
+      </header>
+
+      <main class="page-content" id="pageContent" tabindex="-1"></main>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+  <div id="modalRoot"></div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
