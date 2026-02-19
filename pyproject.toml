@@ -5,14 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aiosqlite>=0.21.0",
     "alembic>=1.18.4",
     "asyncpg>=0.31.0",
     "fastapi>=0.129.0",
-    "orjson>=3.11.7",
+    "gunicorn>=23.0.0",
     "passlib[bcrypt]>=1.7.4",
+    "psycopg[binary]>=3.2.13",
     "pydantic-settings>=2.13.0",
     "python-jose[cryptography]>=3.5.0",
-    "python-multipart>=0.0.22",
     "sqlalchemy>=2.0.46",
     "uvicorn[standard]>=0.40.0",
 ]
@@ -28,11 +29,6 @@ dev = [
     "ruff>=0.15.1",
 ]
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-pythonpath = ["."]
-
 [tool.ruff]
 line-length = 88
 target-version = "py312"
@@ -43,8 +39,6 @@ ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/versions/*.py" = ["E501", "I001", "UP007", "UP035"]
-"streamlit_app/*.py" = ["E501"]
-"streamlit_app/**/*.py" = ["E501"]
 
 [tool.black]
 line-length = 88

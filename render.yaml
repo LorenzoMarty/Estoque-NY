@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: estoque-ny-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: sh -c "alembic upgrade head && gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: JWT_EXPIRATION_MINUTES
+        value: "60"
+      - key: JWT_REFRESH_EXPIRATION_MINUTES
+        value: "1440"
+      - key: AUTH_ENABLED
+        value: "true"
+      - key: ALLOW_NEGATIVE_STOCK
+        value: "false"
+      - key: IDEMPOTENCY_REQUIRED_IN_PRODUCTION
+        value: "true"
+      - key: CORS_ORIGINS
+        value: "*"

@@ -1,6 +1,24 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _normalize_database_url(database_url: str | None, sqlite_url: str) -> str:
+    raw_url = (database_url or "").strip()
+    if not raw_url:
+        return sqlite_url
+
+    lowered = raw_url.lower()
+    if lowered.startswith("postgres://"):
+        return "postgresql+asyncpg://" + raw_url[len("postgres://") :]
+    if lowered.startswith("postgresql://"):
+        return "postgresql+asyncpg://" + raw_url[len("postgresql://") :]
+    if lowered.startswith("postgresql+psycopg://"):
+        return "postgresql+asyncpg://" + raw_url[len("postgresql+psycopg://") :]
+    if lowered.startswith("postgresql+psycopg2://"):
+        return "postgresql+asyncpg://" + raw_url[len("postgresql+psycopg2://") :]
+    return raw_url
 
 
 class Settings(BaseSettings):
@@ -17,6 +35,7 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+asyncpg://postgres:postgres@localhost:55432/inventory"
     )
+    sqlite_url: str = "sqlite+aiosqlite:///./inventory.db"
 
     allow_negative_stock: bool = False
     idempotency_required_in_production: bool = True
@@ -28,6 +47,14 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
+
+    @model_validator(mode="after")
+    def normalize_database_url(self) -> "Settings":
+        self.database_url = _normalize_database_url(
+            database_url=self.database_url,
+            sqlite_url=self.sqlite_url,
+        )
+        return self
 
 
 @lru_cache
