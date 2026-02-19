@@ -175,7 +175,7 @@ import { resolvePeriodRange } from "./utils.js";
 const { DateTime } = window.luxon;
 
 // Configure aqui a URL da API FastAPI para modo online.
-export const API_BASE_URL = "http://localhost:8000";
+export const API_BASE_URL = "https://estoque-ny.onrender.com";
 
 const MIN_LOADING_MS = 600;
 const REQUEST_TIMEOUT_MS = 9000;
