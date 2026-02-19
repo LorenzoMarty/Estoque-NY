@@ -1,0 +1,11 @@
+{
+  "name": "estoque-ny-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Frontend estatico do Estoque NY",
+  "scripts": {
+    "dev": "node ./scripts/serve-static.mjs",
+    "build": "npm run test",
+    "test": "node ./scripts/test-frontend.mjs"
+  }
+}

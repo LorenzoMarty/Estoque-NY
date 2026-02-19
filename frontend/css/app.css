@@ -141,15 +141,15 @@ textarea {
 }
 
 .reveal {
-  opacity: 0;
-  transform: translateY(18px) scale(0.985);
-  filter: blur(6px);
-  transition: opacity 0.6s ease, transform 0.6s ease, filter 0.6s ease;
+  opacity: 1;
+  transform: none;
+  filter: none;
+  transition: none;
 }
 
 .reveal.is-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: none;
   filter: blur(0);
 }
 
@@ -678,20 +678,32 @@ textarea {
 }
 
 .kpi-help {
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  border: 1px solid var(--zinc-700);
-  background: var(--zinc-850);
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--zinc-650);
+  background: rgba(79, 97, 125, 0.08);
   color: var(--zinc-400);
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
   cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.kpi-help i {
-  width: 14px;
-  height: 14px;
+.kpi-help:hover {
+  background: rgba(37, 99, 235, 0.14);
+  border-color: rgba(37, 99, 235, 0.35);
+  color: #1e40af;
+}
+
+.kpi-help i,
+.kpi-help svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.1;
 }
 
 .kpi-label {
@@ -1500,7 +1512,15 @@ body {
 }
 
 .kpi-help {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(148, 163, 184, 0.45);
+  color: #475569;
+}
+
+.kpi-help:hover {
+  background: rgba(219, 234, 254, 0.9);
+  border-color: rgba(37, 99, 235, 0.4);
+  color: #1d4ed8;
 }
 
 thead {

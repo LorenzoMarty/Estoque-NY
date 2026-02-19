@@ -2,6 +2,10 @@ function normalizeSingleProduct(product) {
   const normalized = normalizeProducts([product])[0];
   if (!normalized) return null;
   return {
+    ...normalized,
+    variations: [],
+    variation_count: 0,
+    branch_stock: {},
     branch_ids: [],
   };
 }
@@ -14,6 +18,56 @@ function normalizeSingleVariation(variation) {
 export async function createProduct(payload) {
   const created = await requestJson("/products", {
     method: "POST",
+    body: {
+      name: payload.name,
+      description: payload.description || null,
+      category_id: payload.category_id == null ? null : Number(payload.category_id),
+      brand_id: payload.brand_id == null ? null : Number(payload.brand_id),
+      brand: payload.brand || null,
+      active: payload.active !== false,
+    },
+  });
+  return normalizeSingleProduct(created);
+}
+
+export async function updateProduct(productId, payload = {}) {
+  const body = {};
+
+  if (Object.prototype.hasOwnProperty.call(payload, "name")) {
+    body.name = payload.name;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "description")) {
+    body.description = payload.description;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "category_id")) {
+    body.category_id = payload.category_id == null ? null : Number(payload.category_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "brand_id")) {
+    body.brand_id = payload.brand_id == null ? null : Number(payload.brand_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "brand")) {
+    body.brand = payload.brand;
+  }
+  if (Object.prototype.hasOwnProperty.call(payload, "active")) {
+    body.active = payload.active;
+  }
+
+  const updated = await requestJson(`/products/${productId}`, {
+    method: "PATCH",
+    body,
+  });
+  return normalizeSingleProduct(updated);
+}
+
+export async function createProductCategory(name) {
+  const created = await requestJson("/categories", {
+    method: "POST",
+    body: { name },
+  });
+  const normalized = normalizeCatalogRows([created])[0];
+  return normalized || null;
+}
+
 export async function createProductBrand(name) {
   const created = await requestJson("/brands", {
     method: "POST",
@@ -3390,8 +3444,26 @@ export async function loadDashboardPayload() {
 
 export async function loadMovementsPayload(filters = {}) {
   const startedAt = Date.now();
+
+  try {
+    const payload = await loadMovementsFromApi(filters);
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < MIN_LOADING_MS) {
+      await sleep(MIN_LOADING_MS - elapsed);
+    }
+    return payload;
+  } catch (error) {
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < MIN_LOADING_MS) {
+      await sleep(MIN_LOADING_MS - elapsed);
+    }
+
+    if (error?.status === 401 || error?.status === 403) {
+      return buildMovementsPermissionPayload(error);
+    }
+
     return buildMovementsDemoPayload(
-      error instanceof Error ? error.message : "Falha ao consultar movimentaÃ§Ãµes"
+      error instanceof Error ? error.message : "Falha ao consultar movimentações"
     );
   }
 }
@@ -3486,31 +3558,6 @@ export async function loadAuditPayload(filters = {}, sort = {}) {
 
 export async function loadProductsPayload(filters = {}, sort = {}) {
   const startedAt = Date.now();
-  try {
-    const payload = await loadMovementsFromApi(filters);
-    const elapsed = Date.now() - startedAt;
-    if (elapsed < MIN_LOADING_MS) {
-      await sleep(MIN_LOADING_MS - elapsed);
-    }
-    return payload;
-  } catch (error) {
-    const elapsed = Date.now() - startedAt;
-    if (elapsed < MIN_LOADING_MS) {
-      await sleep(MIN_LOADING_MS - elapsed);
-    }
-
-    if (error?.status === 401 || error?.status === 403) {
-      return buildMovementsPermissionPayload(error);
-    }
-
-    return buildMovementsDemoPayload(
-      error instanceof Error ? error.message : "Falha ao consultar movimentações"
-    );
-  }
-}
-
-export async function loadProductsPayload(filters = {}, sort = {}) {
-  const startedAt = Date.now();
 
   try {
     const payload = await loadProductsFromApi(filters, sort);
@@ -3582,8 +3629,50 @@ function serializeOccurrenceDate(iso) {
 }
 
 export async function createStockMovement(payload) {
+  const moveCategory = String(payload.moveCategory || "");
+  const common = {
+    branch_id: Number(payload.branchId),
+    sku_id: Number(payload.itemId),
+    location_id: payload.locationId ? Number(payload.locationId) : null,
+    reason: payload.reason || null,
+    reference_id: payload.referenceId || null,
+    occurred_at: serializeOccurrenceDate(payload.occurredAtIso),
+  };
 
-  throw new Error("Tipo de movimentaÃ§Ã£o invÃ¡lido.");
+  if (moveCategory === "entry") {
+    const created = await requestJson("/stock/receipts", {
+      method: "POST",
+      body: {
+        ...common,
+        qty: Number(payload.quantity),
+      },
+    });
+    return normalizeMoves([created])[0];
+  }
+
+  if (moveCategory === "issue") {
+    const created = await requestJson("/stock/issues", {
+      method: "POST",
+      body: {
+        ...common,
+        qty: Number(payload.quantity),
+      },
+    });
+    return normalizeMoves([created])[0];
+  }
+
+  if (moveCategory === "adjustment") {
+    const created = await requestJson("/stock/adjustments", {
+      method: "POST",
+      body: {
+        ...common,
+        qty_delta: Number(payload.quantityDelta),
+      },
+    });
+    return normalizeMoves([created])[0];
+  }
+
+  throw new Error("Tipo de movimentação inválido.");
 }
 
 function normalizeSingleTransfer(row) {
@@ -3682,52 +3771,4 @@ export async function cancelInventoryCount(countId) {
     method: "POST",
   });
   return normalizeSingleInventoryCount(cancelled);
-}
-
-function normalizeSingleProduct(product) {
-  const normalized = normalizeProducts([product])[0];
-  const moveCategory = String(payload.moveCategory || "");
-  const common = {
-    branch_id: Number(payload.branchId),
-    sku_id: Number(payload.itemId),
-    location_id: payload.locationId ? Number(payload.locationId) : null,
-    reason: payload.reason || null,
-    reference_id: payload.referenceId || null,
-    occurred_at: serializeOccurrenceDate(payload.occurredAtIso),
-  };
-
-  if (moveCategory === "entry") {
-    const created = await requestJson("/stock/receipts", {
-      method: "POST",
-      body: {
-        ...common,
-        qty: Number(payload.quantity),
-      },
-    });
-    return normalizeMoves([created])[0];
-  }
-
-  if (moveCategory === "issue") {
-    const created = await requestJson("/stock/issues", {
-      method: "POST",
-      body: {
-        ...common,
-        qty: Number(payload.quantity),
-      },
-    });
-    return normalizeMoves([created])[0];
-  }
-
-  if (moveCategory === "adjustment") {
-    const created = await requestJson("/stock/adjustments", {
-      method: "POST",
-      body: {
-        ...common,
-        qty_delta: Number(payload.quantityDelta),
-      },
-    });
-    return normalizeMoves([created])[0];
-  }
-
-  throw new Error("Tipo de movimentação inválido.");
 }
