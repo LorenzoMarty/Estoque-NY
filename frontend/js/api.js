@@ -234,20 +234,13 @@ function resolveRawToken() {
 }
 
 export function hasAuthToken() {
-  return Boolean(resolveRawToken());
+  return Boolean(normalizeValidToken(resolveRawToken()));
 }
 
 export function clearAuthSession() {
   AUTH_STORAGE_KEYS.forEach((key) => {
     window.localStorage.removeItem(key);
   });
-}
-
-function resolveToken() {
-  const token = resolveRawToken();
-  if (!token) return null;
-  if (token.startsWith("Bearer ")) return token;
-  return `Bearer ${token}`;
 }
 
 function dispatchAuthRequired(detail = {}) {
@@ -271,13 +264,60 @@ function buildAuthRequiredError(path, method = "GET", message = "Faca login para
 
 function shouldHandleUnauthorized(path) {
   const normalizedPath = String(path || "").toLowerCase();
-  return !(
+  return !isPublicPath(normalizedPath);
+}
+
+function isPublicPath(path) {
+  const normalizedPath = String(path || "").toLowerCase();
+  return (
+    !normalizedPath ||
     normalizedPath.startsWith("/auth/login") ||
     normalizedPath.startsWith("/auth/register") ||
     normalizedPath.startsWith("/auth/refresh") ||
     normalizedPath.startsWith("/health") ||
     normalizedPath.startsWith("/db")
   );
+}
+
+function normalizeTokenValue(token) {
+  const raw = String(token || "").trim();
+  if (!raw) return "";
+  if (raw.startsWith("Bearer ")) {
+    return raw.slice("Bearer ".length).trim();
+  }
+  return raw;
+}
+
+function decodeJwtPayload(tokenValue) {
+  try {
+    const parts = String(tokenValue || "").split(".");
+    if (parts.length !== 3) return null;
+    const payloadBase64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const paddedPayload = payloadBase64.padEnd(Math.ceil(payloadBase64.length / 4) * 4, "=");
+    const jsonPayload = atob(paddedPayload);
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
+function normalizeValidToken(token) {
+  const tokenValue = normalizeTokenValue(token);
+  if (!tokenValue) return null;
+
+  const parts = tokenValue.split(".");
+  if (parts.length !== 3) return null;
+
+  const payload = decodeJwtPayload(tokenValue);
+  const exp = Number(payload?.exp || 0);
+  if (Number.isFinite(exp) && exp > 0) {
+    const nowEpochSeconds = Math.floor(Date.now() / 1000);
+    if (nowEpochSeconds >= exp) {
+      return null;
+    }
+  }
+
+  return `Bearer ${tokenValue}`;
 }
 
 function isAbortError(error) {
@@ -317,8 +357,20 @@ async function requestJson(path, options = {}) {
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  const token = auth === "none" ? null : resolveToken();
-  if (auth === "required" && !token) {
+
+  const effectiveAuth = auth === "optional" ? (isPublicPath(path) ? "none" : "required") : auth;
+  const rawToken = effectiveAuth === "none" ? null : resolveRawToken();
+  const token = effectiveAuth === "none" ? null : normalizeValidToken(rawToken);
+
+  if (effectiveAuth === "required" && !token) {
+    if (rawToken) {
+      dispatchAuthRequired({
+        path,
+        method,
+        status: 401,
+        reason: "invalid_or_expired_token",
+      });
+    }
     clearTimeout(timeout);
     throw buildAuthRequiredError(path, method);
   }
@@ -440,6 +492,17 @@ export async function checkSystemStatus() {
     apiOnline: snapshot.apiOnline,
     dbOnline: snapshot.dbOnline,
   };
+}
+
+async function ensureAuthenticatedSession() {
+  if (!hasAuthToken()) {
+    throw buildAuthRequiredError("/auth/me", "GET", "Faca login para continuar.");
+  }
+
+  await requestJson("/auth/me", {
+    auth: "required",
+    timeoutMs: 5000,
+  });
 }
 
 function inferModeFromEnv(env) {
@@ -3414,6 +3477,8 @@ async function loadFromApi() {
   }
 
   try {
+    await ensureAuthenticatedSession();
+
     const [branches, locations, balances, recentMoves] = await Promise.all([
       requestJson("/branches", { auth: "required" }),
       requestJson("/locations", { auth: "required" }),
@@ -3607,6 +3672,8 @@ async function loadMovementsFromApi(filters = {}) {
   if (!hasAuthToken()) {
     throw buildAuthRequiredError("/stock/moves", "GET", "Faca login para consultar movimentacoes.");
   }
+
+  await ensureAuthenticatedSession();
 
   const query = buildMovementsQuery(filters);
 
