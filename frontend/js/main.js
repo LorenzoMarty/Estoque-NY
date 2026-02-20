@@ -16,7 +16,7 @@
   - Em 401/403 na página Movimentações, é exibido aviso de permissão sem trocar para demo.
 */
 
-import { loadDashboardPayload } from "./api.js";
+import { AUTH_REQUIRED_EVENT_NAME, loadDashboardPayload } from "./api.js";
 import { I18N_PTBR } from "./i18n.js";
 import {
   state,
@@ -109,6 +109,14 @@ function bindShellEvents() {
   window.addEventListener("hashchange", () => {
     syncRouteWithHash();
   });
+
+  window.addEventListener(AUTH_REQUIRED_EVENT_NAME, () => {
+    showToast({
+      title: I18N_PTBR.app_name,
+      message: "Sessao expirada. Faca login para continuar.",
+      type: "error",
+    });
+  });
 }
 
 function restoreSidebarPreference() {
@@ -138,6 +146,15 @@ function initialize() {
   syncRouteWithHash();
 
   refreshDashboardData().then((payload) => {
+    if (payload.authRequired) {
+      showToast({
+        title: I18N_PTBR.app_name,
+        message: payload.authMessage || "Faca login para consultar os dados protegidos.",
+        type: "error",
+      });
+      return;
+    }
+
     if (payload.mode === "demo") {
       showToast({
         title: I18N_PTBR.shell.demo_title,

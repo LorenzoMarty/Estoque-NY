@@ -605,12 +605,13 @@ function renderLoadingState() {
 }
 
 function renderPermissionState() {
+  const subtitle = state.movements.permissionMessage || I18N_PTBR.movements.permissions.subtitle;
   return `
     <section class="panel pad reveal">
       <div class="permission-state">
         <i data-lucide="shield-alert"></i>
         <h2>${I18N_PTBR.movements.permissions.title}</h2>
-        <p>${I18N_PTBR.movements.permissions.subtitle}</p>
+        <p>${subtitle}</p>
         <button class="btn primary" id="retryMovementsPermissionBtn">
           <i data-lucide="refresh-cw"></i>
           ${I18N_PTBR.movements.permissions.retry}
