@@ -28,3 +28,9 @@ services:
         value: "true"
       - key: CORS_ORIGINS
         value: "*"
+  - type: web
+    name: estoque-ny-front
+    env: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: .
