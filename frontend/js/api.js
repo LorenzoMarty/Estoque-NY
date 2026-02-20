@@ -169,6 +169,136 @@ export async function updateRolePermissions(roleId, permissions) {
     permissions: normalizeRolePermissions(permissions),
   };
 }
+
+function buildAdminQuery({
+  page = 1,
+  pageSize = 10,
+  q = "",
+  sort = "name",
+  order = "asc",
+  branchId = null,
+} = {}) {
+  const params = new URLSearchParams();
+  params.set("page", String(Math.max(1, Number(page) || 1)));
+  params.set("page_size", String(Math.max(1, Number(pageSize) || 10)));
+  params.set("sort", String(sort || "name"));
+  params.set("order", String(order || "asc").toLowerCase() === "desc" ? "desc" : "asc");
+  if (String(q || "").trim()) {
+    params.set("q", String(q).trim());
+  }
+  if (branchId != null && String(branchId) !== "all") {
+    params.set("branch_id", String(branchId));
+  }
+  return params.toString();
+}
+
+export async function listAdminBrands(params = {}) {
+  const query = buildAdminQuery(params);
+  return requestJson(`/brands?${query}`, { auth: "required" });
+}
+
+export async function createAdminBrand(payload) {
+  return requestJson("/brands", {
+    method: "POST",
+    body: {
+      name: payload.name,
+    },
+    auth: "required",
+  });
+}
+
+export async function updateAdminBrand(brandId, payload) {
+  return requestJson(`/brands/${brandId}`, {
+    method: "PUT",
+    body: {
+      name: payload.name,
+    },
+    auth: "required",
+  });
+}
+
+export async function deleteAdminBrand(brandId) {
+  return requestJson(`/brands/${brandId}`, {
+    method: "DELETE",
+    auth: "required",
+  });
+}
+
+export async function listAdminBranches(params = {}) {
+  const query = buildAdminQuery({
+    sort: params.sort || "name",
+    ...params,
+  });
+  return requestJson(`/branches?${query}`, { auth: "required" });
+}
+
+export async function createAdminBranch(payload) {
+  return requestJson("/branches", {
+    method: "POST",
+    body: {
+      name: payload.name,
+    },
+    auth: "required",
+  });
+}
+
+export async function updateAdminBranch(branchId, payload) {
+  return requestJson(`/branches/${branchId}`, {
+    method: "PUT",
+    body: {
+      name: payload.name,
+    },
+    auth: "required",
+  });
+}
+
+export async function deleteAdminBranch(branchId) {
+  return requestJson(`/branches/${branchId}`, {
+    method: "DELETE",
+    auth: "required",
+  });
+}
+
+export async function listAdminLocations(params = {}) {
+  const query = buildAdminQuery({
+    sort: params.sort || "name",
+    branchId: params.branchId ?? null,
+    ...params,
+  });
+  return requestJson(`/locations?${query}`, { auth: "required" });
+}
+
+export async function createAdminLocation(payload) {
+  return requestJson("/locations", {
+    method: "POST",
+    body: {
+      branch_id: Number(payload.branch_id),
+      name: payload.name,
+      type: payload.type,
+    },
+    auth: "required",
+  });
+}
+
+export async function updateAdminLocation(locationId, payload) {
+  return requestJson(`/locations/${locationId}`, {
+    method: "PUT",
+    body: {
+      branch_id: Number(payload.branch_id),
+      name: payload.name,
+      type: payload.type,
+    },
+    auth: "required",
+  });
+}
+
+export async function deleteAdminLocation(locationId) {
+  return requestJson(`/locations/${locationId}`, {
+    method: "DELETE",
+    auth: "required",
+  });
+}
+
 import { generateMockDataset, generateMockProductsDataset } from "./mock_data.js";
 import { resolvePeriodRange } from "./utils.js";
 

@@ -1,13 +1,15 @@
 export const ROUTES = [
-  { id: "dashboard", icon: "layout-dashboard", navKey: "dashboard", complete: true },
-  { id: "movimentacoes", icon: "shuffle", navKey: "movements", complete: true },
-  { id: "produtos", icon: "package", navKey: "products", complete: true },
-  { id: "variacoes", icon: "barcode", navKey: "variations", complete: true },
-  { id: "transferencias", icon: "arrow-right-left", navKey: "transfers", complete: true },
-  { id: "contagem", icon: "clipboard-check", navKey: "inventory_count", complete: true },
-  { id: "relatorios", icon: "bar-chart-3", navKey: "reports", complete: true },
-  { id: "auditoria", icon: "shield-check", navKey: "audit", complete: true },
-  { id: "usuarios", icon: "users", navKey: "users", complete: true },
+  { id: "dashboard", icon: "layout-dashboard", navKey: "dashboard", section: "operation", complete: true },
+  { id: "movimentacoes", icon: "shuffle", navKey: "movements", section: "operation", complete: true },
+  { id: "produtos", icon: "package", navKey: "products", section: "operation", complete: true },
+  { id: "variacoes", icon: "barcode", navKey: "variations", section: "operation", complete: true },
+  { id: "transferencias", icon: "arrow-right-left", navKey: "transfers", section: "operation", complete: true },
+  { id: "contagem", icon: "clipboard-check", navKey: "inventory_count", section: "operation", complete: true },
+  { id: "relatorios", icon: "bar-chart-3", navKey: "reports", section: "operation", complete: true },
+  { id: "auditoria", icon: "shield-check", navKey: "audit", section: "operation", complete: true },
+  { id: "cadastros", icon: "folder", navKey: "cadastros", section: "cadastros", complete: true },
+  { id: "usuarios", icon: "users", navKey: "users", section: "settings", complete: true },
+  { id: "login", icon: "log-in", navKey: "login", section: "settings", hidden: true, complete: true },
 ];
 
 function isoDateDaysAgo(daysAgo = 0) {

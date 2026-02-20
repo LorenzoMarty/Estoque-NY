@@ -3914,3 +3914,129 @@ table {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
+
+/* Cadastros + Nav Section */
+body.mobile-nav-open {
+  overflow: hidden;
+}
+
+.nav-section {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.nav-section:first-child {
+  margin-top: 0;
+}
+
+.nav-section-label {
+  margin: 2px 10px 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--zinc-500);
+}
+
+.table-actions-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cad-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  border-top: 1px solid var(--zinc-700);
+}
+
+.cad-pagination p {
+  margin: 0;
+  color: var(--zinc-400);
+  font-size: 0.78rem;
+}
+
+.cad-mobile-card-list {
+  display: none;
+}
+
+.cad-mobile-empty {
+  display: none;
+}
+
+.cad-mobile-card {
+  display: grid;
+  gap: 8px;
+}
+
+.cad-mobile-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.cad-mobile-card p {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.cad-mobile-card small {
+  color: var(--zinc-400);
+  font-size: 0.72rem;
+}
+
+.cad-mobile-card strong {
+  color: var(--zinc-100);
+  font-size: 0.86rem;
+}
+
+.cad-mobile-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.cad-mobile-card-head span {
+  color: var(--zinc-500);
+  font-size: 0.78rem;
+}
+
+.cadastros-filter-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (min-width: 64rem) {
+  .app-shell.sidebar-collapsed .nav-section-label {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .cadastros-filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cad-table-wrap {
+    display: none;
+  }
+
+  .cad-mobile-card-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .cad-mobile-empty {
+    display: block;
+  }
+
+  .cad-pagination {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
