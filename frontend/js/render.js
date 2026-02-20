@@ -56,6 +56,15 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function getMaps(data) {
   const branchById = new Map((data?.branches || []).map((branch) => [branch.id, branch]));
   const locationById = new Map(
@@ -580,6 +589,15 @@ function renderDashboardLoaded(view) {
   const data = state.dashboard.data;
   const lastUpdate = state.dashboard.lastUpdatedIso || data.generated_at;
   const modeIsDemo = state.dashboard.demoMode;
+  const authRequired = state.dashboard.authRequired;
+  const topBannerMarkup = authRequired
+    ? `<div class="banner"><i data-lucide="lock"></i>${escapeHtml(
+        state.dashboard.authMessage || "Faca login para consultar os dados protegidos."
+      )}</div>`
+    : state.dashboard.showDemoBanner
+    ? `<div class="banner"><i data-lucide="flask-conical"></i>${I18N_PTBR.mode_demo_banner}</div>`
+    : "";
+  const topBannerVisible = Boolean(topBannerMarkup);
 
   const branchOptions = [
     `<option value="all">${I18N_PTBR.dashboard.all_branches}</option>`,
@@ -597,12 +615,8 @@ function renderDashboardLoaded(view) {
 
   return `
     <section class="panel pad reveal">
-      ${
-        state.dashboard.showDemoBanner
-          ? `<div class="banner"><i data-lucide="flask-conical"></i>${I18N_PTBR.mode_demo_banner}</div>`
-          : ""
-      }
-      <div class="page-head" style="margin-top:${state.dashboard.showDemoBanner ? "12px" : "0"};">
+      ${topBannerMarkup}
+      <div class="page-head" style="margin-top:${topBannerVisible ? "12px" : "0"};">
         <div>
           <div class="breadcrumbs">${I18N_PTBR.breadcrumb_home} / ${I18N_PTBR.nav.dashboard}</div>
           <h1>${I18N_PTBR.dashboard.title}</h1>
@@ -1382,11 +1396,16 @@ function bindDashboardEvents(view) {
 
   refreshButton?.addEventListener("click", async () => {
     const payload = await callbacks.onRefreshData();
+    const authRequired = Boolean(payload?.authRequired);
     const isDemo = payload?.mode === "demo";
     showToast({
       title: I18N_PTBR.dashboard.update,
-      message: isDemo ? I18N_PTBR.actions.refresh_error : I18N_PTBR.actions.refresh_done,
-      type: isDemo ? "error" : "success",
+      message: authRequired
+        ? payload?.authMessage || "Faca login para consultar os dados protegidos."
+        : isDemo
+        ? I18N_PTBR.actions.refresh_error
+        : I18N_PTBR.actions.refresh_done,
+      type: authRequired || isDemo ? "error" : "success",
     });
   });
 

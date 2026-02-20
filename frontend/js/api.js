@@ -174,8 +174,45 @@ import { resolvePeriodRange } from "./utils.js";
 
 const { DateTime } = window.luxon;
 
-// Configure aqui a URL da API FastAPI para modo online.
-export const API_BASE_URL = "https://estoque-ny.onrender.com";
+const DEFAULT_API_BASE_URL = "https://estoque-ny.onrender.com";
+const AUTH_STORAGE_KEYS = ["ESTOQUE_API_TOKEN", "access_token"];
+const AUTH_REQUIRED_EVENT = "estoque:auth-required";
+export const AUTH_REQUIRED_EVENT_NAME = AUTH_REQUIRED_EVENT;
+
+function normalizeApiBaseUrl(rawValue) {
+  const value = String(rawValue || "").trim();
+  if (!value) return "";
+  return value.replace(/\/+$/, "");
+}
+
+function readEnvApiBaseUrl() {
+  const viteValue =
+    typeof import.meta !== "undefined" && import.meta?.env?.VITE_API_URL
+      ? String(import.meta.env.VITE_API_URL)
+      : "";
+  if (viteValue) return viteValue;
+
+  const nextValue =
+    typeof process !== "undefined" && process?.env?.NEXT_PUBLIC_API_URL
+      ? String(process.env.NEXT_PUBLIC_API_URL)
+      : "";
+  if (nextValue) return nextValue;
+
+  const runtimeValue =
+    (typeof window !== "undefined" && window.__API_BASE_URL__) ||
+    (typeof window !== "undefined" && window.VITE_API_URL) ||
+    (typeof window !== "undefined" && window.NEXT_PUBLIC_API_URL) ||
+    "";
+  return String(runtimeValue);
+}
+
+function resolveApiBaseUrl() {
+  const fromEnv = normalizeApiBaseUrl(readEnvApiBaseUrl());
+  if (fromEnv) return fromEnv;
+  return normalizeApiBaseUrl(DEFAULT_API_BASE_URL);
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 const MIN_LOADING_MS = 600;
 const REQUEST_TIMEOUT_MS = 9000;
@@ -190,16 +227,57 @@ function unwrapCollection(payload) {
   return [];
 }
 
-function resolveToken() {
-  const tokenCandidates = [
-    window.localStorage.getItem("ESTOQUE_API_TOKEN"),
-    window.localStorage.getItem("access_token"),
-  ].filter(Boolean);
-
+function resolveRawToken() {
+  const tokenCandidates = AUTH_STORAGE_KEYS.map((key) => window.localStorage.getItem(key)).filter(Boolean);
   const first = tokenCandidates[0];
-  if (!first) return null;
-  if (first.startsWith("Bearer ")) return first;
-  return `Bearer ${first}`;
+  return first || null;
+}
+
+export function hasAuthToken() {
+  return Boolean(resolveRawToken());
+}
+
+export function clearAuthSession() {
+  AUTH_STORAGE_KEYS.forEach((key) => {
+    window.localStorage.removeItem(key);
+  });
+}
+
+function resolveToken() {
+  const token = resolveRawToken();
+  if (!token) return null;
+  if (token.startsWith("Bearer ")) return token;
+  return `Bearer ${token}`;
+}
+
+function dispatchAuthRequired(detail = {}) {
+  clearAuthSession();
+  window.dispatchEvent(
+    new CustomEvent(AUTH_REQUIRED_EVENT, {
+      detail,
+    })
+  );
+}
+
+function buildAuthRequiredError(path, method = "GET", message = "Faca login para continuar.") {
+  const error = new Error(message);
+  error.status = 401;
+  error.path = path;
+  error.code = "AUTH_REQUIRED";
+  error.payload = { detail: "authentication required", source: "frontend" };
+  error.method = method;
+  return error;
+}
+
+function shouldHandleUnauthorized(path) {
+  const normalizedPath = String(path || "").toLowerCase();
+  return !(
+    normalizedPath.startsWith("/auth/login") ||
+    normalizedPath.startsWith("/auth/register") ||
+    normalizedPath.startsWith("/auth/refresh") ||
+    normalizedPath.startsWith("/health") ||
+    normalizedPath.startsWith("/db")
+  );
 }
 
 function isAbortError(error) {
@@ -234,11 +312,16 @@ async function requestJson(path, options = {}) {
     body = null,
     headers: customHeaders = {},
     timeoutMs = REQUEST_TIMEOUT_MS,
+    auth = "optional",
   } = options;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  const token = resolveToken();
+  const token = auth === "none" ? null : resolveToken();
+  if (auth === "required" && !token) {
+    clearTimeout(timeout);
+    throw buildAuthRequiredError(path, method);
+  }
   const headers = {
     Accept: "application/json",
     ...customHeaders,
@@ -257,11 +340,19 @@ async function requestJson(path, options = {}) {
       method,
       headers,
       body: body != null ? JSON.stringify(body) : undefined,
+      credentials: "include",
       signal: controller.signal,
     });
 
     if (!response.ok) {
       const payload = await parseJsonSafe(response);
+      if (response.status === 401 && shouldHandleUnauthorized(path)) {
+        dispatchAuthRequired({
+          path,
+          method,
+          status: 401,
+        });
+      }
       throw buildHttpError({
         path,
         method,
@@ -294,6 +385,61 @@ async function optionalJson(path, options = {}) {
   } catch {
     return null;
   }
+}
+
+export const apiClient = Object.freeze({
+  request: requestJson,
+  get(path, options = {}) {
+    return requestJson(path, { ...options, method: "GET" });
+  },
+  post(path, body = null, options = {}) {
+    return requestJson(path, { ...options, method: "POST", body });
+  },
+  patch(path, body = null, options = {}) {
+    return requestJson(path, { ...options, method: "PATCH", body });
+  },
+  delete(path, options = {}) {
+    return requestJson(path, { ...options, method: "DELETE" });
+  },
+});
+
+async function loadDbHealthPayload() {
+  const directPayload = await optionalJson("/db", {
+    auth: "none",
+    timeoutMs: 5000,
+  });
+  if (directPayload && typeof directPayload === "object") {
+    return directPayload;
+  }
+  return optionalJson("/health/db", {
+    auth: "none",
+    timeoutMs: 5000,
+  });
+}
+
+async function loadSystemStatusSnapshot() {
+  const [healthPayload, healthDbPayload] = await Promise.all([
+    optionalJson("/health", {
+      auth: "none",
+      timeoutMs: 5000,
+    }),
+    loadDbHealthPayload(),
+  ]);
+
+  return {
+    healthPayload,
+    healthDbPayload,
+    apiOnline: healthPayload?.status === "ok",
+    dbOnline: healthDbPayload?.status === "ok",
+  };
+}
+
+export async function checkSystemStatus() {
+  const snapshot = await loadSystemStatusSnapshot();
+  return {
+    apiOnline: snapshot.apiOnline,
+    dbOnline: snapshot.dbOnline,
+  };
 }
 
 function inferModeFromEnv(env) {
@@ -3206,64 +3352,139 @@ async function loadUsersFromApi() {
   };
 }
 
-async function loadFromApi() {
-  const [health, healthDb, branches, locations, balances, recentMoves] = await Promise.all([
-    requestJson("/health"),
-    requestJson("/health/db"),
-    requestJson("/branches"),
-    requestJson("/locations"),
-    requestJson("/stock/balances?page=1&page_size=200&order=desc"),
-    requestJson("/stock/moves?page=1&page_size=20&order=desc"),
-  ]);
+function resolveSystemMode(env, apiOnline) {
+  const normalizedEnv = String(env || "").trim();
+  if (normalizedEnv) {
+    return inferModeFromEnv(normalizedEnv);
+  }
+  return apiOnline ? "production" : "demo";
+}
 
-  const [moreMoves, skus, transfers, counts] = await Promise.all([
-    optionalJson("/stock/moves?page=1&page_size=200&order=desc"),
-    optionalJson("/skus?page=1&page_size=200&order=asc"),
-    optionalJson("/stock/transfers?page=1&page_size=50&order=desc"),
-    optionalJson("/stock/inventory-counts?page=1&page_size=50&order=desc"),
-  ]);
-
-  const moves = normalizeMoves(unwrapCollection(moreMoves).length ? moreMoves : recentMoves);
-  const normalizedBranches = normalizeBranches(branches);
-  const normalizedLocations = normalizeLocations(locations);
-  const normalizedBalances = unwrapCollection(balances);
-
-  const items = buildItemsFromApi({ skus, balances: normalizedBalances, moves });
-  const normalizedTransfers = unwrapCollection(transfers);
-  const normalizedCounts = unwrapCollection(counts);
-  const alerts = deriveAlertsFromApi({
-    balances: normalizedBalances,
-    items,
-    transfers: normalizedTransfers,
-    counts: normalizedCounts,
-  });
-  const inferredMode = inferModeFromEnv(health?.env);
-
+function buildDashboardAuthRequiredPayload({ apiOnline, dbOnline, env, reason = "" }) {
+  const message = reason || "Faca login para carregar os dados protegidos.";
+  const mode = resolveSystemMode(env, apiOnline);
   return {
     mode: "api",
     showDemoBanner: false,
-    fallbackReason: "",
+    fallbackReason: message,
+    authRequired: true,
+    authMessage: message,
     systemStatus: {
-      api: health?.status === "ok" ? "online" : "offline",
-      db: healthDb?.status === "ok" ? "online" : "offline",
-      mode: inferredMode,
-      env: health?.env || "unknown",
+      api: apiOnline ? "online" : "offline",
+      db: dbOnline ? "online" : "offline",
+      mode,
+      env: env || "unknown",
     },
     data: {
       source: "api",
       generated_at: new Date().toISOString(),
-      branches: normalizedBranches,
-      locations: normalizedLocations,
-      items,
-      balances: normalizedBalances,
-      moves,
-      alerts,
-      transfers: normalizedTransfers,
-      counts: normalizedCounts,
-      users: normalizeUsersFromMoves(moves),
+      branches: [],
+      locations: [],
+      items: [],
+      balances: [],
+      moves: [],
+      alerts: [],
+      transfers: [],
+      counts: [],
+      users: [],
     },
     lastUpdatedIso: new Date().toISOString(),
   };
+}
+
+async function loadFromApi() {
+  const systemSnapshot = await loadSystemStatusSnapshot();
+  const healthPayload = systemSnapshot.healthPayload || {};
+  const apiOnline = Boolean(systemSnapshot.apiOnline);
+  const dbOnline = Boolean(systemSnapshot.dbOnline);
+  const env = healthPayload?.env || "unknown";
+  const inferredMode = resolveSystemMode(env, apiOnline);
+
+  if (!apiOnline) {
+    throw new Error("Falha ao consultar /health.");
+  }
+
+  if (!hasAuthToken()) {
+    return buildDashboardAuthRequiredPayload({
+      apiOnline,
+      dbOnline,
+      env,
+      reason: "Faca login para consultar dados de estoque.",
+    });
+  }
+
+  try {
+    const [branches, locations, balances, recentMoves] = await Promise.all([
+      requestJson("/branches", { auth: "required" }),
+      requestJson("/locations", { auth: "required" }),
+      requestJson("/stock/balances?page=1&page_size=200&order=desc", { auth: "required" }),
+      requestJson("/stock/moves?page=1&page_size=20&order=desc", { auth: "required" }),
+    ]);
+
+    const [moreMoves, skus, transfers, counts] = await Promise.all([
+      optionalJson("/stock/moves?page=1&page_size=200&order=desc"),
+      optionalJson("/skus?page=1&page_size=200&order=asc"),
+      optionalJson("/stock/transfers?page=1&page_size=50&order=desc"),
+      optionalJson("/stock/inventory-counts?page=1&page_size=50&order=desc"),
+    ]);
+
+    const moves = normalizeMoves(unwrapCollection(moreMoves).length ? moreMoves : recentMoves);
+    const normalizedBranches = normalizeBranches(branches);
+    const normalizedLocations = normalizeLocations(locations);
+    const normalizedBalances = unwrapCollection(balances);
+
+    const items = buildItemsFromApi({ skus, balances: normalizedBalances, moves });
+    const normalizedTransfers = unwrapCollection(transfers);
+    const normalizedCounts = unwrapCollection(counts);
+    const alerts = deriveAlertsFromApi({
+      balances: normalizedBalances,
+      items,
+      transfers: normalizedTransfers,
+      counts: normalizedCounts,
+    });
+
+    return {
+      mode: "api",
+      showDemoBanner: false,
+      fallbackReason: "",
+      authRequired: false,
+      authMessage: "",
+      systemStatus: {
+        api: apiOnline ? "online" : "offline",
+        db: dbOnline ? "online" : "offline",
+        mode: inferredMode,
+        env,
+      },
+      data: {
+        source: "api",
+        generated_at: new Date().toISOString(),
+        branches: normalizedBranches,
+        locations: normalizedLocations,
+        items,
+        balances: normalizedBalances,
+        moves,
+        alerts,
+        transfers: normalizedTransfers,
+        counts: normalizedCounts,
+        users: normalizeUsersFromMoves(moves),
+      },
+      lastUpdatedIso: new Date().toISOString(),
+    };
+  } catch (error) {
+    if (error?.status === 401 || error?.status === 403) {
+      const message =
+        error?.status === 403
+          ? "Permissao insuficiente para consultar dados do dashboard."
+          : "Sessao invalida. Faca login para continuar.";
+      return buildDashboardAuthRequiredPayload({
+        apiOnline,
+        dbOnline,
+        env,
+        reason: message,
+      });
+    }
+    throw error;
+  }
 }
 
 function buildDemoPayload(reason = "") {
@@ -3271,6 +3492,8 @@ function buildDemoPayload(reason = "") {
     mode: "demo",
     showDemoBanner: true,
     fallbackReason: reason,
+    authRequired: false,
+    authMessage: "",
     systemStatus: {
       api: "offline",
       db: "offline",
@@ -3357,8 +3580,8 @@ function buildMovementsDemoPayload(reason = "") {
 function buildMovementsPermissionPayload(error) {
   const message =
     error?.status === 403
-      ? "Permissão insuficiente para consultar movimentações."
-      : "Sessão inválida para consultar movimentações.";
+      ? "Permissao insuficiente para consultar movimentacoes."
+      : "Sessao invalida. Faca login para consultar movimentacoes.";
 
   return {
     mode: "api",
@@ -3381,12 +3604,16 @@ function buildMovementsPermissionPayload(error) {
 }
 
 async function loadMovementsFromApi(filters = {}) {
+  if (!hasAuthToken()) {
+    throw buildAuthRequiredError("/stock/moves", "GET", "Faca login para consultar movimentacoes.");
+  }
+
   const query = buildMovementsQuery(filters);
 
   const [branches, locations, moves, balances, skus] = await Promise.all([
-    requestJson("/branches"),
-    requestJson("/locations"),
-    requestJson(`/stock/moves?${query}`),
+    requestJson("/branches", { auth: "required" }),
+    requestJson("/locations", { auth: "required" }),
+    requestJson(`/stock/moves?${query}`, { auth: "required" }),
     optionalJson("/stock/balances?page=1&page_size=350&order=desc"),
     optionalJson("/skus?page=1&page_size=250&order=asc"),
   ]);

@@ -148,6 +148,8 @@ export const state = {
     demoMode: true,
     showDemoBanner: false,
     fallbackReason: "",
+    authRequired: false,
+    authMessage: "",
     data: null,
     lastUpdatedIso: null,
     systemStatus: {
@@ -392,6 +394,8 @@ export function setDashboardPayload(payload) {
   state.dashboard.demoMode = payload.mode === "demo";
   state.dashboard.showDemoBanner = Boolean(payload.showDemoBanner);
   state.dashboard.fallbackReason = payload.fallbackReason || "";
+  state.dashboard.authRequired = Boolean(payload.authRequired);
+  state.dashboard.authMessage = payload.authMessage || "";
   state.dashboard.systemStatus = payload.systemStatus;
   state.dashboard.lastUpdatedIso = payload.lastUpdatedIso;
   state.dashboard.pagination.movesPage = 1;
