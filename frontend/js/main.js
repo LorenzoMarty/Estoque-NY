@@ -16,7 +16,13 @@
   - Em 401/403 na página Movimentações, é exibido aviso de permissão sem trocar para demo.
 */
 
-import { AUTH_REQUIRED_EVENT_NAME, loadDashboardPayload } from "./api.js";
+import {
+  AUTH_REQUIRED_EVENT_NAME,
+  clearAuthSession,
+  hasAuthToken,
+  loadDashboardPayload,
+  loginWithPassword,
+} from "./api.js";
 import { I18N_PTBR } from "./i18n.js";
 import {
   state,
@@ -31,9 +37,10 @@ import {
   subscribe,
 } from "./state.js";
 import { configureRenderer, renderApp } from "./render.js";
-import { refreshIcons, showToast } from "./ui.js";
+import { openDrawer, refreshIcons, showToast } from "./ui.js";
 
 let searchDebounceId = null;
+let authDrawerOpen = false;
 
 async function refreshDashboardData() {
   setDashboardLoading(true);
@@ -45,6 +52,117 @@ async function refreshDashboardData() {
 function syncRouteWithHash() {
   const route = routeFromHash(window.location.hash);
   setRoute(route);
+}
+
+function extractApiErrorMessage(error, fallback = "Nao foi possivel concluir o login.") {
+  if (typeof error?.payload?.error?.message === "string" && error.payload.error.message) {
+    return error.payload.error.message;
+  }
+  if (typeof error?.payload?.detail === "string" && error.payload.detail) {
+    return error.payload.detail;
+  }
+  if (typeof error?.message === "string" && error.message) {
+    return error.message;
+  }
+  return fallback;
+}
+
+function openAuthDrawer(reason = "Faca login para continuar.") {
+  if (authDrawerOpen) {
+    return;
+  }
+  authDrawerOpen = true;
+
+  openDrawer({
+    title: "Login no sistema",
+    subtitle: reason,
+    submitLabel: "Entrar",
+    cancelLabel: "Fechar",
+    initialFocusSelector: "#authEmailInput",
+    bodyHtml: `
+      <div class="field">
+        <label for="authEmailInput">E-mail</label>
+        <input id="authEmailInput" name="email" type="email" autocomplete="username" required placeholder="usuario@empresa.com" />
+      </div>
+      <div class="field">
+        <label for="authPasswordInput">Senha</label>
+        <input id="authPasswordInput" name="password" type="password" autocomplete="current-password" required placeholder="Sua senha" />
+      </div>
+    `,
+    onSubmit: async (formData, helpers) => {
+      const email = String(formData.get("email") || "")
+        .trim()
+        .toLowerCase();
+      const password = String(formData.get("password") || "");
+
+      if (!email || !email.includes("@")) {
+        helpers.setError("Informe um e-mail valido.");
+        return false;
+      }
+      if (password.length < 8) {
+        helpers.setError("Informe sua senha com pelo menos 8 caracteres.");
+        return false;
+      }
+
+      try {
+        await loginWithPassword(email, password);
+        const payload = await refreshDashboardData();
+        if (payload.authRequired) {
+          helpers.setError(payload.authMessage || "Login realizado, mas a sessao nao foi validada.");
+          return false;
+        }
+        showToast({
+          title: I18N_PTBR.app_name,
+          message: "Login realizado com sucesso.",
+          type: "success",
+        });
+        return true;
+      } catch (error) {
+        helpers.setError(extractApiErrorMessage(error));
+        return false;
+      }
+    },
+    onOpen: () => {
+      return () => {
+        authDrawerOpen = false;
+      };
+    },
+  });
+}
+
+function openSessionDrawer() {
+  openDrawer({
+    title: "Sessao ativa",
+    subtitle: "Sua autenticacao esta valida para consultar a API.",
+    footerHtml: `
+      <div class="drawer-footer">
+        <button class="btn ghost" type="button" data-close-drawer>Fechar</button>
+        <button class="btn" type="button" id="logoutSessionBtn">Sair</button>
+      </div>
+    `,
+    bodyHtml: `
+      <div class="banner">
+        <i data-lucide="shield-check"></i>
+        Sessao autenticada com token Bearer.
+      </div>
+    `,
+    onOpen: (overlay, helpers) => {
+      const logoutButton = overlay.querySelector("#logoutSessionBtn");
+      logoutButton?.addEventListener("click", async () => {
+        clearAuthSession();
+        helpers.close();
+        showToast({
+          title: I18N_PTBR.app_name,
+          message: "Sessao encerrada. Faca login para continuar.",
+          type: "success",
+        });
+        const payload = await refreshDashboardData();
+        if (payload.authRequired) {
+          openAuthDrawer(payload.authMessage || "Faca login para continuar.");
+        }
+      });
+    },
+  });
 }
 
 function bindShellEvents() {
@@ -93,11 +211,11 @@ function bindShellEvents() {
   });
 
   profileButton?.addEventListener("click", () => {
-    showToast({
-      title: I18N_PTBR.app_name,
-      message: I18N_PTBR.shell.profile_message,
-      type: "success",
-    });
+    if (hasAuthToken()) {
+      openSessionDrawer();
+      return;
+    }
+    openAuthDrawer("Sessao nao autenticada.");
   });
 
   window.addEventListener("resize", () => {
@@ -110,12 +228,15 @@ function bindShellEvents() {
     syncRouteWithHash();
   });
 
-  window.addEventListener(AUTH_REQUIRED_EVENT_NAME, () => {
+  window.addEventListener(AUTH_REQUIRED_EVENT_NAME, (event) => {
+    const reason = event?.detail?.reason;
+    const message = typeof reason === "string" && reason ? reason : "Sessao expirada. Faca login para continuar.";
     showToast({
       title: I18N_PTBR.app_name,
-      message: "Sessao expirada. Faca login para continuar.",
+      message,
       type: "error",
     });
+    openAuthDrawer(message);
   });
 }
 
@@ -147,11 +268,13 @@ function initialize() {
 
   refreshDashboardData().then((payload) => {
     if (payload.authRequired) {
+      const authMessage = payload.authMessage || "Faca login para consultar os dados protegidos.";
       showToast({
         title: I18N_PTBR.app_name,
-        message: payload.authMessage || "Faca login para consultar os dados protegidos.",
+        message: authMessage,
         type: "error",
       });
+      openAuthDrawer(authMessage);
       return;
     }
 
