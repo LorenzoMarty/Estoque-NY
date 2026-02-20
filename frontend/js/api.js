@@ -175,9 +175,18 @@ import { resolvePeriodRange } from "./utils.js";
 const { DateTime } = window.luxon;
 
 const DEFAULT_API_BASE_URL = "https://estoque-ny.onrender.com";
-const AUTH_STORAGE_KEYS = ["ESTOQUE_API_TOKEN", "access_token"];
+const AUTH_STORAGE_KEYS = [
+  "ESTOQUE_API_TOKEN",
+  "access_token",
+  "token",
+  "ESTOQUE_TOKEN",
+  "auth_token",
+];
+const AUTH_REFRESH_STORAGE_KEYS = ["ESTOQUE_API_REFRESH_TOKEN", "refresh_token"];
+const AUTH_STORAGE_RECORD_KEYS = ["ESTOQUE_AUTH_SESSION", "auth_session"];
 const AUTH_REQUIRED_EVENT = "estoque:auth-required";
 export const AUTH_REQUIRED_EVENT_NAME = AUTH_REQUIRED_EVENT;
+let refreshTokenPromise = null;
 
 function normalizeApiBaseUrl(rawValue) {
   const value = String(rawValue || "").trim();
@@ -227,19 +236,178 @@ function unwrapCollection(payload) {
   return [];
 }
 
+function extractTokenFromObject(source, candidateKeys = []) {
+  if (!source || typeof source !== "object") return null;
+  for (const key of candidateKeys) {
+    const value = source[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+function resolveStoredToken(candidate, candidateKeys = []) {
+  if (typeof candidate !== "string") return null;
+  const compact = candidate.trim();
+  if (!compact) return null;
+
+  if (compact.startsWith("{") || compact.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(compact);
+      if (typeof parsed === "string" && parsed.trim()) {
+        return parsed.trim();
+      }
+      return extractTokenFromObject(parsed, candidateKeys);
+    } catch {
+      return null;
+    }
+  }
+
+  return compact;
+}
+
 function resolveRawToken() {
-  const tokenCandidates = AUTH_STORAGE_KEYS.map((key) => window.localStorage.getItem(key)).filter(Boolean);
-  const first = tokenCandidates[0];
-  return first || null;
+  const directTokenCandidates = AUTH_STORAGE_KEYS.map((key) => window.localStorage.getItem(key))
+    .map((value) =>
+      resolveStoredToken(value, ["access_token", "accessToken", "token", "jwt", "authorization"])
+    )
+    .filter(Boolean);
+
+  if (directTokenCandidates[0]) {
+    return directTokenCandidates[0];
+  }
+
+  const recordTokenCandidates = AUTH_STORAGE_RECORD_KEYS.map((key) => window.localStorage.getItem(key))
+    .map((value) =>
+      resolveStoredToken(value, ["access_token", "accessToken", "token", "jwt", "authorization"])
+    )
+    .filter(Boolean);
+
+  return recordTokenCandidates[0] || null;
+}
+
+function resolveRawRefreshToken() {
+  const directTokenCandidates = AUTH_REFRESH_STORAGE_KEYS.map((key) => window.localStorage.getItem(key))
+    .map((value) => resolveStoredToken(value, ["refresh_token", "refreshToken"]))
+    .filter(Boolean);
+
+  if (directTokenCandidates[0]) {
+    return directTokenCandidates[0];
+  }
+
+  const recordTokenCandidates = AUTH_STORAGE_RECORD_KEYS.map((key) => window.localStorage.getItem(key))
+    .map((value) => resolveStoredToken(value, ["refresh_token", "refreshToken"]))
+    .filter(Boolean);
+
+  return recordTokenCandidates[0] || null;
+}
+
+function persistAuthSession({ accessToken, refreshToken }) {
+  const normalizedAccess = normalizeTokenValue(accessToken);
+  const normalizedRefresh = normalizeTokenValue(refreshToken);
+
+  if (normalizedAccess) {
+    AUTH_STORAGE_KEYS.forEach((key) => {
+      window.localStorage.setItem(key, normalizedAccess);
+    });
+  }
+
+  if (normalizedRefresh) {
+    AUTH_REFRESH_STORAGE_KEYS.forEach((key) => {
+      window.localStorage.setItem(key, normalizedRefresh);
+    });
+  }
+
+  const serialized = JSON.stringify({
+    access_token: normalizedAccess || null,
+    refresh_token: normalizedRefresh || null,
+    updated_at: new Date().toISOString(),
+  });
+  AUTH_STORAGE_RECORD_KEYS.forEach((key) => {
+    window.localStorage.setItem(key, serialized);
+  });
 }
 
 export function hasAuthToken() {
-  return Boolean(normalizeValidToken(resolveRawToken()));
+  return Boolean(normalizeValidToken(resolveRawToken()) || normalizeTokenValue(resolveRawRefreshToken()));
 }
 
 export function clearAuthSession() {
-  AUTH_STORAGE_KEYS.forEach((key) => {
+  [...AUTH_STORAGE_KEYS, ...AUTH_REFRESH_STORAGE_KEYS, ...AUTH_STORAGE_RECORD_KEYS].forEach((key) => {
     window.localStorage.removeItem(key);
+  });
+}
+
+async function refreshAccessToken() {
+  if (refreshTokenPromise) {
+    return refreshTokenPromise;
+  }
+
+  const refreshToken = resolveRawRefreshToken();
+  if (!refreshToken) {
+    return null;
+  }
+
+  refreshTokenPromise = (async () => {
+    try {
+      const refreshed = await requestJson("/auth/refresh", {
+        method: "POST",
+        body: { refresh_token: refreshToken },
+        auth: "none",
+        timeoutMs: 7000,
+        allowRefresh: false,
+        retryOnUnauthorized: false,
+      });
+      const nextAccessToken = normalizeTokenValue(refreshed?.access_token);
+      const nextRefreshToken = normalizeTokenValue(refreshed?.refresh_token || refreshToken);
+      if (!nextAccessToken) {
+        clearAuthSession();
+        return null;
+      }
+      persistAuthSession({
+        accessToken: nextAccessToken,
+        refreshToken: nextRefreshToken,
+      });
+      return normalizeValidToken(nextAccessToken);
+    } catch {
+      clearAuthSession();
+      return null;
+    } finally {
+      refreshTokenPromise = null;
+    }
+  })();
+
+  return refreshTokenPromise;
+}
+
+export async function loginWithPassword(email, password) {
+  const payload = await requestJson("/auth/login", {
+    method: "POST",
+    body: {
+      email: String(email || "").trim().toLowerCase(),
+      password: String(password || ""),
+    },
+    auth: "none",
+    timeoutMs: 9000,
+    allowRefresh: false,
+    retryOnUnauthorized: false,
+  });
+
+  const nextAccessToken = normalizeTokenValue(payload?.access_token);
+  const nextRefreshToken = normalizeTokenValue(payload?.refresh_token);
+  if (!nextAccessToken || !nextRefreshToken) {
+    throw new Error("Resposta de login sem tokens.");
+  }
+
+  persistAuthSession({
+    accessToken: nextAccessToken,
+    refreshToken: nextRefreshToken,
+  });
+
+  return requestJson("/auth/me", {
+    auth: "required",
+    timeoutMs: 7000,
   });
 }
 
@@ -330,6 +498,8 @@ function buildHttpError({ path, method, status, payload }) {
       ? payload.detail
       : typeof payload?.message === "string"
       ? payload.message
+      : typeof payload?.error?.message === "string"
+      ? payload.error.message
       : null;
   const error = new Error(messageFromPayload || `${method} ${path} retornou status ${status}`);
   error.status = status;
@@ -353,6 +523,8 @@ async function requestJson(path, options = {}) {
     headers: customHeaders = {},
     timeoutMs = REQUEST_TIMEOUT_MS,
     auth = "optional",
+    allowRefresh = true,
+    retryOnUnauthorized = true,
   } = options;
 
   const controller = new AbortController();
@@ -360,7 +532,11 @@ async function requestJson(path, options = {}) {
 
   const effectiveAuth = auth === "optional" ? (isPublicPath(path) ? "none" : "required") : auth;
   const rawToken = effectiveAuth === "none" ? null : resolveRawToken();
-  const token = effectiveAuth === "none" ? null : normalizeValidToken(rawToken);
+  let token = effectiveAuth === "none" ? null : normalizeValidToken(rawToken);
+
+  if (effectiveAuth === "required" && !token && allowRefresh) {
+    token = await refreshAccessToken();
+  }
 
   if (effectiveAuth === "required" && !token) {
     if (rawToken) {
@@ -398,6 +574,23 @@ async function requestJson(path, options = {}) {
 
     if (!response.ok) {
       const payload = await parseJsonSafe(response);
+      if (
+        response.status === 401 &&
+        retryOnUnauthorized &&
+        effectiveAuth !== "none" &&
+        allowRefresh &&
+        !isPublicPath(path)
+      ) {
+        const refreshedToken = await refreshAccessToken();
+        if (refreshedToken) {
+          return requestJson(path, {
+            ...options,
+            allowRefresh: false,
+            retryOnUnauthorized: false,
+          });
+        }
+      }
+
       if (response.status === 401 && shouldHandleUnauthorized(path)) {
         dispatchAuthRequired({
           path,
