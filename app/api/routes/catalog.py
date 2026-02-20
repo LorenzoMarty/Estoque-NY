@@ -3,11 +3,21 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.errors import domain_error_to_http
 from app.api.pagination import apply_order_and_pagination, page_meta, pagination_params
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
-from app.models.entities import Brand, Category, User
-from app.schemas.catalog import BrandCreate, BrandOut, CategoryCreate, CategoryOut
+from app.domain.errors import DomainError
+from app.models.entities import Category, User
+from app.schemas.catalog import (
+    BrandCreate,
+    BrandListOut,
+    BrandOut,
+    BrandUpdate,
+    CategoryCreate,
+    CategoryOut,
+)
+from app.services import admin_entities_service
 from app.services.audit_service import write_audit_log
 
 router = APIRouter(tags=["catalog"])
@@ -91,57 +101,152 @@ async def create_brand(
     request: Request,
     current_user: User | None = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> Brand:
-    brand = Brand(name=payload.name)
-    session.add(brand)
+) -> BrandOut:
     try:
-        await session.flush()
-    except IntegrityError as exc:
+        brand = await admin_entities_service.create_brand(session, payload=payload)
+        await write_audit_log(
+            session,
+            request=request,
+            user_id=current_user.id if current_user else None,
+            action="brand.create",
+            resource_type="brand",
+            resource_id=brand.id,
+            before=None,
+            after=BrandOut.model_validate(brand).model_dump(mode="json"),
+        )
+        await session.commit()
+    except DomainError as exc:
         await session.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="brand name already exists",
-        ) from exc
+        raise domain_error_to_http(exc) from exc
+    except Exception:
+        await session.rollback()
+        raise
 
-    await write_audit_log(
-        session,
-        request=request,
-        user_id=current_user.id if current_user else None,
-        action="brand.create",
-        resource_type="brand",
-        resource_id=brand.id,
-        before=None,
-        after={"name": brand.name},
-    )
-    await session.commit()
     await session.refresh(brand)
-    return brand
+    return BrandOut.model_validate(brand)
 
 
 @router.get(
     "/brands",
+    response_model=BrandListOut,
     dependencies=[Depends(require_permission("brand.read"))],
 )
 async def list_brands(
-    request: Request,
     params=Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> dict:
-    stmt = select(Brand)
-    if params.q:
-        stmt = stmt.where(Brand.name.ilike(f"%{params.q}%"))
-
-    total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    stmt = apply_order_and_pagination(
-        stmt,
-        model=Brand,
-        params=params,
-        allowed_sort_fields={"id", "name", "created_at"},
+) -> BrandListOut:
+    rows, total = await admin_entities_service.list_brands(
+        session,
+        page=params.page,
+        page_size=params.page_size,
+        sort=params.sort,
+        order=params.order,
+        q=params.q,
     )
-    rows = list((await session.scalars(stmt)).all())
-    return {
-        "items": [BrandOut.model_validate(row).model_dump() for row in rows],
-        "meta": page_meta(
+    return BrandListOut(
+        items=[BrandOut.model_validate(row) for row in rows],
+        meta=page_meta(
             total=int(total), page=params.page, page_size=params.page_size
         ),
-    }
+    )
+
+
+@router.get(
+    "/brands/{brand_id}",
+    response_model=BrandOut,
+    dependencies=[Depends(require_permission("brand.read"))],
+)
+async def get_brand(
+    brand_id: int,
+    session: AsyncSession = Depends(get_session),
+) -> BrandOut:
+    try:
+        brand = await admin_entities_service.get_brand_or_error(
+            session,
+            brand_id=brand_id,
+        )
+    except DomainError as exc:
+        raise domain_error_to_http(exc) from exc
+    return BrandOut.model_validate(brand)
+
+
+@router.put(
+    "/brands/{brand_id}",
+    response_model=BrandOut,
+    dependencies=[Depends(require_permission("brand.update"))],
+)
+async def update_brand(
+    brand_id: int,
+    payload: BrandUpdate,
+    request: Request,
+    current_user: User | None = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> BrandOut:
+    try:
+        current = await admin_entities_service.get_brand_or_error(
+            session,
+            brand_id=brand_id,
+        )
+        before = BrandOut.model_validate(current).model_dump(mode="json")
+        brand = await admin_entities_service.update_brand(
+            session,
+            brand_id=brand_id,
+            payload=payload,
+        )
+        await write_audit_log(
+            session,
+            request=request,
+            user_id=current_user.id if current_user else None,
+            action="brand.update",
+            resource_type="brand",
+            resource_id=brand.id,
+            before=before,
+            after=BrandOut.model_validate(brand).model_dump(mode="json"),
+        )
+        await session.commit()
+    except DomainError as exc:
+        await session.rollback()
+        raise domain_error_to_http(exc) from exc
+    except Exception:
+        await session.rollback()
+        raise
+
+    await session.refresh(brand)
+    return BrandOut.model_validate(brand)
+
+
+@router.delete(
+    "/brands/{brand_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_permission("brand.delete"))],
+)
+async def delete_brand(
+    brand_id: int,
+    request: Request,
+    current_user: User | None = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    try:
+        current = await admin_entities_service.get_brand_or_error(
+            session,
+            brand_id=brand_id,
+        )
+        before = BrandOut.model_validate(current).model_dump(mode="json")
+        await admin_entities_service.delete_brand(session, brand_id=brand_id)
+        await write_audit_log(
+            session,
+            request=request,
+            user_id=current_user.id if current_user else None,
+            action="brand.delete",
+            resource_type="brand",
+            resource_id=brand_id,
+            before=before,
+            after=None,
+        )
+        await session.commit()
+    except DomainError as exc:
+        await session.rollback()
+        raise domain_error_to_http(exc) from exc
+    except Exception:
+        await session.rollback()
+        raise

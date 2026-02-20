@@ -6,11 +6,13 @@ import {
   state,
   getRouteById,
   setRoute,
+  setMobileSidebarOpen,
   updateDashboardFilter,
   setMovesPage,
   mutateDashboardData,
 } from "./state.js";
 import { applyReveal, initTooltips, openDrawer, refreshIcons, showToast } from "./ui.js";
+import { renderCadastros } from "./cadastros.js";
 import { renderInventoryCount } from "./inventory_counts.js";
 import { renderMovements } from "./movements.js";
 import { renderProducts } from "./products.js";
@@ -29,6 +31,7 @@ const chartInstances = {
 
 const callbacks = {
   onRefreshData: async () => {},
+  onOpenLogin: () => {},
 };
 
 function formatNumber(value) {
@@ -400,21 +403,40 @@ function renderSidebarNav() {
   const nav = document.getElementById("sidebarNav");
   if (!nav) return;
 
-  const links = ROUTES.map((route) => {
-    const isActive = state.route === route.id;
-    const label = I18N_PTBR.nav[route.navKey];
-    const badge = route.complete
-      ? ""
-      : `<span class="nav-badge">${I18N_PTBR.actions.page_under_construction}</span>`;
-
-    return `
-      <button class="nav-link ${isActive ? "is-active" : ""}" data-route="${route.id}" aria-label="${label}">
-        <i data-lucide="${route.icon}"></i>
-        <span class="nav-label">${label}</span>
-        ${badge}
-      </button>
-    `;
-  }).join("");
+  const orderedSections = ["operation", "cadastros", "settings"];
+  const links = orderedSections
+    .map((sectionKey) => {
+      const sectionRoutes = ROUTES.filter(
+        (route) => !route.hidden && String(route.section || "operation") === sectionKey
+      );
+      if (!sectionRoutes.length) {
+        return "";
+      }
+      const sectionLabel = I18N_PTBR.nav_sections?.[sectionKey] || sectionKey;
+      const sectionLinks = sectionRoutes
+        .map((route) => {
+          const isActive = state.route === route.id;
+          const label = I18N_PTBR.nav[route.navKey] || route.id;
+          const badge = route.complete
+            ? ""
+            : `<span class="nav-badge">${I18N_PTBR.actions.page_under_construction}</span>`;
+          return `
+            <button class="nav-link ${isActive ? "is-active" : ""}" data-route="${route.id}" aria-label="${label}">
+              <i data-lucide="${route.icon}"></i>
+              <span class="nav-label">${label}</span>
+              ${badge}
+            </button>
+          `;
+        })
+        .join("");
+      return `
+        <section class="nav-section" data-nav-section="${sectionKey}">
+          <p class="nav-section-label">${escapeHtml(sectionLabel)}</p>
+          ${sectionLinks}
+        </section>
+      `;
+    })
+    .join("");
 
   nav.innerHTML = links;
 
@@ -424,6 +446,7 @@ function renderSidebarNav() {
       if (!nextRoute) return;
       window.location.hash = `#/${nextRoute}`;
       setRoute(nextRoute);
+      setMobileSidebarOpen(false);
     });
   });
 }
@@ -1036,6 +1059,33 @@ function renderPlaceholder(route) {
   applyReveal(pageContent);
 }
 
+function renderLoginPage() {
+  const pageContent = document.getElementById("pageContent");
+  if (!pageContent) return;
+
+  pageContent.innerHTML = `
+    <section class="placeholder-page">
+      <article class="placeholder-card border-gradient reveal">
+        <i data-lucide="log-in"></i>
+        <h2>${I18N_PTBR.login.title}</h2>
+        <p>${I18N_PTBR.login.subtitle}</p>
+        <div class="table-tools" style="margin-top: 14px; justify-content: center;">
+          <button class="btn primary" type="button" id="loginRouteCta">
+            <i data-lucide="log-in"></i>${I18N_PTBR.login.cta}
+          </button>
+        </div>
+      </article>
+    </section>
+  `;
+
+  pageContent.querySelector("#loginRouteCta")?.addEventListener("click", () => {
+    callbacks.onOpenLogin?.();
+  });
+
+  refreshIcons();
+  applyReveal(pageContent);
+}
+
 function nextId(rows) {
   return rows.reduce((maxId, row) => Math.max(maxId, Number(row.id || 0)), 0) + 1;
 }
@@ -1488,6 +1538,10 @@ export function renderApp() {
     const isDesktop = window.innerWidth > 1180;
     sidebar.setAttribute("aria-hidden", isDesktop || state.mobileSidebarOpen ? "false" : "true");
   }
+  document.body.classList.toggle(
+    "mobile-nav-open",
+    state.mobileSidebarOpen && window.innerWidth <= 1180
+  );
 
   renderSidebarNav();
 
@@ -1497,6 +1551,9 @@ export function renderApp() {
 
   if (state.route === "dashboard") {
     renderDashboard();
+  } else if (state.route === "login") {
+    destroyCharts();
+    renderLoginPage();
   } else if (state.route === "movimentacoes") {
     destroyCharts();
     renderMovements();
@@ -1515,6 +1572,9 @@ export function renderApp() {
   } else if (state.route === "auditoria") {
     destroyCharts();
     renderAudit();
+  } else if (state.route === "cadastros") {
+    destroyCharts();
+    renderCadastros();
   } else if (state.route === "usuarios") {
     destroyCharts();
     renderUsers();

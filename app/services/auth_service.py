@@ -54,11 +54,9 @@ async def ensure_rbac_seed(session: AsyncSession) -> None:
         key
         for key in ALL_PERMISSIONS
         if key.startswith("stock.")
-        or key.startswith("branch.")
-        or key.startswith("location.")
         or key.startswith("product.")
         or key.startswith("sku.")
-        or key in {"category.read", "brand.read"}
+        or key in {"branch.read", "location.read", "category.read", "brand.read"}
     }
     operator_perm_ids = {permissions[key].id for key in operator_perm_keys}
     viewer_perm_keys = {

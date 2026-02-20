@@ -41,6 +41,7 @@ import { openDrawer, refreshIcons, showToast } from "./ui.js";
 
 let searchDebounceId = null;
 let authDrawerOpen = false;
+const PUBLIC_ROUTES = new Set(["login"]);
 
 async function refreshDashboardData() {
   setDashboardLoading(true);
@@ -50,8 +51,17 @@ async function refreshDashboardData() {
 }
 
 function syncRouteWithHash() {
-  const route = routeFromHash(window.location.hash);
+  let route = routeFromHash(window.location.hash);
+  if (!PUBLIC_ROUTES.has(route) && !hasAuthToken()) {
+    route = "login";
+    if (window.location.hash !== "#/login") {
+      window.location.hash = "#/login";
+    }
+  }
   setRoute(route);
+  if (state.mobileSidebarOpen) {
+    setMobileSidebarOpen(false);
+  }
 }
 
 function extractApiErrorMessage(error, fallback = "Nao foi possivel concluir o login.") {
@@ -111,6 +121,8 @@ function openAuthDrawer(reason = "Faca login para continuar.") {
           helpers.setError(payload.authMessage || "Login realizado, mas a sessao nao foi validada.");
           return false;
         }
+        window.location.hash = "#/dashboard";
+        syncRouteWithHash();
         showToast({
           title: I18N_PTBR.app_name,
           message: "Login realizado com sucesso.",
@@ -151,15 +163,13 @@ function openSessionDrawer() {
       logoutButton?.addEventListener("click", async () => {
         clearAuthSession();
         helpers.close();
+        window.location.hash = "#/login";
+        syncRouteWithHash();
         showToast({
           title: I18N_PTBR.app_name,
           message: "Sessao encerrada. Faca login para continuar.",
           type: "success",
         });
-        const payload = await refreshDashboardData();
-        if (payload.authRequired) {
-          openAuthDrawer(payload.authMessage || "Faca login para continuar.");
-        }
       });
     },
   });
@@ -236,6 +246,8 @@ function bindShellEvents() {
       message,
       type: "error",
     });
+    window.location.hash = "#/login";
+    syncRouteWithHash();
     openAuthDrawer(message);
   });
 }
@@ -250,6 +262,7 @@ function restoreSidebarPreference() {
 function initialize() {
   configureRenderer({
     onRefreshData: refreshDashboardData,
+    onOpenLogin: () => openAuthDrawer("Sessao nao autenticada."),
   });
 
   subscribe(() => {
@@ -261,10 +274,14 @@ function initialize() {
   bindShellEvents();
 
   if (!window.location.hash) {
-    window.location.hash = "#/dashboard";
+    window.location.hash = hasAuthToken() ? "#/dashboard" : "#/login";
   }
 
   syncRouteWithHash();
+
+  if (!hasAuthToken()) {
+    return;
+  }
 
   refreshDashboardData().then((payload) => {
     if (payload.authRequired) {
@@ -274,6 +291,9 @@ function initialize() {
         message: authMessage,
         type: "error",
       });
+      clearAuthSession();
+      window.location.hash = "#/login";
+      syncRouteWithHash();
       openAuthDrawer(authMessage);
       return;
     }
