@@ -42,6 +42,7 @@ import { openDrawer, refreshIcons, showToast } from "./ui.js";
 let searchDebounceId = null;
 let authDrawerOpen = false;
 const PUBLIC_ROUTES = new Set(["login"]);
+const MOBILE_SHELL_BREAKPOINT = 1200;
 
 async function refreshDashboardData() {
   setDashboardLoading(true);
@@ -229,7 +230,7 @@ function bindShellEvents() {
   });
 
   window.addEventListener("resize", () => {
-    if (window.innerWidth > 1180 && state.mobileSidebarOpen) {
+    if (window.innerWidth > MOBILE_SHELL_BREAKPOINT && state.mobileSidebarOpen) {
       setMobileSidebarOpen(false);
     }
   });
