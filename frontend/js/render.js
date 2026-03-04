@@ -28,6 +28,7 @@ const chartInstances = {
   topItems: null,
   branchStock: null,
 };
+const MOBILE_SHELL_BREAKPOINT = 1200;
 
 const callbacks = {
   onRefreshData: async () => {},
@@ -1535,12 +1536,12 @@ export function renderApp() {
   }
 
   if (sidebar) {
-    const isDesktop = window.innerWidth > 1180;
+    const isDesktop = window.innerWidth > MOBILE_SHELL_BREAKPOINT;
     sidebar.setAttribute("aria-hidden", isDesktop || state.mobileSidebarOpen ? "false" : "true");
   }
   document.body.classList.toggle(
     "mobile-nav-open",
-    state.mobileSidebarOpen && window.innerWidth <= 1180
+    state.mobileSidebarOpen && window.innerWidth <= MOBILE_SHELL_BREAKPOINT
   );
 
   renderSidebarNav();
