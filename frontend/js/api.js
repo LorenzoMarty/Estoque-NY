@@ -708,7 +708,7 @@ async function requestJson(path, options = {}) {
       method,
       headers,
       body: body != null ? JSON.stringify(body) : undefined,
-      credentials: "include",
+      credentials: "same-origin",
       signal: controller.signal,
     });
 
