@@ -304,7 +304,8 @@ import { resolvePeriodRange } from "./utils.js";
 
 const { DateTime } = window.luxon;
 
-const DEFAULT_API_BASE_URL = "https://estoque-ny.onrender.com";
+const DEFAULT_API_BASE_URL_REMOTE = "https://estoque-ny.onrender.com";
+const DEFAULT_API_BASE_URL_LOCAL = "http://127.0.0.1:8000";
 const AUTH_STORAGE_KEYS = [
   "ESTOQUE_API_TOKEN",
   "access_token",
@@ -348,7 +349,16 @@ function readEnvApiBaseUrl() {
 function resolveApiBaseUrl() {
   const fromEnv = normalizeApiBaseUrl(readEnvApiBaseUrl());
   if (fromEnv) return fromEnv;
-  return normalizeApiBaseUrl(DEFAULT_API_BASE_URL);
+
+  const host =
+    typeof window !== "undefined" ? String(window.location.hostname || "").toLowerCase() : "";
+  const isLocalHost =
+    host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+  if (isLocalHost) {
+    return normalizeApiBaseUrl(DEFAULT_API_BASE_URL_LOCAL);
+  }
+
+  return normalizeApiBaseUrl(DEFAULT_API_BASE_URL_REMOTE);
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
