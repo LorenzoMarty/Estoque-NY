@@ -825,36 +825,6 @@ function renderDashboardLoaded(view) {
           <h2 class="section-title">${I18N_PTBR.dashboard.recent_moves.title}</h2>
           <p class="section-subtitle">${I18N_PTBR.dashboard.recent_moves.subtitle}</p>
         </div>
-
-        <div class="table-tools">
-          <div class="field" style="min-width: 180px;">
-            <label for="moveTypeFilter">${I18N_PTBR.dashboard.recent_moves.filter_label}</label>
-            <select id="moveTypeFilter" aria-label="Filtrar tipo de movimentação">
-            <option value="transfer" ${
-                filters.moveType === "transfer" ? "selected" : ""
-              }>${I18N_PTBR.dashboard.recent_moves.filter_transfer}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-              <option value="all" ${
-                filters.moveType === "all" ? "selected" : ""
-              }>${I18N_PTBR.dashboard.recent_moves.filter_all}</option>
-              <option value="receipt" ${
-                filters.moveType === "receipt" ? "selected" : ""
-              }>${I18N_PTBR.dashboard.recent_moves.filter_receipt}</option>
-              <option value="issue" ${
-                filters.moveType === "issue" ? "selected" : ""
-              }>${I18N_PTBR.dashboard.recent_moves.filter_issue}</option>
-              <option value="adjustment" ${
-                filters.moveType === "adjustment" ? "selected" : ""
-              }>${I18N_PTBR.dashboard.recent_moves.filter_adjustment}</option>
-              <option value="transfer" ${
-                filters.moveType === "transfer" ? "selected" : ""
-              }>${I18N_PTBR.dashboard.recent_moves.filter_transfer}</option>
-            </select>
-          </label>
-        </div>
       </div>
 
       <div class="table-wrap">

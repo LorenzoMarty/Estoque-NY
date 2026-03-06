@@ -22,13 +22,23 @@ async def app_lifespan(_: FastAPI):
 
 def create_app() -> FastAPI:
     configure_logging()
+    cors_origins = [origin.strip() for origin in settings.cors_origins.split(",")]
+    cors_origins = [origin for origin in cors_origins if origin]
+    allow_origin_regex = None
+    if "*" in cors_origins:
+        # With credentials enabled, using "*" in allow_origins may lead to
+        # browser-side CORS rejection on cross-origin requests.
+        cors_origins = []
+        allow_origin_regex = ".*"
+
     app = FastAPI(
         title=settings.app_name,
         lifespan=app_lifespan,
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[origin.strip() for origin in settings.cors_origins.split(",")],
+        allow_origins=cors_origins,
+        allow_origin_regex=allow_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
