@@ -305,7 +305,6 @@ import { resolvePeriodRange } from "./utils.js";
 const { DateTime } = window.luxon;
 
 const DEFAULT_API_BASE_URL_LOCAL = "http://127.0.0.1:8000";
-const DEFAULT_API_BASE_URL_FALLBACK = "https://estoque-ny.onrender.com/api";
 const AUTH_STORAGE_KEYS = [
   "ESTOQUE_API_TOKEN",
   "access_token",
@@ -323,6 +322,16 @@ function normalizeApiBaseUrl(rawValue) {
   const value = String(rawValue || "").trim();
   if (!value) return "";
   return value.replace(/\/+$/, "");
+}
+
+function isLocalHostName(host) {
+  const normalized = String(host || "").trim().toLowerCase();
+  return (
+    normalized === "localhost" ||
+    normalized === "127.0.0.1" ||
+    normalized === "::1" ||
+    normalized === "[::1]"
+  );
 }
 
 function readEnvApiBaseUrl() {
@@ -356,9 +365,7 @@ function resolveApiBaseUrl() {
       : "";
   const host =
     typeof window !== "undefined" ? String(window.location.hostname || "").toLowerCase() : "";
-  const isLocalHost =
-    host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
-  if (isLocalHost) {
+  if (isLocalHostName(host)) {
     return normalizeApiBaseUrl(DEFAULT_API_BASE_URL_LOCAL);
   }
 
@@ -366,10 +373,12 @@ function resolveApiBaseUrl() {
     return normalizeApiBaseUrl(`${origin}/api`);
   }
 
-  return normalizeApiBaseUrl(DEFAULT_API_BASE_URL_FALLBACK);
+  return "/api";
 }
 
 export const API_BASE_URL = resolveApiBaseUrl();
+const STRICT_API_MODE =
+  typeof window !== "undefined" ? !isLocalHostName(window.location.hostname) : true;
 
 const MIN_LOADING_MS = 600;
 const REQUEST_TIMEOUT_MS = 9000;
@@ -640,25 +649,51 @@ function isAbortError(error) {
   return error instanceof Error && error.name === "AbortError";
 }
 
+function extractErrorMessageFromPayload(payload) {
+  if (typeof payload?.detail === "string" && payload.detail) {
+    return payload.detail;
+  }
+  if (typeof payload?.message === "string" && payload.message) {
+    return payload.message;
+  }
+  if (typeof payload?.error?.message === "string" && payload.error.message) {
+    return payload.error.message;
+  }
+  return null;
+}
+
 function buildHttpError({ path, method, status, payload }) {
-  const messageFromPayload =
-    typeof payload?.detail === "string"
-      ? payload.detail
-      : typeof payload?.message === "string"
-      ? payload.message
-      : typeof payload?.error?.message === "string"
-      ? payload.error.message
-      : null;
-  const error = new Error(messageFromPayload || `${method} ${path} retornou status ${status}`);
+  const messageFromPayload = extractErrorMessageFromPayload(payload);
+  const normalizedMessage = String(messageFromPayload || "").trim().toLowerCase();
+  let message = messageFromPayload || `${method} ${path} retornou status ${status}`;
+
+  if (status === 404) {
+    message = `Endpoint da API não encontrado (${path}). Verifique se o backend foi publicado na Vercel.`;
+  } else if (status === 401 && normalizedMessage === "invalid credentials") {
+    message = "E-mail ou senha inválidos.";
+  } else if (status === 403 && normalizedMessage === "inactive user") {
+    message = "Usuário inativo.";
+  } else if (status >= 500) {
+    message = "Falha interna da API. Tente novamente em instantes.";
+  }
+
+  const error = new Error(message);
   error.status = status;
   error.path = path;
   error.payload = payload || null;
+  error.code = payload?.error?.code || null;
   return error;
 }
 
-async function parseJsonSafe(response) {
+async function parseResponsePayload(response) {
   try {
-    return await response.json();
+    const text = await response.text();
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { message: text.slice(0, 240).replace(/\s+/g, " ").trim() };
+    }
   } catch {
     return null;
   }
@@ -721,7 +756,7 @@ async function requestJson(path, options = {}) {
     });
 
     if (!response.ok) {
-      const payload = await parseJsonSafe(response);
+      const payload = await parseResponsePayload(response);
       if (
         response.status === 401 &&
         retryOnUnauthorized &&
@@ -758,13 +793,21 @@ async function requestJson(path, options = {}) {
       return null;
     }
 
-    return response.json();
+    return parseResponsePayload(response);
   } catch (error) {
     if (isAbortError(error)) {
       const timeoutError = new Error(`Timeout na chamada ${method} ${path}`);
       timeoutError.status = 504;
       timeoutError.path = path;
       throw timeoutError;
+    }
+    if (error instanceof TypeError) {
+      const networkError = new Error(
+        `Falha de rede ao acessar ${API_BASE_URL}${path}. Verifique a URL da API e o deploy publicado.`
+      );
+      networkError.status = 0;
+      networkError.path = path;
+      throw networkError;
     }
     throw error;
   } finally {
@@ -3764,6 +3807,22 @@ function resolveSystemMode(env, apiOnline) {
   return apiOnline ? "production" : "demo";
 }
 
+function buildEmptyDashboardData(source = "api") {
+  return {
+    source,
+    generated_at: new Date().toISOString(),
+    branches: [],
+    locations: [],
+    items: [],
+    balances: [],
+    moves: [],
+    alerts: [],
+    transfers: [],
+    counts: [],
+    users: [],
+  };
+}
+
 function buildDashboardAuthRequiredPayload({ apiOnline, dbOnline, env, reason = "" }) {
   const message = reason || "Faca login para carregar os dados protegidos.";
   const mode = resolveSystemMode(env, apiOnline);
@@ -3773,25 +3832,37 @@ function buildDashboardAuthRequiredPayload({ apiOnline, dbOnline, env, reason = 
     fallbackReason: message,
     authRequired: true,
     authMessage: message,
+    apiUnavailable: false,
+    apiMessage: "",
     systemStatus: {
       api: apiOnline ? "online" : "offline",
       db: dbOnline ? "online" : "offline",
       mode,
       env: env || "unknown",
     },
-    data: {
-      source: "api",
-      generated_at: new Date().toISOString(),
-      branches: [],
-      locations: [],
-      items: [],
-      balances: [],
-      moves: [],
-      alerts: [],
-      transfers: [],
-      counts: [],
-      users: [],
+    data: buildEmptyDashboardData("api"),
+    lastUpdatedIso: new Date().toISOString(),
+  };
+}
+
+function buildApiUnavailablePayload({ apiOnline, dbOnline, env, reason = "" }) {
+  const message = reason || "A API publicada não respondeu corretamente.";
+  const mode = resolveSystemMode(env, apiOnline);
+  return {
+    mode: "api",
+    showDemoBanner: false,
+    fallbackReason: message,
+    authRequired: false,
+    authMessage: "",
+    apiUnavailable: true,
+    apiMessage: message,
+    systemStatus: {
+      api: apiOnline ? "online" : "offline",
+      db: dbOnline ? "online" : "offline",
+      mode,
+      env: env || "unknown",
     },
+    data: buildEmptyDashboardData("api"),
     lastUpdatedIso: new Date().toISOString(),
   };
 }
@@ -3805,6 +3876,14 @@ async function loadFromApi() {
   const inferredMode = resolveSystemMode(env, apiOnline);
 
   if (!apiOnline) {
+    if (STRICT_API_MODE) {
+      return buildApiUnavailablePayload({
+        apiOnline,
+        dbOnline,
+        env,
+        reason: "A API publicada não respondeu em /api/health.",
+      });
+    }
     throw new Error("Falha ao consultar /health.");
   }
 
@@ -3855,6 +3934,8 @@ async function loadFromApi() {
       fallbackReason: "",
       authRequired: false,
       authMessage: "",
+      apiUnavailable: false,
+      apiMessage: "",
       systemStatus: {
         api: apiOnline ? "online" : "offline",
         db: dbOnline ? "online" : "offline",
@@ -3889,6 +3970,14 @@ async function loadFromApi() {
         reason: message,
       });
     }
+    if (STRICT_API_MODE) {
+      return buildApiUnavailablePayload({
+        apiOnline,
+        dbOnline,
+        env,
+        reason: error instanceof Error ? error.message : "Falha ao consultar a API publicada.",
+      });
+    }
     throw error;
   }
 }
@@ -3900,6 +3989,8 @@ function buildDemoPayload(reason = "") {
     fallbackReason: reason,
     authRequired: false,
     authMessage: "",
+    apiUnavailable: false,
+    apiMessage: "",
     systemStatus: {
       api: "offline",
       db: "offline",
@@ -4071,6 +4162,15 @@ export async function loadDashboardPayload() {
     const elapsed = Date.now() - startedAt;
     if (elapsed < MIN_LOADING_MS) {
       await sleep(MIN_LOADING_MS - elapsed);
+    }
+
+    if (STRICT_API_MODE) {
+      return buildApiUnavailablePayload({
+        apiOnline: false,
+        dbOnline: false,
+        env: "unknown",
+        reason: error instanceof Error ? error.message : "Falha desconhecida",
+      });
     }
 
     return buildDemoPayload(error instanceof Error ? error.message : "Falha desconhecida");

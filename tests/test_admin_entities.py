@@ -1,17 +1,20 @@
 import pytest
 
 
-async def _auth_headers(client) -> dict[str, str]:
+async def _auth_headers(client, prefix: str = "") -> dict[str, str]:
     register_payload = {
         "name": "Admin User",
         "email": "admin@example.com",
         "password": "Password123!",
     }
-    register_response = await client.post("/auth/register", json=register_payload)
+    register_response = await client.post(
+        f"{prefix}/auth/register",
+        json=register_payload,
+    )
     assert register_response.status_code == 201
 
     login_response = await client.post(
-        "/auth/login",
+        f"{prefix}/auth/login",
         json={
             "email": register_payload["email"],
             "password": register_payload["password"],
@@ -28,6 +31,33 @@ async def test_admin_routes_require_auth(client):
     assert response.status_code == 401
     payload = response.json()
     assert payload["error"]["message"] == "missing bearer token"
+
+
+@pytest.mark.asyncio
+async def test_health_routes_available_with_and_without_api_prefix(client):
+    direct_health = await client.get("/health")
+    assert direct_health.status_code == 200
+    assert direct_health.json()["status"] == "ok"
+
+    vercel_health = await client.get("/api/health")
+    assert vercel_health.status_code == 200
+    assert vercel_health.json()["status"] == "ok"
+
+    direct_db_health = await client.get("/health/db")
+    assert direct_db_health.status_code == 200
+    assert direct_db_health.json()["db"] == "up"
+
+    vercel_db_health = await client.get("/api/health/db")
+    assert vercel_db_health.status_code == 200
+    assert vercel_db_health.json()["db"] == "up"
+
+
+@pytest.mark.asyncio
+async def test_auth_routes_available_with_api_prefix(client):
+    headers = await _auth_headers(client, prefix="/api")
+    response = await client.get("/api/auth/me", headers=headers)
+    assert response.status_code == 200
+    assert response.json()["email"] == "admin@example.com"
 
 
 @pytest.mark.asyncio

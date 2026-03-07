@@ -10,8 +10,6 @@ from app.core.middleware import request_context_middleware
 from app.core.settings import get_settings
 from app.db.session import dispose_engine, get_engine
 
-settings = get_settings()
-
 
 @asynccontextmanager
 async def app_lifespan(_: FastAPI):
@@ -21,6 +19,7 @@ async def app_lifespan(_: FastAPI):
 
 
 def create_app() -> FastAPI:
+    settings = get_settings()
     configure_logging()
     cors_origins = [origin.strip() for origin in settings.cors_origins.split(",")]
     cors_origins = [origin for origin in cors_origins if origin]
@@ -46,6 +45,9 @@ def create_app() -> FastAPI:
     app.middleware("http")(request_context_middleware)
     register_exception_handlers(app)
     app.include_router(api_router)
+    # Vercel may forward requests with or without the `/api` prefix depending on
+    # the function entrypoint that matches the request.
+    app.include_router(api_router, prefix="/api")
 
     return app
 

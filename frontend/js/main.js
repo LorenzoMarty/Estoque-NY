@@ -118,6 +118,12 @@ function openAuthDrawer(reason = "Faca login para continuar.") {
       try {
         await loginWithPassword(email, password);
         const payload = await refreshDashboardData();
+        if (payload.apiUnavailable) {
+          helpers.setError(
+            payload.apiMessage || "Login realizado, mas a API publicada não respondeu corretamente."
+          );
+          return false;
+        }
         if (payload.authRequired) {
           helpers.setError(payload.authMessage || "Login realizado, mas a sessao nao foi validada.");
           return false;
@@ -285,6 +291,15 @@ function initialize() {
   }
 
   refreshDashboardData().then((payload) => {
+    if (payload.apiUnavailable) {
+      showToast({
+        title: I18N_PTBR.app_name,
+        message: payload.apiMessage || "A API publicada não respondeu corretamente.",
+        type: "error",
+      });
+      return;
+    }
+
     if (payload.authRequired) {
       const authMessage = payload.authMessage || "Faca login para consultar os dados protegidos.";
       showToast({
