@@ -100,9 +100,11 @@ Sempre que criar novas migracoes, rode este comando novamente no banco de produc
 
 Observacao:
 - A configuracao de build esta em `vercel.json`.
+- `framework: null` em `vercel.json` força o preset **Other** e evita conflito com um Framework Preset salvo no dashboard do Vercel.
 - O Vercel executa:
   - `python scripts/prepare_vercel_static.py`
 - Esse script copia `frontend/index.html`, `frontend/css`, `frontend/js` e `frontend/vendor` para `public/`.
+- A configuracao `functions` usa `api/**/*.py`, entao qualquer Python Function dentro de `api/` continua sendo reconhecida.
 
 ### 4) Configurar variaveis de ambiente no Vercel
 
