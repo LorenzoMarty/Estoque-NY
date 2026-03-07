@@ -67,6 +67,81 @@ Scripts do frontend:
 - `npm run test`: validacao de sintaxe JS e assets
 - `npm run build`: alias para `npm run test`
 
+## Deploy no Vercel (API + frontend no mesmo projeto)
+
+Este repositorio agora esta preparado para subir no Vercel em um unico projeto:
+
+- API FastAPI via `index.py` (entrypoint ASGI do Vercel)
+- Frontend estatico copiado para `public/` no build (`scripts/prepare_vercel_static.py`)
+- Frontend consumindo API no mesmo dominio automaticamente
+
+### 1) Preparar banco PostgreSQL
+
+Use um Postgres gerenciado (Neon, Supabase, Render, RDS etc.).
+Copie a URL de conexao e use em `DATABASE_URL`.
+
+### 2) Aplicar migracoes no banco de producao
+
+Antes do primeiro deploy no Vercel:
+
+```bash
+DATABASE_URL=<url_do_postgres_de_producao> uv run alembic upgrade head
+```
+
+Sempre que criar novas migracoes, rode este comando novamente no banco de producao.
+
+### 3) Criar projeto no Vercel
+
+1. Faca push do repositorio no GitHub.
+2. No Vercel: **Add New...** -> **Project**.
+3. Selecione este repositorio.
+4. Use o projeto na raiz (nao use `frontend` como Root Directory).
+5. Deploy.
+
+Observacao:
+- O Vercel executa o script de build definido em `pyproject.toml`:
+  - `python scripts/prepare_vercel_static.py`
+- Esse script copia `frontend/index.html`, `frontend/css`, `frontend/js` e `frontend/vendor` para `public/`.
+
+### 4) Configurar variaveis de ambiente no Vercel
+
+Defina no projeto:
+
+- `APP_ENV=production`
+- `DATABASE_URL=<url_do_postgres_de_producao>`
+- `JWT_SECRET=<segredo_forte>`
+- `AUTH_ENABLED=true`
+- `LOG_LEVEL=INFO`
+- `JWT_ALGORITHM=HS256`
+- `JWT_EXPIRATION_MINUTES=60`
+- `JWT_REFRESH_EXPIRATION_MINUTES=1440`
+- `ALLOW_NEGATIVE_STOCK=false`
+- `IDEMPOTENCY_REQUIRED_IN_PRODUCTION=true`
+- `CORS_ORIGINS=https://<seu-projeto>.vercel.app`
+
+Se usar dominio customizado, inclua tambem esse dominio em `CORS_ORIGINS`.
+
+### 5) Validar deploy
+
+Depois do deploy:
+
+- Frontend: `https://<seu-projeto>.vercel.app`
+- Health API: `https://<seu-projeto>.vercel.app/health`
+- Health DB: `https://<seu-projeto>.vercel.app/health/db`
+
+### 6) Criar primeiro usuario
+
+Com a API online, crie o primeiro usuario via `POST /auth/register`.
+O primeiro usuario recebe papel `admin` automaticamente.
+
+### 7) (Opcional) Popular dados de teste
+
+Para ambiente de homologacao:
+
+```bash
+uv run python scripts/seed_test_data.py
+```
+
 ## Deploy no Render (API + frontend)
 
 Este repositorio ja inclui `render.yaml` para o backend.
