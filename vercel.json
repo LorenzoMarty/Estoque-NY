@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "buildCommand": "python scripts/prepare_vercel_static.py",
-  "outputDirectory": "public",
   "functions": {
     "api/**/*.py": {
       "maxDuration": 10

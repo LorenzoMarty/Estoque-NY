@@ -104,6 +104,7 @@ Observacao:
 - O Vercel executa:
   - `python scripts/prepare_vercel_static.py`
 - Esse script copia `frontend/index.html`, `frontend/css`, `frontend/js` e `frontend/vendor` para `public/`.
+- O `outputDirectory` explicito foi removido. O Vercel serve `public/**` automaticamente para este projeto e isso evita conflito com a publicacao das Functions em `api/**`.
 - A configuracao `functions` usa `api/**/*.py`, entao qualquer Python Function dentro de `api/` continua sendo reconhecida.
 
 ### 4) Configurar variaveis de ambiente no Vercel
@@ -144,8 +145,6 @@ Para ambiente de homologacao:
 ```bash
 uv run python scripts/seed_test_data.py
 ```
-
-## Deploy no Render (API + frontend)
 
 Este repositorio ja inclui `render.yaml` para o backend.
 
