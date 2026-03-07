@@ -71,9 +71,9 @@ Scripts do frontend:
 
 Este repositorio agora esta preparado para subir no Vercel em um unico projeto:
 
-- API FastAPI via `index.py` (entrypoint ASGI do Vercel)
+- API FastAPI via `api/index.py` (Python Function do Vercel)
 - Frontend estatico copiado para `public/` no build (`scripts/prepare_vercel_static.py`)
-- Frontend consumindo API no mesmo dominio automaticamente
+- Frontend consumindo API em `/api` no mesmo dominio automaticamente
 
 ### 1) Preparar banco PostgreSQL
 
@@ -99,7 +99,8 @@ Sempre que criar novas migracoes, rode este comando novamente no banco de produc
 5. Deploy.
 
 Observacao:
-- O Vercel executa o script de build definido em `pyproject.toml`:
+- A configuracao de build esta em `vercel.json`.
+- O Vercel executa:
   - `python scripts/prepare_vercel_static.py`
 - Esse script copia `frontend/index.html`, `frontend/css`, `frontend/js` e `frontend/vendor` para `public/`.
 
@@ -126,12 +127,12 @@ Se usar dominio customizado, inclua tambem esse dominio em `CORS_ORIGINS`.
 Depois do deploy:
 
 - Frontend: `https://<seu-projeto>.vercel.app`
-- Health API: `https://<seu-projeto>.vercel.app/health`
-- Health DB: `https://<seu-projeto>.vercel.app/health/db`
+- Health API: `https://<seu-projeto>.vercel.app/api/health`
+- Health DB: `https://<seu-projeto>.vercel.app/api/health/db`
 
 ### 6) Criar primeiro usuario
 
-Com a API online, crie o primeiro usuario via `POST /auth/register`.
+Com a API online, crie o primeiro usuario via `POST /api/auth/register`.
 O primeiro usuario recebe papel `admin` automaticamente.
 
 ### 7) (Opcional) Popular dados de teste

@@ -305,7 +305,7 @@ import { resolvePeriodRange } from "./utils.js";
 const { DateTime } = window.luxon;
 
 const DEFAULT_API_BASE_URL_LOCAL = "http://127.0.0.1:8000";
-const DEFAULT_API_BASE_URL_FALLBACK = "https://estoque-ny.onrender.com";
+const DEFAULT_API_BASE_URL_FALLBACK = "https://estoque-ny.onrender.com/api";
 const AUTH_STORAGE_KEYS = [
   "ESTOQUE_API_TOKEN",
   "access_token",
@@ -363,7 +363,7 @@ function resolveApiBaseUrl() {
   }
 
   if (origin) {
-    return origin;
+    return normalizeApiBaseUrl(`${origin}/api`);
   }
 
   return normalizeApiBaseUrl(DEFAULT_API_BASE_URL_FALLBACK);
