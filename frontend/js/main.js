@@ -93,7 +93,7 @@ function openAuthDrawer(reason = "Faca login para continuar.") {
     bodyHtml: `
       <div class="field">
         <label for="authEmailInput">E-mail</label>
-        <input id="authEmailInput" name="email" type="email" autocomplete="username" required placeholder="usuario@empresa.com" />
+        <input id="authEmailInput" name="email" type="text" inputmode="email" autocapitalize="off" spellcheck="false" autocomplete="username" required placeholder="usuario@empresa.com" />
       </div>
       <div class="field">
         <label for="authPasswordInput">Senha</label>
@@ -105,8 +105,9 @@ function openAuthDrawer(reason = "Faca login para continuar.") {
         .trim()
         .toLowerCase();
       const password = String(formData.get("password") || "");
+      const emailIsValid = /^[^\s@]+@[^\s@]+$/.test(email);
 
-      if (!email || !email.includes("@")) {
+      if (!emailIsValid) {
         helpers.setError("Informe um e-mail valido.");
         return false;
       }
