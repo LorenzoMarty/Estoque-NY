@@ -1,4 +1,4 @@
-"""Vercel ASGI entrypoint."""
+"""Vercel Python Function entrypoint."""
 
 from app.main import app
 

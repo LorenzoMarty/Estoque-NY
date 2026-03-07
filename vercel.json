@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "python scripts/prepare_vercel_static.py",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12"
+    }
+  }
+}
