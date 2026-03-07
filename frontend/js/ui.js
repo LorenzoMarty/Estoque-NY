@@ -168,6 +168,7 @@ export function openDrawer({
   const form = overlay.querySelector("#drawerForm");
   const drawer = overlay.querySelector(".drawer");
   const errorBox = overlay.querySelector("#drawerError");
+  const submitButton = form.querySelector("button[type='submit']");
   let customCleanup = null;
 
   function setError(message) {
@@ -181,6 +182,25 @@ export function openDrawer({
     if (!errorBox) return;
     errorBox.hidden = true;
     errorBox.textContent = "";
+  }
+
+  function setSubmitting(isSubmitting) {
+    const nextValue = Boolean(isSubmitting);
+    form.setAttribute("aria-busy", String(nextValue));
+    form
+      .querySelectorAll("button, input, select, textarea")
+      .forEach((element) => {
+        element.disabled = nextValue;
+      });
+
+    if (submitButton) {
+      if (!submitButton.dataset.defaultLabel) {
+        submitButton.dataset.defaultLabel = submitButton.textContent || "";
+      }
+      submitButton.textContent = nextValue
+        ? "Processando..."
+        : submitButton.dataset.defaultLabel || submitButton.textContent || "";
+    }
   }
 
   function close() {
@@ -242,6 +262,7 @@ export function openDrawer({
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       clearError();
+      setSubmitting(true);
 
       const formData = new FormData(form);
 
@@ -250,14 +271,17 @@ export function openDrawer({
           close,
           setError,
           clearError,
+          setSubmitting,
           form,
           overlay,
         });
 
+        setSubmitting(false);
         if (result !== false) {
           close();
         }
       } catch {
+        setSubmitting(false);
         setError("Erro inesperado ao processar a ação.");
       }
     });

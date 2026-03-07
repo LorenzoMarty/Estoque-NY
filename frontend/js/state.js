@@ -152,6 +152,8 @@ export const state = {
     fallbackReason: "",
     authRequired: false,
     authMessage: "",
+    apiUnavailable: false,
+    apiMessage: "",
     data: null,
     lastUpdatedIso: null,
     systemStatus: {
@@ -398,6 +400,8 @@ export function setDashboardPayload(payload) {
   state.dashboard.fallbackReason = payload.fallbackReason || "";
   state.dashboard.authRequired = Boolean(payload.authRequired);
   state.dashboard.authMessage = payload.authMessage || "";
+  state.dashboard.apiUnavailable = Boolean(payload.apiUnavailable);
+  state.dashboard.apiMessage = payload.apiMessage || "";
   state.dashboard.systemStatus = payload.systemStatus;
   state.dashboard.lastUpdatedIso = payload.lastUpdatedIso;
   state.dashboard.pagination.movesPage = 1;

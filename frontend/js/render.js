@@ -614,9 +614,14 @@ function renderDashboardLoaded(view) {
   const lastUpdate = state.dashboard.lastUpdatedIso || data.generated_at;
   const modeIsDemo = state.dashboard.demoMode;
   const authRequired = state.dashboard.authRequired;
+  const apiUnavailable = state.dashboard.apiUnavailable;
   const topBannerMarkup = authRequired
     ? `<div class="banner"><i data-lucide="lock"></i>${escapeHtml(
         state.dashboard.authMessage || "Faca login para consultar os dados protegidos."
+      )}</div>`
+    : apiUnavailable
+    ? `<div class="banner"><i data-lucide="server-off"></i>${escapeHtml(
+        state.dashboard.apiMessage || "A API publicada não respondeu corretamente."
       )}</div>`
     : state.dashboard.showDemoBanner
     ? `<div class="banner"><i data-lucide="flask-conical"></i>${I18N_PTBR.mode_demo_banner}</div>`
@@ -1418,15 +1423,18 @@ function bindDashboardEvents(view) {
   refreshButton?.addEventListener("click", async () => {
     const payload = await callbacks.onRefreshData();
     const authRequired = Boolean(payload?.authRequired);
+    const apiUnavailable = Boolean(payload?.apiUnavailable);
     const isDemo = payload?.mode === "demo";
     showToast({
       title: I18N_PTBR.dashboard.update,
       message: authRequired
         ? payload?.authMessage || "Faca login para consultar os dados protegidos."
+        : apiUnavailable
+        ? payload?.apiMessage || "A API publicada não respondeu corretamente."
         : isDemo
         ? I18N_PTBR.actions.refresh_error
         : I18N_PTBR.actions.refresh_done,
-      type: authRequired || isDemo ? "error" : "success",
+      type: authRequired || apiUnavailable || isDemo ? "error" : "success",
     });
   });
 

@@ -3,6 +3,8 @@ from functools import lru_cache
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+_PRODUCTION_ENVS = {"prod", "production"}
+
 
 def _normalize_database_url(database_url: str | None, sqlite_url: str) -> str:
     raw_url = (database_url or "").strip()
@@ -54,6 +56,25 @@ class Settings(BaseSettings):
             database_url=self.database_url,
             sqlite_url=self.sqlite_url,
         )
+        normalized_env = self.app_env.strip().lower()
+        normalized_database_url = self.database_url.strip().lower()
+
+        if normalized_env in _PRODUCTION_ENVS:
+            if not self.jwt_secret or self.jwt_secret == "change-me":
+                raise ValueError("JWT_SECRET must be configured for production")
+            if not normalized_database_url:
+                raise ValueError("DATABASE_URL must be configured for production")
+            if normalized_database_url.startswith("sqlite+"):
+                raise ValueError(
+                    "DATABASE_URL must point to PostgreSQL in production, not SQLite"
+                )
+            if (
+                "localhost" in normalized_database_url
+                or "127.0.0.1" in normalized_database_url
+            ):
+                raise ValueError(
+                    "DATABASE_URL cannot point to localhost in production"
+                )
         return self
 
 

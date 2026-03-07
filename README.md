@@ -1,13 +1,15 @@
 # Estoque NY
 
 Projeto com backend FastAPI + frontend estatico para operacao de estoque.
+Se o banco estiver no Supabase, este repositorio usa o Supabase apenas como provedor PostgreSQL.
+O fluxo de login em producao e JWT proprio da API, nao Supabase Auth.
 
 ## Stack
 
 - API: FastAPI
 - ORM: SQLAlchemy async
 - Migracoes: Alembic
-- Banco em producao: PostgreSQL (Render)
+- Banco em producao: PostgreSQL (Supabase, Neon, Render, RDS etc.)
 - Frontend: HTML/CSS/JS estatico em `frontend/`
 
 ## Configuracao local
@@ -105,7 +107,9 @@ Observacao:
   - `python scripts/prepare_vercel_static.py`
 - Esse script copia `frontend/index.html`, `frontend/css`, `frontend/js` e `frontend/vendor` para `public/`.
 - O `outputDirectory` explicito foi removido. O Vercel serve `public/**` automaticamente para este projeto e isso evita conflito com a publicacao das Functions em `api/**`.
+- O deploy usa `api/index.py` para `/api` e `api/[...path].py` para capturar `/api/*` diretamente pelo filesystem routing da Vercel, sem rewrite ambiguo.
 - A configuracao `functions` usa `api/**/*.py`, entao qualquer Python Function dentro de `api/` continua sendo reconhecida.
+- A app FastAPI responde tanto sem prefixo (`/health`) quanto com prefixo (`/api/health`) para tolerar como a Vercel encaminha o path para a ASGI app.
 
 ### 4) Configurar variaveis de ambiente no Vercel
 
@@ -122,6 +126,9 @@ Defina no projeto:
 - `ALLOW_NEGATIVE_STOCK=false`
 - `IDEMPOTENCY_REQUIRED_IN_PRODUCTION=true`
 - `CORS_ORIGINS=https://<seu-projeto>.vercel.app`
+
+Se o banco for Supabase, use a string de conexao PostgreSQL em `DATABASE_URL`.
+Nao configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` ou chaves de Supabase Auth: este frontend nao usa o client JS do Supabase.
 
 Se usar dominio customizado, inclua tambem esse dominio em `CORS_ORIGINS`.
 
