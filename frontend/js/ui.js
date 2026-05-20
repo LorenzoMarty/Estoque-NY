@@ -262,9 +262,8 @@ export function openDrawer({
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       clearError();
-      setSubmitting(true);
-
       const formData = new FormData(form);
+      setSubmitting(true);
 
       try {
         const result = await onSubmit(formData, {

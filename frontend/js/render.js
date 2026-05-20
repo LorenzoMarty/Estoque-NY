@@ -621,7 +621,7 @@ function renderDashboardLoaded(view) {
       )}</div>`
     : apiUnavailable
     ? `<div class="banner"><i data-lucide="server-off"></i>${escapeHtml(
-        state.dashboard.apiMessage || "A API publicada não respondeu corretamente."
+        state.dashboard.apiMessage || "A API não respondeu corretamente."
       )}</div>`
     : state.dashboard.showDemoBanner
     ? `<div class="banner"><i data-lucide="flask-conical"></i>${I18N_PTBR.mode_demo_banner}</div>`
@@ -1430,7 +1430,7 @@ function bindDashboardEvents(view) {
       message: authRequired
         ? payload?.authMessage || "Faca login para consultar os dados protegidos."
         : apiUnavailable
-        ? payload?.apiMessage || "A API publicada não respondeu corretamente."
+        ? payload?.apiMessage || "A API não respondeu corretamente."
         : isDemo
         ? I18N_PTBR.actions.refresh_error
         : I18N_PTBR.actions.refresh_done,

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import (
@@ -27,6 +27,10 @@ from app.models.enums import (
 )
 
 
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
 class Branch(Base):
     __tablename__ = "branches"
 
@@ -35,6 +39,7 @@ class Branch(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
 
@@ -65,6 +70,7 @@ class Category(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
 
@@ -77,6 +83,7 @@ class Brand(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
 
@@ -106,6 +113,7 @@ class Product(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
 
@@ -152,6 +160,7 @@ class SKU(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
 
@@ -169,6 +178,7 @@ class SKUBarcode(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
 
@@ -210,6 +220,7 @@ class TransferOrder(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
     shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -258,6 +269,7 @@ class InventoryCount(Base):
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -343,6 +355,7 @@ class StockBalance(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
 
@@ -400,11 +413,13 @@ class StockMove(Base):
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
     reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -427,6 +442,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
 
@@ -504,6 +520,7 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )
 
@@ -524,5 +541,6 @@ class IdempotencyKey(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
+        default=_utc_now,
         server_default=func.now(),
     )

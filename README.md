@@ -28,7 +28,7 @@ JWT_EXPIRATION_MINUTES=60
 JWT_REFRESH_EXPIRATION_MINUTES=1440
 AUTH_ENABLED=true
 
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:55432/inventory
+DATABASE_URL=
 SQLITE_URL=sqlite+aiosqlite:///./inventory.db
 
 ALLOW_NEGATIVE_STOCK=false
@@ -36,9 +36,23 @@ IDEMPOTENCY_REQUIRED_IN_PRODUCTION=true
 CORS_ORIGINS=*
 ```
 
-### Rodar backend
+### Rodar backend local sem Docker
 
-Com Postgres local (recomendado):
+Deixe `DATABASE_URL=` vazio no `.env`. Assim a API usa SQLite em
+`inventory.db` na raiz do projeto.
+
+```bash
+uv run uvicorn app.main:app --reload
+```
+
+Health checks locais:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/health/db
+```
+
+### Rodar backend com Postgres local opcional
 
 ```bash
 docker compose up -d
@@ -46,13 +60,30 @@ uv run alembic upgrade head
 uv run uvicorn app.main:app --reload
 ```
 
-Fallback SQLite:
+Para usar este modo, defina `DATABASE_URL` no `.env` como
+`postgresql+asyncpg://postgres:postgres@localhost:55432/inventory`.
 
-1. Deixe `DATABASE_URL` vazio no `.env`.
-2. Rode:
+### Rodar frontend, backend e banco com Docker
 
 ```bash
-uv run uvicorn app.main:app --reload
+docker compose up -d --build
+```
+
+URLs locais:
+
+- Frontend: `http://127.0.0.1:8080`
+- Backend: `http://127.0.0.1:8000`
+- Health API: `http://127.0.0.1:8000/health`
+- Health DB: `http://127.0.0.1:8000/health/db`
+- Postgres no host: `localhost:55432`
+
+Comandos uteis:
+
+```bash
+docker compose ps
+docker compose logs -f backend
+docker compose logs -f frontend
+docker compose down
 ```
 
 ### Rodar frontend

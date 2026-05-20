@@ -1,0 +1,13 @@
+.git
+.venv
+.server-logs
+__pycache__
+.pytest_cache
+.ruff_cache
+.mypy_cache
+inventory.db
+*.db
+*.db.backup-*
+public
+frontend/node_modules
+frontend/.cache

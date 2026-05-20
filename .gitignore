@@ -16,5 +16,10 @@ wheels/
 .env
 streamlit_app/.env
 
+# Local runtime files
+.server-logs/
+*.db
+*.db.backup-*
+
 # Generated for Vercel deploy
 public/
