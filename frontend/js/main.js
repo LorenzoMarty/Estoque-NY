@@ -121,7 +121,7 @@ function openAuthDrawer(reason = "Faca login para continuar.") {
         const payload = await refreshDashboardData();
         if (payload.apiUnavailable) {
           helpers.setError(
-            payload.apiMessage || "Login realizado, mas a API publicada não respondeu corretamente."
+            payload.apiMessage || "Login realizado, mas a API não respondeu corretamente."
           );
           return false;
         }
@@ -295,7 +295,7 @@ function initialize() {
     if (payload.apiUnavailable) {
       showToast({
         title: I18N_PTBR.app_name,
-        message: payload.apiMessage || "A API publicada não respondeu corretamente.",
+        message: payload.apiMessage || "A API não respondeu corretamente.",
         type: "error",
       });
       return;

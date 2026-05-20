@@ -668,7 +668,7 @@ function buildHttpError({ path, method, status, payload }) {
   let message = messageFromPayload || `${method} ${path} retornou status ${status}`;
 
   if (status === 404) {
-    message = `Endpoint da API não encontrado (${path}). Verifique se o backend foi publicado na Vercel.`;
+    message = `Endpoint da API não encontrado (${path}). Verifique se o backend está rodando.`;
   } else if (status === 401 && normalizedMessage === "invalid credentials") {
     message = "E-mail ou senha inválidos.";
   } else if (status === 403 && normalizedMessage === "inactive user") {
@@ -3846,7 +3846,7 @@ function buildDashboardAuthRequiredPayload({ apiOnline, dbOnline, env, reason = 
 }
 
 function buildApiUnavailablePayload({ apiOnline, dbOnline, env, reason = "" }) {
-  const message = reason || "A API publicada não respondeu corretamente.";
+  const message = reason || "A API não respondeu corretamente.";
   const mode = resolveSystemMode(env, apiOnline);
   return {
     mode: "api",
@@ -3881,7 +3881,7 @@ async function loadFromApi() {
         apiOnline,
         dbOnline,
         env,
-        reason: "A API publicada não respondeu em /api/health.",
+        reason: "A API não respondeu em /api/health.",
       });
     }
     throw new Error("Falha ao consultar /health.");
@@ -3975,7 +3975,7 @@ async function loadFromApi() {
         apiOnline,
         dbOnline,
         env,
-        reason: error instanceof Error ? error.message : "Falha ao consultar a API publicada.",
+        reason: error instanceof Error ? error.message : "Falha ao consultar a API.",
       });
     }
     throw error;

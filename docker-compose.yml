@@ -16,5 +16,44 @@ services:
       timeout: 5s
       retries: 10
 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inventory_backend
+    environment:
+      APP_ENV: local
+      APP_NAME: inventory-api
+      LOG_LEVEL: INFO
+      JWT_SECRET: change-me
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRATION_MINUTES: 60
+      JWT_REFRESH_EXPIRATION_MINUTES: 1440
+      AUTH_ENABLED: "true"
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/inventory
+      CORS_ORIGINS: http://127.0.0.1:8080,http://localhost:8080
+      ALLOW_NEGATIVE_STOCK: "false"
+      IDEMPOTENCY_REQUIRED_IN_PRODUCTION: "true"
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: inventory_frontend
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
 volumes:
   pgdata_inventory:
