@@ -20,9 +20,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
 from app.models.enums import (
+    CampaignStatus,
+    DiscountType,
     InventoryCountStatus,
     LocationType,
+    MarketingChannelType,
     MoveType,
+    PromotionStatus,
     TransferStatus,
 )
 
@@ -175,6 +179,195 @@ class SKUBarcode(Base):
         nullable=False,
     )
     barcode: Mapped[str] = mapped_column(String(120), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class MarketingChannel(Base):
+    __tablename__ = "marketing_channels"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
+    type: Mapped[MarketingChannelType] = mapped_column(
+        Enum(MarketingChannelType, name="marketing_channel_type"),
+        nullable=False,
+    )
+    active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=text("true"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class Campaign(Base):
+    __tablename__ = "campaigns"
+    __table_args__ = (
+        Index("ix_campaigns_status_dates", "status", "starts_at", "ends_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[CampaignStatus] = mapped_column(
+        Enum(CampaignStatus, name="campaign_status"),
+        nullable=False,
+        default=CampaignStatus.DRAFT,
+        server_default=CampaignStatus.DRAFT.value,
+    )
+    channel_id: Mapped[int | None] = mapped_column(
+        ForeignKey("marketing_channels.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    objective: Mapped[str | None] = mapped_column(Text, nullable=True)
+    budget: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class Promotion(Base):
+    __tablename__ = "promotions"
+    __table_args__ = (
+        Index("ix_promotions_status_dates", "status", "starts_at", "ends_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    campaign_id: Mapped[int | None] = mapped_column(
+        ForeignKey("campaigns.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[PromotionStatus] = mapped_column(
+        Enum(PromotionStatus, name="promotion_status"),
+        nullable=False,
+        default=PromotionStatus.DRAFT,
+        server_default=PromotionStatus.DRAFT.value,
+    )
+    discount_type: Mapped[DiscountType | None] = mapped_column(
+        Enum(DiscountType, name="discount_type"),
+        nullable=True,
+    )
+    discount_value: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2),
+        nullable=True,
+    )
+    starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class AudienceSegment(Base):
+    __tablename__ = "audience_segments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rules_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=text("true"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class ContentAsset(Base):
+    __tablename__ = "content_assets"
+    __table_args__ = (Index("ix_content_assets_campaign_id", "campaign_id"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    campaign_id: Mapped[int | None] = mapped_column(
+        ForeignKey("campaigns.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    asset_type: Mapped[str] = mapped_column(String(60), nullable=False)
+    url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    meta_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class CampaignProduct(Base):
+    __tablename__ = "campaign_products"
+    __table_args__ = (
+        UniqueConstraint(
+            "campaign_id",
+            "product_id",
+            name="uq_campaign_products_campaign_product",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    campaign_id: Mapped[int] = mapped_column(
+        ForeignKey("campaigns.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class PromotionSKU(Base):
+    __tablename__ = "promotion_skus"
+    __table_args__ = (
+        UniqueConstraint(
+            "promotion_id",
+            "sku_id",
+            name="uq_promotion_skus_promotion_sku",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    promotion_id: Mapped[int] = mapped_column(
+        ForeignKey("promotions.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sku_id: Mapped[int] = mapped_column(
+        ForeignKey("skus.id", ondelete="CASCADE"),
+        nullable=False,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
