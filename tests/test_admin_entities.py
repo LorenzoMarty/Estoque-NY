@@ -177,3 +177,120 @@ async def test_admin_crud_branches_locations_brands(client):
         headers=headers,
     )
     assert delete_branch.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_marketing_domain_crud_and_catalog_links(client):
+    headers = await _auth_headers(client)
+
+    create_channel = await client.post(
+        "/marketing/channels",
+        json={"name": "Instagram", "type": "SOCIAL"},
+        headers=headers,
+    )
+    assert create_channel.status_code == 201
+    channel_id = create_channel.json()["id"]
+
+    create_product = await client.post(
+        "/products",
+        json={"name": "Produto Campanha", "active": True},
+        headers=headers,
+    )
+    assert create_product.status_code == 201
+    product_id = create_product.json()["id"]
+
+    create_sku = await client.post(
+        "/skus",
+        json={
+            "product_id": product_id,
+            "sku_code": "SKU-MKT-001",
+            "name": "Produto Campanha UN",
+            "unit": "UN",
+            "price": "99.90",
+        },
+        headers=headers,
+    )
+    assert create_sku.status_code == 201
+    sku_id = create_sku.json()["id"]
+
+    create_campaign = await client.post(
+        "/marketing/campaigns",
+        json={
+            "name": "Campanha Julho",
+            "status": "SCHEDULED",
+            "channel_id": channel_id,
+            "objective": "Aumentar giro de produtos selecionados",
+            "budget": "1500.00",
+            "starts_at": "2026-07-10T00:00:00Z",
+            "ends_at": "2026-07-31T23:59:59Z",
+            "product_ids": [product_id],
+        },
+        headers=headers,
+    )
+    assert create_campaign.status_code == 201
+    campaign = create_campaign.json()
+    campaign_id = campaign["id"]
+    assert campaign["product_ids"] == [product_id]
+
+    list_campaigns = await client.get(
+        "/marketing/campaigns?status=SCHEDULED&q=julho",
+        headers=headers,
+    )
+    assert list_campaigns.status_code == 200
+    campaign_items = list_campaigns.json()["items"]
+    assert any(row["id"] == campaign_id for row in campaign_items)
+
+    update_campaign = await client.patch(
+        f"/marketing/campaigns/{campaign_id}",
+        json={"status": "ACTIVE", "product_ids": []},
+        headers=headers,
+    )
+    assert update_campaign.status_code == 200
+    assert update_campaign.json()["status"] == "ACTIVE"
+    assert update_campaign.json()["product_ids"] == []
+
+    create_promotion = await client.post(
+        "/marketing/promotions",
+        json={
+            "name": "Desconto Julho",
+            "campaign_id": campaign_id,
+            "status": "ACTIVE",
+            "discount_type": "PERCENT",
+            "discount_value": "10",
+            "sku_ids": [sku_id],
+        },
+        headers=headers,
+    )
+    assert create_promotion.status_code == 201
+    promotion = create_promotion.json()
+    assert promotion["sku_ids"] == [sku_id]
+
+    create_segment = await client.post(
+        "/marketing/audience-segments",
+        json={
+            "name": "Clientes recorrentes",
+            "description": "Compradores com pedidos recentes",
+            "rules_json": {"orders_last_days": 90},
+        },
+        headers=headers,
+    )
+    assert create_segment.status_code == 201
+
+    create_asset = await client.post(
+        "/marketing/content-assets",
+        json={
+            "title": "Banner principal",
+            "asset_type": "banner",
+            "campaign_id": campaign_id,
+            "url": "https://example.com/banner.png",
+        },
+        headers=headers,
+    )
+    assert create_asset.status_code == 201
+
+    list_assets = await client.get(
+        f"/marketing/content-assets?campaign_id={campaign_id}",
+        headers=headers,
+    )
+    assert list_assets.status_code == 200
+    assert list_assets.json()["meta"]["total"] == 1

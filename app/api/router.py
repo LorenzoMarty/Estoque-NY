@@ -10,6 +10,7 @@ from app.modules import (
     catalog,
     inventory,
     locations,
+    marketing,
     products,
     reports,
     skus,
@@ -28,5 +29,6 @@ api_router.include_router(skus.router)
 api_router.include_router(stock.router)
 api_router.include_router(transfers.router)
 api_router.include_router(inventory.router)
+api_router.include_router(marketing.router)
 api_router.include_router(audit.router)
 api_router.include_router(reports.router)

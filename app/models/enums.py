@@ -33,3 +33,36 @@ class UOM(StrEnum):
     UN = "UN"
     KG = "KG"
     CX = "CX"
+
+
+class MarketingChannelType(StrEnum):
+    EMAIL = "EMAIL"
+    SOCIAL = "SOCIAL"
+    PAID_MEDIA = "PAID_MEDIA"
+    MARKETPLACE = "MARKETPLACE"
+    STORE = "STORE"
+    OTHER = "OTHER"
+
+
+class CampaignStatus(StrEnum):
+    DRAFT = "DRAFT"
+    SCHEDULED = "SCHEDULED"
+    ACTIVE = "ACTIVE"
+    PAUSED = "PAUSED"
+    FINISHED = "FINISHED"
+    CANCELLED = "CANCELLED"
+
+
+class PromotionStatus(StrEnum):
+    DRAFT = "DRAFT"
+    SCHEDULED = "SCHEDULED"
+    ACTIVE = "ACTIVE"
+    PAUSED = "PAUSED"
+    FINISHED = "FINISHED"
+    CANCELLED = "CANCELLED"
+
+
+class DiscountType(StrEnum):
+    PERCENT = "PERCENT"
+    FIXED = "FIXED"
+    CUSTOM = "CUSTOM"
