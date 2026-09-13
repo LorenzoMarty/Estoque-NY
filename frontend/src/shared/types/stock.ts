@@ -80,6 +80,8 @@ export interface StockMove {
 }
 
 export interface TransferItem {
+  id: number;
+  transfer_id: number;
   sku_id: number;
   qty: number;
 }
