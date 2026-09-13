@@ -80,6 +80,30 @@ describe("httpClient", () => {
     expect(requestInit.headers.Authorization).toBe(`Bearer ${token}`);
   });
 
+  it("apiClient.put sends a PUT request with the given body", async () => {
+    const { apiClient, loginRequest } = await import("./httpClient");
+    const token = makeJwt(Math.floor(Date.now() / 1000) + 3600);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ access_token: token, refresh_token: "refresh-1" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: 1, name: "Matriz" }), { status: 200, headers: { "Content-Type": "application/json" } })
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await loginRequest("user@example.com", "password123");
+    await apiClient.put("/branches/1", { name: "Matriz" });
+
+    const [, requestInit] = fetchMock.mock.calls[1];
+    expect(requestInit.method).toBe("PUT");
+    expect(JSON.parse(requestInit.body)).toEqual({ name: "Matriz" });
+  });
+
   it("dispatches AUTH_REQUIRED_EVENT_NAME and clears the session when a protected call has no usable token", async () => {
     const { apiClient, AUTH_REQUIRED_EVENT_NAME } = await import("./httpClient");
     const listener = vi.fn();

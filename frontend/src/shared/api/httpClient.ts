@@ -346,6 +346,9 @@ export const apiClient = Object.freeze({
   patch<T>(path: string, body: unknown = null, options: RequestOptions = {}) {
     return requestJson<T>(path, { ...options, method: "PATCH", body });
   },
+  put<T>(path: string, body: unknown = null, options: RequestOptions = {}) {
+    return requestJson<T>(path, { ...options, method: "PUT", body });
+  },
   delete<T>(path: string, options: RequestOptions = {}) {
     return requestJson<T>(path, { ...options, method: "DELETE" });
   },

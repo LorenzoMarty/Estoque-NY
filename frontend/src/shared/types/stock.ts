@@ -1,7 +1,7 @@
 export type MoveType = "RECEIPT" | "ISSUE" | "ADJUSTMENT" | "TRANSFER_SHIP" | "TRANSFER_RECEIVE";
 export type TransferStatus = "DRAFT" | "SHIPPED" | "RECEIVED" | "CANCELLED";
 export type InventoryCountStatus = "OPEN" | "CLOSED" | "POSTED" | "CANCELLED";
-export type LocationType = "STORE" | "WAREHOUSE" | "OTHER";
+export type LocationType = "STORE" | "STOCK" | "DAMAGED";
 
 export interface Branch {
   id: number;

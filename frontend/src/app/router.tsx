@@ -6,6 +6,7 @@ import { MovementsPage } from "../features/movements/MovementsPage";
 import { PlaceholderPage } from "../features/placeholder/PlaceholderPage";
 import { ProductsPage } from "../features/products/ProductsPage";
 import { InventoryCountsPage } from "../features/inventory-counts/InventoryCountsPage";
+import { CadastrosPage } from "../features/cadastros/CadastrosPage";
 import { ReportsPage } from "../features/reports/ReportsPage";
 import { TransfersPage } from "../features/transfers/TransfersPage";
 import { VariationsPage } from "../features/variations/VariationsPage";
@@ -21,6 +22,7 @@ const SCREEN_ELEMENTS: Partial<Record<string, ReactElement>> = {
   transferencias: <TransfersPage />,
   contagem: <InventoryCountsPage />,
   relatorios: <ReportsPage />,
+  cadastros: <CadastrosPage />,
 };
 
 const domainRoutes = ROUTES.filter((route) => route.id !== "login").map((route) => ({

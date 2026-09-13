@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./httpClient";
 import type { Paginated } from "../types/pagination";
-import type { Branch, Brand, Category, Location, Sku } from "../types/stock";
+import type { Branch, Brand, Category, Location, LocationType, Sku } from "../types/stock";
 
 export function useBranchesQuery() {
   return useQuery({
@@ -53,5 +53,78 @@ export function useBrandsQuery() {
       return page.items;
     },
     staleTime: 60_000,
+  });
+}
+
+export function useCreateBranch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (values: { name: string }) => apiClient.post<Branch>("/branches", values),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["branches"] }),
+  });
+}
+
+export function useUpdateBranch(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (values: { name: string }) => apiClient.put<Branch>(`/branches/${id}`, values),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["branches"] }),
+  });
+}
+
+export function useDeleteBranch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiClient.delete(`/branches/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["branches"] }),
+  });
+}
+
+export function useCreateLocation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (values: { branch_id: number; name: string; type: LocationType }) => apiClient.post<Location>("/locations", values),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["locations"] }),
+  });
+}
+
+export function useUpdateLocation(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (values: { branch_id: number; name: string; type: LocationType }) =>
+      apiClient.put<Location>(`/locations/${id}`, values),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["locations"] }),
+  });
+}
+
+export function useDeleteLocation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiClient.delete(`/locations/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["locations"] }),
+  });
+}
+
+export function useCreateBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (values: { name: string }) => apiClient.post<Brand>("/catalog/brands", values),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["brands"] }),
+  });
+}
+
+export function useUpdateBrand(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (values: { name: string }) => apiClient.put<Brand>(`/catalog/brands/${id}`, values),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["brands"] }),
+  });
+}
+
+export function useDeleteBrand() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => apiClient.delete(`/catalog/brands/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["brands"] }),
   });
 }
