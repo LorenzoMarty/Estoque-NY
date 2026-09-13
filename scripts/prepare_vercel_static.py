@@ -14,7 +14,8 @@ PUBLIC_DIR = PROJECT_ROOT / "public"
 def main() -> None:
     if not DIST_DIR.exists():
         raise FileNotFoundError(
-            f"Missing frontend build output: {DIST_DIR}. Run `npm run build` in frontend/ first."
+            f"Missing frontend build output: {DIST_DIR}. "
+            "Run `npm run build` in frontend/ first."
         )
 
     if PUBLIC_DIR.exists():
