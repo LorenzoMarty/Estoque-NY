@@ -1,0 +1,40 @@
+export const strings = {
+  app_name: "Estoque FreeShop",
+  search_placeholder: "Buscar produto ou código de barras",
+  nav: {
+    dashboard: "Visão geral",
+    movements: "Movimentações",
+    products: "Produtos",
+    variations: "Variações",
+    transfers: "Transferências",
+    inventory_count: "Contagem de estoque",
+    reports: "Relatórios",
+    audit: "Auditoria",
+    cadastros: "Cadastros",
+    users: "Usuários & Permissões",
+    login: "Login",
+  },
+  nav_sections: {
+    operation: "Operação",
+    cadastros: "Cadastros",
+    settings: "Configurações",
+  },
+  login: {
+    title: "Acesso ao sistema",
+    subtitle: "Faça login para acessar dashboards, movimentações e cadastros administrativos.",
+    cta: "Entrar com usuário e senha",
+    email_label: "E-mail",
+    password_label: "Senha",
+    submit_label: "Entrar",
+    invalid_email: "Informe um e-mail válido.",
+    invalid_password: "Informe sua senha com pelo menos 8 caracteres.",
+  },
+  shell: {
+    notifications_title: "Notificações",
+    notifications_empty: "Sem novos alertas não lidos.",
+    demo_title: "Modo demonstração",
+  },
+  actions: {
+    page_under_construction: "Em breve",
+  },
+} as const;
