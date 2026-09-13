@@ -1,33 +1,39 @@
 import { createTheme, type MantineColorsTuple } from "@mantine/core";
 
+// frontend/css/app.css defines its palette twice: an original dark zinc/orange
+// `:root` block (lines 1-21) and a later "Light Theme (Blue + White)" `:root`
+// override (lines 1355-1381) that wins the cascade and is the design actually
+// in effect today (confirmed with the user 2026-09-13, since custom properties
+// resolve at used-value time and the later declaration overrides the earlier
+// one for every consumer in the file). This theme mirrors that light palette.
 const zinc: MantineColorsTuple = [
-  "#f4f4f5", // 0 — zinc-100
-  "#e4e4e7", // 1 — zinc-200
-  "#d4d4d8", // 2 — zinc-300
-  "#a1a1aa", // 3 — zinc-400
-  "#71717a", // 4 — zinc-500
-  "#52525b", // 5 — zinc-650
-  "#3f3f46", // 6 — zinc-700
-  "#27272a", // 7 — zinc-800
-  "#1f1f24", // 8 — zinc-850
-  "#18181b", // 9 — zinc-900
+  "#ffffff", // 0 — zinc-900 (surface)
+  "#f8fbff", // 1 — zinc-850
+  "#f5f9ff", // 2 — zinc-950 (page background)
+  "#eef4ff", // 3 — zinc-800
+  "#d8e3f3", // 4 — zinc-700
+  "#c4d2e8", // 5 — zinc-650
+  "#66758f", // 6 — zinc-500
+  "#4f617d", // 7 — zinc-400
+  "#2d3e59", // 8 — zinc-300
+  "#0f1f36", // 9 — zinc-100 (text)
 ];
 
-const orange: MantineColorsTuple = [
-  "#fff2e8",
-  "#fdba74", // 1 — orange-200
-  "#fb923c", // 2 — orange-400
-  "#f97316", // 3
-  "#f97316", // 4
-  "#f97316", // 5
-  "#f97316", // 6 — orange-500, primary shade
-  "#ea580c", // 7 — orange-600
-  "#c2410c", // 8 — orange-700
-  "#431407", // 9 — orange-950
+const brand: MantineColorsTuple = [
+  "#eff6ff", // 0 — orange-950 (pale blue tint under the new palette)
+  "#dbeafe", // 1 — orange-200
+  "#60a5fa", // 2 — orange-400
+  "#3b82f6", // 3 — orange-500 / orange-300
+  "#3b82f6", // 4
+  "#3b82f6", // 5
+  "#3b82f6", // 6 — orange-500, primary shade
+  "#2563eb", // 7 — orange-600
+  "#1d4ed8", // 8 — orange-700
+  "#1e40af", // 9 — indigo-500
 ];
 
 export const theme = createTheme({
-  primaryColor: "orange",
+  primaryColor: "brand",
   primaryShade: 6,
   fontFamily: "Inter, sans-serif",
   radius: {
@@ -37,19 +43,7 @@ export const theme = createTheme({
     xl: "22px",
   },
   colors: {
-    dark: [
-      "#f4f4f5",
-      "#e4e4e7",
-      "#d4d4d8",
-      "#a1a1aa",
-      "#71717a",
-      "#52525b",
-      "#3f3f46",
-      "#18181b", // dark[7] — Mantine's default "surface" shade, matches zinc-900
-      "#1f1f24",
-      "#09090b", // zinc-950 — app background
-    ],
     zinc,
-    orange,
+    brand,
   },
 });

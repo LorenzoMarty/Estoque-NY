@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { LoginPage } from "../features/auth/LoginPage";
 import { PlaceholderPage } from "../features/placeholder/PlaceholderPage";
 import { AppShell } from "./shell/AppShell";
@@ -11,6 +11,7 @@ const domainRoutes = ROUTES.filter((route) => route.id !== "login").map((route) 
 }));
 
 export const router = createBrowserRouter([
+  { path: "/", element: <Navigate to="/dashboard" replace /> },
   { path: "/login", element: <LoginPage /> },
   {
     element: <RequireAuth />,
