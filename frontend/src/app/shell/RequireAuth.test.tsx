@@ -19,7 +19,14 @@ function renderAt(path: string) {
 
 describe("RequireAuth", () => {
   beforeEach(() => {
-    useAuthStore.setState({ isAuthenticated: false, user: null });
+    useAuthStore.setState({ isAuthenticated: false, isInitializing: false, user: null });
+  });
+
+  it("renders nothing while the session is still initializing", () => {
+    useAuthStore.setState({ isInitializing: true });
+    renderAt("/dashboard");
+    expect(screen.queryByText("Login page")).not.toBeInTheDocument();
+    expect(screen.queryByText("Dashboard page")).not.toBeInTheDocument();
   });
 
   it("redirects to /login when not authenticated", () => {

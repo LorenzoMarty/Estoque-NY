@@ -12,7 +12,7 @@ export function AppShell() {
   const setMobileSidebarOpen = useUiStore((state) => state.setMobileSidebarOpen);
 
   return (
-    <div className={`app-shell${sidebarCollapsed ? " is-collapsed" : ""}${mobileSidebarOpen ? " mobile-open" : ""}`} id="appShell">
+    <div className={`app-shell${sidebarCollapsed ? " sidebar-collapsed" : ""}${mobileSidebarOpen ? " sidebar-open" : ""}`} id="appShell">
       <aside className="sidebar border-gradient" id="sidebar" aria-label="Menu lateral">
         <div className="sidebar-header">
           <a className="brand" href="/dashboard" aria-label="Ir para Visão geral">
