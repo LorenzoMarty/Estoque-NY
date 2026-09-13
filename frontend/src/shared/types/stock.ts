@@ -16,6 +16,29 @@ export interface Location {
   type: LocationType;
 }
 
+export interface Category {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+export interface Brand {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+export interface Product {
+  id: number;
+  name: string;
+  description: string | null;
+  category_id: number | null;
+  brand_id: number | null;
+  brand: string | null;
+  active: boolean;
+  created_at: string;
+}
+
 export interface Sku {
   id: number;
   product_id: number;
