@@ -7,6 +7,11 @@ const chartInstances = {
   turnover: null,
   abc: null,
   divergence: null,
+  marketingCampaignProducts: null,
+  marketingPromotionSkus: null,
+  marketingCampaigns: null,
+  marketingLowTurnover: null,
+  marketingTopSkus: null,
 };
 
 function formatInt(value) {
@@ -60,6 +65,11 @@ export function destroyReportsCharts() {
   chartInstances.turnover = null;
   chartInstances.abc = null;
   chartInstances.divergence = null;
+  chartInstances.marketingCampaignProducts = null;
+  chartInstances.marketingPromotionSkus = null;
+  chartInstances.marketingCampaigns = null;
+  chartInstances.marketingLowTurnover = null;
+  chartInstances.marketingTopSkus = null;
 }
 
 function createFlowChart(data) {
@@ -354,6 +364,220 @@ function createDivergenceChart(data) {
   });
 }
 
+function createMarketingCampaignProductsChart(data) {
+  const target = document.getElementById("reportsMarketingCampaignProductsChart");
+  if (!target || !window.Chart || !data?.labels?.length) return;
+
+  chartInstances.marketingCampaignProducts = new window.Chart(target.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: data.labels,
+      datasets: [
+        {
+          label: I18N_PTBR.reports_marketing.chart.dataset_on_hand,
+          data: data.values,
+          backgroundColor: "rgba(37, 99, 235, 0.75)",
+          borderColor: "#1d4ed8",
+          borderWidth: 1,
+          borderRadius: 8,
+          maxBarThickness: 34,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 520, easing: "easeOutQuart" },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...commonTooltip(),
+          callbacks: {
+            label: (context) =>
+              `${I18N_PTBR.reports_marketing.chart.dataset_on_hand}: ${formatInt(context.parsed.y)}`,
+          },
+        },
+      },
+      scales: commonScales(),
+    },
+  });
+}
+
+function createMarketingPromotionSkusChart(data) {
+  const target = document.getElementById("reportsMarketingPromotionSkusChart");
+  if (!target || !window.Chart || !data?.labels?.length) return;
+
+  chartInstances.marketingPromotionSkus = new window.Chart(target.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: data.labels,
+      datasets: [
+        {
+          label: I18N_PTBR.reports_marketing.chart.dataset_cost,
+          data: data.cost,
+          backgroundColor: "rgba(148, 163, 184, 0.75)",
+          borderRadius: 6,
+          maxBarThickness: 26,
+        },
+        {
+          label: I18N_PTBR.reports_marketing.chart.dataset_price,
+          data: data.price,
+          backgroundColor: "rgba(34, 197, 94, 0.75)",
+          borderRadius: 6,
+          maxBarThickness: 26,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 520, easing: "easeOutQuart" },
+      plugins: {
+        legend: { labels: { color: "#d4d4d8", usePointStyle: true } },
+        tooltip: {
+          ...commonTooltip(),
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`,
+          },
+        },
+      },
+      scales: commonScales(),
+    },
+  });
+}
+
+function createMarketingCampaignsChart(data) {
+  const target = document.getElementById("reportsMarketingCampaignsChart");
+  if (!target || !window.Chart || !data?.labels?.length) return;
+
+  chartInstances.marketingCampaigns = new window.Chart(target.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: data.labels,
+      datasets: [
+        {
+          label: I18N_PTBR.reports_marketing.chart.dataset_budget,
+          data: data.values,
+          backgroundColor: "rgba(245, 158, 11, 0.75)",
+          borderColor: "#b45309",
+          borderWidth: 1,
+          borderRadius: 8,
+          maxBarThickness: 34,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 520, easing: "easeOutQuart" },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...commonTooltip(),
+          callbacks: {
+            label: (context) =>
+              `${I18N_PTBR.reports_marketing.chart.dataset_budget}: ${formatCurrency(
+                context.parsed.y
+              )}`,
+          },
+        },
+      },
+      scales: commonScales(),
+    },
+  });
+}
+
+function createMarketingLowTurnoverChart(data) {
+  const target = document.getElementById("reportsMarketingLowTurnoverChart");
+  if (!target || !window.Chart || !data?.labels?.length) return;
+
+  chartInstances.marketingLowTurnover = new window.Chart(target.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: data.labels,
+      datasets: [
+        {
+          label: I18N_PTBR.reports_marketing.chart.dataset_turnover,
+          data: data.values,
+          backgroundColor: "rgba(239, 68, 68, 0.72)",
+          borderColor: "#b91c1c",
+          borderWidth: 1,
+          borderRadius: 6,
+          maxBarThickness: 26,
+        },
+      ],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 520, easing: "easeOutQuart" },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...commonTooltip(),
+          callbacks: {
+            label: (context) =>
+              `${I18N_PTBR.reports_marketing.chart.dataset_turnover}: ${Number(
+                context.parsed.x || 0
+              ).toFixed(2)}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: "rgba(63, 63, 70, 0.24)" },
+          ticks: { color: "#a1a1aa" },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: "#a1a1aa" },
+        },
+      },
+    },
+  });
+}
+
+function createMarketingTopSkusChart(data) {
+  const target = document.getElementById("reportsMarketingTopSkusChart");
+  if (!target || !window.Chart || !data?.labels?.length) return;
+
+  chartInstances.marketingTopSkus = new window.Chart(target.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: data.labels,
+      datasets: [
+        {
+          label: I18N_PTBR.reports_marketing.chart.dataset_movement_value,
+          data: data.values,
+          backgroundColor: "rgba(37, 99, 235, 0.72)",
+          borderRadius: 6,
+          maxBarThickness: 26,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 520, easing: "easeOutQuart" },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...commonTooltip(),
+          callbacks: {
+            label: (context) =>
+              `${I18N_PTBR.reports_marketing.chart.dataset_movement_value}: ${formatCurrency(
+                context.parsed.y
+              )}`,
+          },
+        },
+      },
+      scales: commonScales(),
+    },
+  });
+}
+
 export function renderReportsCharts(view) {
   destroyReportsCharts();
   if (!view?.charts) return;
@@ -364,4 +588,30 @@ export function renderReportsCharts(view) {
   createTurnoverChart(view.charts.turnover);
   createAbcChart(view.charts.abc);
   createDivergenceChart(view.charts.divergence);
+}
+
+function destroyMarketingReportsCharts() {
+  [
+    "marketingCampaignProducts",
+    "marketingPromotionSkus",
+    "marketingCampaigns",
+    "marketingLowTurnover",
+    "marketingTopSkus",
+  ].forEach((key) => {
+    if (chartInstances[key] && typeof chartInstances[key].destroy === "function") {
+      chartInstances[key].destroy();
+    }
+    chartInstances[key] = null;
+  });
+}
+
+export function renderMarketingReportsCharts(view) {
+  destroyMarketingReportsCharts();
+  if (!view?.charts) return;
+
+  createMarketingCampaignProductsChart(view.charts.campaignProducts);
+  createMarketingPromotionSkusChart(view.charts.promotionSkus);
+  createMarketingCampaignsChart(view.charts.campaigns);
+  createMarketingLowTurnoverChart(view.charts.lowTurnover);
+  createMarketingTopSkusChart(view.charts.topSkus);
 }

@@ -4269,6 +4269,41 @@ export async function loadReportsPayload(filters = {}) {
   }
 }
 
+export async function loadMarketingReportsPayload(filters = {}) {
+  const threshold = filters.threshold != null ? filters.threshold : 0.5;
+
+  try {
+    const [campaignProducts, promotionSkus, campaigns, lowTurnover, dashboardSummary] =
+      await Promise.all([
+        fetchAllReportItems("/reports/marketing/campaign-products", {}, { pageSize: 100 }),
+        fetchAllReportItems("/reports/marketing/promotion-skus", {}, { pageSize: 100 }),
+        fetchAllReportItems("/reports/marketing/campaigns", {}, { pageSize: 100 }),
+        fetchAllReportItems(
+          "/reports/marketing/low-turnover-candidates",
+          { threshold },
+          { pageSize: 100 }
+        ),
+        requestJson("/reports/marketing/dashboard-summary"),
+      ]);
+
+    return {
+      error: "",
+      data: {
+        campaignProducts,
+        promotionSkus,
+        campaigns,
+        lowTurnover,
+        dashboardSummary,
+      },
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Falha ao consultar marketing",
+      data: null,
+    };
+  }
+}
+
 export async function loadAuditPayload(filters = {}, sort = {}) {
   const startedAt = Date.now();
 

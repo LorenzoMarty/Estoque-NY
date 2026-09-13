@@ -22,16 +22,23 @@
     com dados simulados coerentes e banner discreto.
 */
 
-import { loadReportsPayload } from "./api.js";
+import { loadMarketingReportsPayload, loadReportsPayload } from "./api.js";
 import { I18N_PTBR } from "./i18n.js";
 import {
   clearReportsFilters,
   setReportsLoading,
+  setReportsMarketingLoading,
+  setReportsMarketingPayload,
   setReportsPayload,
   state,
   updateReportsFilter,
+  updateReportsMarketingFilter,
 } from "./state.js";
-import { renderReportsCharts, destroyReportsCharts } from "./reports_charts.js";
+import {
+  renderReportsCharts,
+  renderMarketingReportsCharts,
+  destroyReportsCharts,
+} from "./reports_charts.js";
 import { copyReportsSummary, exportReportsCsv, exportReportsPdf } from "./reports_export.js";
 import { applyReveal, initTooltips, refreshIcons, showToast } from "./ui.js";
 import {
@@ -583,6 +590,223 @@ function buildView() {
   };
 }
 
+function buildMarketingView() {
+  const data = state.reportsMarketing.data;
+  const itemById = new Map((state.reports.data?.items || []).map((item) => [Number(item.id), item]));
+
+  if (!data) {
+    return {
+      loading: state.reportsMarketing.loading,
+      dashboardSummary: null,
+      charts: {
+        campaignProducts: { labels: [], values: [] },
+        promotionSkus: { labels: [], cost: [], price: [] },
+        campaigns: { labels: [], values: [] },
+        lowTurnover: { labels: [], values: [] },
+        topSkus: { labels: [], values: [] },
+      },
+    };
+  }
+
+  const campaignProductRows = data.campaignProducts || [];
+  const promotionSkuRows = data.promotionSkus || [];
+  const campaignRows = data.campaigns || [];
+  const lowTurnoverRows = (data.lowTurnover || []).map((row) => ({
+    ...row,
+    item_name:
+      itemById.get(Number(row.sku_id))?.name || `${I18N_PTBR.reports.defaults.variation_fallback} ${row.sku_id}`,
+  }));
+  const topSkuRows = (data.dashboardSummary?.top_skus_by_value || []).map((row) => ({
+    ...row,
+    item_name:
+      itemById.get(Number(row.sku_id))?.name || `${I18N_PTBR.reports.defaults.variation_fallback} ${row.sku_id}`,
+  }));
+
+  const MAX_CHART_ROWS = 15;
+
+  return {
+    loading: state.reportsMarketing.loading,
+    dashboardSummary: data.dashboardSummary || null,
+    charts: {
+      campaignProducts: {
+        labels: campaignProductRows
+          .slice(0, MAX_CHART_ROWS)
+          .map((row) => shortLabel(row.product_name, 20)),
+        values: campaignProductRows
+          .slice(0, MAX_CHART_ROWS)
+          .map((row) => Number(row.on_hand || 0)),
+      },
+      promotionSkus: {
+        labels: promotionSkuRows.slice(0, MAX_CHART_ROWS).map((row) => shortLabel(row.sku_code, 16)),
+        cost: promotionSkuRows.slice(0, MAX_CHART_ROWS).map((row) => Number(row.cost || 0)),
+        price: promotionSkuRows.slice(0, MAX_CHART_ROWS).map((row) => Number(row.price || 0)),
+      },
+      campaigns: {
+        labels: campaignRows.slice(0, MAX_CHART_ROWS).map((row) => shortLabel(row.name, 20)),
+        values: campaignRows.slice(0, MAX_CHART_ROWS).map((row) => Number(row.budget || 0)),
+      },
+      lowTurnover: {
+        labels: lowTurnoverRows.slice(0, MAX_CHART_ROWS).map((row) => shortLabel(row.item_name, 24)),
+        values: lowTurnoverRows.slice(0, MAX_CHART_ROWS).map((row) => Number(row.turnover || 0)),
+      },
+      topSkus: {
+        labels: topSkuRows.map((row) => shortLabel(row.item_name, 20)),
+        values: topSkuRows.map((row) => Number(row.movement_value || 0)),
+      },
+    },
+  };
+}
+
+function renderMarketingSection(view) {
+  const threshold = state.reportsMarketing.filters.threshold;
+  const summary = view.dashboardSummary;
+
+  return `
+    <section class="panel pad reveal">
+      <div class="table-head">
+        <div>
+          <h2 class="section-title">${I18N_PTBR.reports_marketing.title}</h2>
+          <p class="section-subtitle">${I18N_PTBR.reports_marketing.subtitle}</p>
+        </div>
+        <div class="reports-filter-actions">
+          <div class="field">
+            <label for="reportsMarketingThreshold">${I18N_PTBR.reports_marketing.filters.threshold}</label>
+            <input id="reportsMarketingThreshold" type="number" min="0" step="0.1" value="${threshold}" />
+          </div>
+          <button class="btn" id="refreshMarketingReportsBtn"><i data-lucide="refresh-cw"></i>${
+            I18N_PTBR.reports_marketing.filters.refresh
+          }</button>
+        </div>
+      </div>
+
+      <div class="reports-kpi-grid">
+        <article class="mini-kpi-card border-gradient">
+          <p>${I18N_PTBR.reports_marketing.kpis.stock_valuation_total}</p>
+          <strong>${formatCurrency(summary?.stock_valuation_total || 0)}</strong>
+        </article>
+        <article class="mini-kpi-card border-gradient">
+          <p>${I18N_PTBR.reports_marketing.kpis.active_campaigns_count}</p>
+          <strong>${formatInt(summary?.active_campaigns_count || 0)}</strong>
+        </article>
+        <article class="mini-kpi-card border-gradient">
+          <p>${I18N_PTBR.reports_marketing.kpis.active_promotions_count}</p>
+          <strong>${formatInt(summary?.active_promotions_count || 0)}</strong>
+        </article>
+        <article class="mini-kpi-card border-gradient">
+          <p>${I18N_PTBR.reports_marketing.kpis.low_turnover_candidates_count}</p>
+          <strong>${formatInt(summary?.low_turnover_candidates_count || 0)}</strong>
+        </article>
+      </div>
+
+      <div class="reports-two-col">
+        <article class="panel chart-card border-gradient">
+          <div class="chart-header">
+            <h3 class="section-title">${I18N_PTBR.reports_marketing.sections.campaign_products.title}</h3>
+            <p class="section-subtitle">${I18N_PTBR.reports_marketing.sections.campaign_products.subtitle}</p>
+          </div>
+          ${renderChartOrEmpty({
+            chartId: "reportsMarketingCampaignProductsChart",
+            ariaLabel: I18N_PTBR.reports_marketing.chart.aria_campaign_products,
+            hasData: view.charts.campaignProducts.labels.length > 0,
+            emptyLabel: I18N_PTBR.reports_marketing.empty.campaign_products,
+          })}
+        </article>
+
+        <article class="panel chart-card border-gradient">
+          <div class="chart-header">
+            <h3 class="section-title">${I18N_PTBR.reports_marketing.sections.promotion_skus.title}</h3>
+            <p class="section-subtitle">${I18N_PTBR.reports_marketing.sections.promotion_skus.subtitle}</p>
+          </div>
+          ${renderChartOrEmpty({
+            chartId: "reportsMarketingPromotionSkusChart",
+            ariaLabel: I18N_PTBR.reports_marketing.chart.aria_promotion_skus,
+            hasData: view.charts.promotionSkus.labels.length > 0,
+            emptyLabel: I18N_PTBR.reports_marketing.empty.promotion_skus,
+          })}
+        </article>
+      </div>
+
+      <div class="reports-two-col">
+        <article class="panel chart-card border-gradient">
+          <div class="chart-header">
+            <h3 class="section-title">${I18N_PTBR.reports_marketing.sections.campaigns.title}</h3>
+            <p class="section-subtitle">${I18N_PTBR.reports_marketing.sections.campaigns.subtitle}</p>
+          </div>
+          ${renderChartOrEmpty({
+            chartId: "reportsMarketingCampaignsChart",
+            ariaLabel: I18N_PTBR.reports_marketing.chart.aria_campaigns,
+            hasData: view.charts.campaigns.labels.length > 0,
+            emptyLabel: I18N_PTBR.reports_marketing.empty.campaigns,
+          })}
+        </article>
+
+        <article class="panel chart-card border-gradient">
+          <div class="chart-header">
+            <h3 class="section-title">${I18N_PTBR.reports_marketing.sections.low_turnover.title}</h3>
+            <p class="section-subtitle">${I18N_PTBR.reports_marketing.sections.low_turnover.subtitle}</p>
+          </div>
+          ${renderChartOrEmpty({
+            chartId: "reportsMarketingLowTurnoverChart",
+            ariaLabel: I18N_PTBR.reports_marketing.chart.aria_low_turnover,
+            hasData: view.charts.lowTurnover.labels.length > 0,
+            emptyLabel: I18N_PTBR.reports_marketing.empty.low_turnover,
+          })}
+        </article>
+      </div>
+
+      <article class="panel chart-card border-gradient">
+        <div class="chart-header">
+          <h3 class="section-title">${I18N_PTBR.reports_marketing.sections.dashboard_summary.title}</h3>
+          <p class="section-subtitle">${I18N_PTBR.reports_marketing.sections.dashboard_summary.subtitle}</p>
+        </div>
+        ${renderChartOrEmpty({
+          chartId: "reportsMarketingTopSkusChart",
+          ariaLabel: I18N_PTBR.reports_marketing.chart.aria_top_skus,
+          hasData: view.charts.topSkus.labels.length > 0,
+          emptyLabel: I18N_PTBR.reports_marketing.empty.top_skus,
+        })}
+      </article>
+    </section>
+  `;
+}
+
+let marketingRefreshSequence = 0;
+
+async function refreshMarketingReportsData() {
+  const currentRequest = ++marketingRefreshSequence;
+  setReportsMarketingLoading(true);
+  const payload = await loadMarketingReportsPayload(state.reportsMarketing.filters);
+
+  if (currentRequest !== marketingRefreshSequence) {
+    return payload;
+  }
+
+  setReportsMarketingPayload(payload);
+  if (payload.error) {
+    showToast({
+      title: I18N_PTBR.reports_marketing.title,
+      message: I18N_PTBR.reports_marketing.toasts.error,
+      type: "error",
+    });
+  }
+  return payload;
+}
+
+function bindMarketingEvents() {
+  const thresholdInput = document.getElementById("reportsMarketingThreshold");
+  const refreshBtn = document.getElementById("refreshMarketingReportsBtn");
+
+  thresholdInput?.addEventListener("change", (event) => {
+    const value = Number(event.target.value);
+    updateReportsMarketingFilter("threshold", Number.isFinite(value) ? value : 0.5);
+    refreshMarketingReportsData();
+  });
+
+  refreshBtn?.addEventListener("click", () => {
+    refreshMarketingReportsData();
+  });
+}
+
 function renderChartOrEmpty({ chartId, ariaLabel, hasData, emptyLabel }) {
   if (!hasData) {
     return `
@@ -1119,6 +1343,8 @@ function renderLoadedState(view) {
       </div>
     </section>
 
+    ${renderMarketingSection(buildMarketingView())}
+
     <section class="panel pad reveal">
       <div class="table-head">
         <div>
@@ -1371,6 +1597,8 @@ function bindEvents() {
       maybeRefreshServer(key);
     });
   });
+
+  bindMarketingEvents();
 }
 
 export function destroyReportsRuntime() {
@@ -1385,6 +1613,10 @@ export function renderReports() {
 
   if (!state.reports.loaded && !state.reports.loading) {
     refreshReportsData();
+  }
+
+  if (!state.reportsMarketing.loaded && !state.reportsMarketing.loading) {
+    refreshMarketingReportsData();
   }
 
   if (state.reports.loading || !state.reports.loaded) {
@@ -1402,5 +1634,6 @@ export function renderReports() {
   applyReveal(pageContent);
   initTooltips(pageContent);
   renderReportsCharts(view);
+  renderMarketingReportsCharts(buildMarketingView());
   bindEvents(view);
 }
