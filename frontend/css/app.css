@@ -409,6 +409,25 @@ textarea {
   gap: 10px;
 }
 
+.command-chip {
+  flex-shrink: 0;
+}
+
+.command-item {
+  width: 100%;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text-body, #26364d);
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.command-item:hover {
+  background: var(--surface-muted, #eef3f9);
+  transform: translateY(-1px);
+}
+
 .dot {
   width: 8px;
   height: 8px;
@@ -1248,6 +1267,7 @@ tbody tr:hover {
   }
 
   .search-kbd,
+  .command-chip,
   .profile-meta {
     display: none;
   }
