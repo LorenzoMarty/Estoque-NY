@@ -37,3 +37,26 @@ class UserOut(SchemaBase):
 class AssignRoleIn(SchemaBase):
     user_id: int
     role_name: str
+
+
+class RoleOut(SchemaBase):
+    id: int
+    name: str
+
+
+class PermissionOut(SchemaBase):
+    id: int
+    key: str
+
+
+class UserWithRolesOut(UserOut):
+    roles: list[str] = []
+
+
+class UserListOut(SchemaBase):
+    items: list[UserWithRolesOut]
+    meta: dict[str, int | None]
+
+
+class UserActiveIn(SchemaBase):
+    active: bool

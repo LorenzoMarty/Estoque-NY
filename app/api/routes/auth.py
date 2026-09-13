@@ -1,8 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.pagination import (
+    PaginationParams,
+    apply_order_and_pagination,
+    page_meta,
+    pagination_params,
+)
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.core.security import (
@@ -12,14 +18,19 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.models.entities import User
+from app.models.entities import Permission, Role, User, UserRole
 from app.schemas.auth import (
     AssignRoleIn,
+    PermissionOut,
     RefreshTokenIn,
+    RoleOut,
     TokenPairOut,
+    UserActiveIn,
+    UserListOut,
     UserLoginIn,
     UserOut,
     UserRegisterIn,
+    UserWithRolesOut,
 )
 from app.services.audit_service import write_audit_log
 from app.services.auth_service import (
@@ -191,3 +202,126 @@ async def assign_role(
     except Exception:
         await session.rollback()
         raise
+
+
+@router.get(
+    "/users",
+    response_model=UserListOut,
+    dependencies=[Depends(require_permission("auth.user.manage"))],
+)
+async def list_users(
+    params: PaginationParams = Depends(pagination_params),
+    session: AsyncSession = Depends(get_session),
+) -> UserListOut:
+    stmt = select(User)
+    if params.q:
+        stmt = stmt.where(
+            (User.name.ilike(f"%{params.q}%")) | (User.email.ilike(f"%{params.q}%"))
+        )
+
+    total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    stmt = apply_order_and_pagination(
+        stmt,
+        model=User,
+        params=params,
+        allowed_sort_fields={"id", "name", "email", "created_at"},
+    )
+    rows = (await session.scalars(stmt)).all()
+
+    user_ids = [row.id for row in rows]
+    roles_by_user: dict[int, list[str]] = {user_id: [] for user_id in user_ids}
+    if user_ids:
+        role_rows = (
+            await session.execute(
+                select(UserRole.user_id, Role.name)
+                .join(Role, Role.id == UserRole.role_id)
+                .where(UserRole.user_id.in_(user_ids))
+            )
+        ).all()
+        for user_id, role_name in role_rows:
+            roles_by_user.setdefault(user_id, []).append(role_name)
+
+    items = [
+        UserWithRolesOut(
+            id=row.id,
+            name=row.name,
+            email=row.email,
+            active=row.active,
+            created_at=row.created_at,
+            roles=roles_by_user.get(row.id, []),
+        )
+        for row in rows
+    ]
+    return UserListOut(
+        items=items,
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )
+
+
+@router.get(
+    "/roles",
+    response_model=list[RoleOut],
+    dependencies=[Depends(require_permission("auth.user.manage"))],
+)
+async def list_roles(session: AsyncSession = Depends(get_session)) -> list[Role]:
+    await ensure_rbac_seed(session)
+    await session.commit()
+    rows = (await session.scalars(select(Role).order_by(Role.name))).all()
+    return list(rows)
+
+
+@router.get(
+    "/permissions",
+    response_model=list[PermissionOut],
+    dependencies=[Depends(require_permission("auth.user.manage"))],
+)
+async def list_permissions(
+    session: AsyncSession = Depends(get_session),
+) -> list[Permission]:
+    await ensure_rbac_seed(session)
+    await session.commit()
+    rows = (await session.scalars(select(Permission).order_by(Permission.key))).all()
+    return list(rows)
+
+
+@router.patch(
+    "/users/{user_id}",
+    response_model=UserOut,
+    dependencies=[Depends(require_permission("auth.user.manage"))],
+)
+async def update_user_active(
+    user_id: int,
+    payload: UserActiveIn,
+    request: Request,
+    actor: User | None = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> User:
+    if actor is not None and actor.id == user_id and not payload.active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="cannot deactivate your own account",
+        )
+
+    user = await session.scalar(select(User).where(User.id == user_id))
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"user {user_id} not found",
+        )
+
+    before = {"active": user.active}
+    user.active = payload.active
+    await session.flush()
+    await write_audit_log(
+        session,
+        request=request,
+        user_id=actor.id if actor else None,
+        action="auth.user.update_active",
+        resource_type="user",
+        resource_id=user.id,
+        before=before,
+        after={"active": user.active},
+    )
+    await session.commit()
+    await session.refresh(user)
+    return user
