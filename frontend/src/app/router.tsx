@@ -4,6 +4,7 @@ import { LoginPage } from "../features/auth/LoginPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { MovementsPage } from "../features/movements/MovementsPage";
 import { PlaceholderPage } from "../features/placeholder/PlaceholderPage";
+import { ProductsPage } from "../features/products/ProductsPage";
 import { AppShell } from "./shell/AppShell";
 import { RequireAuth } from "./shell/RequireAuth";
 import { ROUTES } from "./routes";
@@ -11,6 +12,7 @@ import { ROUTES } from "./routes";
 const SCREEN_ELEMENTS: Partial<Record<string, ReactElement>> = {
   dashboard: <DashboardPage />,
   movimentacoes: <MovementsPage />,
+  produtos: <ProductsPage />,
 };
 
 const domainRoutes = ROUTES.filter((route) => route.id !== "login").map((route) => ({
