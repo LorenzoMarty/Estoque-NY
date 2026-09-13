@@ -2,6 +2,7 @@ import type { ReactElement } from "react";
 import { createBrowserRouter, Navigate } from "react-router";
 import { LoginPage } from "../features/auth/LoginPage";
 import { DashboardPage } from "../features/dashboard/DashboardPage";
+import { MovementsPage } from "../features/movements/MovementsPage";
 import { PlaceholderPage } from "../features/placeholder/PlaceholderPage";
 import { AppShell } from "./shell/AppShell";
 import { RequireAuth } from "./shell/RequireAuth";
@@ -9,6 +10,7 @@ import { ROUTES } from "./routes";
 
 const SCREEN_ELEMENTS: Partial<Record<string, ReactElement>> = {
   dashboard: <DashboardPage />,
+  movimentacoes: <MovementsPage />,
 };
 
 const domainRoutes = ROUTES.filter((route) => route.id !== "login").map((route) => ({
