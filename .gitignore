@@ -23,7 +23,7 @@ streamlit_app/.env
 *.db.backup-*
 
 # Generated for Vercel deploy
-public/
+/public/
 
 # Claude knowledge cache (derived, not source of truth)
 .claude/knowledge/

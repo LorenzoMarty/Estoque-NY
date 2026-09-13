@@ -1,10 +1,13 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "python scripts/prepare_vercel_static.py",
+  "buildCommand": "cd frontend && npm ci && npm run build && cd .. && python scripts/prepare_vercel_static.py",
   "functions": {
     "api/**/*.py": {
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }

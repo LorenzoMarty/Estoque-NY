@@ -1,6 +1,6 @@
 # Estoque NY
 
-Projeto com backend FastAPI + frontend estatico para operacao de estoque.
+Projeto com backend FastAPI + frontend React (Vite + TypeScript) para operacao de estoque.
 Se o banco estiver no Supabase, este repositorio usa o Supabase apenas como provedor PostgreSQL.
 O fluxo de login em producao e JWT proprio da API, nao Supabase Auth.
 
@@ -10,7 +10,7 @@ O fluxo de login em producao e JWT proprio da API, nao Supabase Auth.
 - ORM: SQLAlchemy async
 - Migracoes: Alembic
 - Banco em producao: PostgreSQL (Supabase, Neon, Render, RDS etc.)
-- Frontend: HTML/CSS/JS estatico em `frontend/`
+- Frontend: React + TypeScript (Vite), Mantine, TanStack Query/Table, em `frontend/`
 
 ## Configuracao local
 
@@ -96,9 +96,11 @@ npm run dev
 
 Scripts do frontend:
 
-- `npm run dev`: servidor estatico local (`PORT` ou `8080`)
-- `npm run test`: validacao de sintaxe JS e assets
-- `npm run build`: alias para `npm run test`
+- `npm run dev`: servidor Vite local (porta `8080`)
+- `npm run typecheck`: checagem de tipos TypeScript (`tsc --noEmit`)
+- `npm run test`: testes unitários (Vitest)
+- `npm run build`: typecheck + test + `vite build` (gera `frontend/dist/`)
+- `npm run preview`: serve o build de producao localmente para conferencia
 
 ## Deploy no Vercel (API + frontend no mesmo projeto)
 
@@ -235,11 +237,11 @@ Tambem recomendadas (ja no `render.yaml`):
 3. Configure:
    - Root Directory: `frontend`
    - Build Command: `npm ci && npm run build`
-   - Publish Directory: `.`
-4. Antes de publicar, ajuste `frontend/js/api.js` para apontar para a API do Render:
+   - Publish Directory: `dist`
+4. Antes de publicar, defina a variável de build `VITE_API_URL` apontando para a API do Render:
 
-```js
-export const API_BASE_URL = "https://<nome-da-sua-api>.onrender.com";
+```env
+VITE_API_URL=https://<nome-da-sua-api>.onrender.com
 ```
 
 5. Deploy.
