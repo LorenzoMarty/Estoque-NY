@@ -64,8 +64,8 @@ export function VariationsPage() {
   const table = useTable({ features: tableFeatureSet, columns, data: filtered });
 
   return (
-    <div>
-      <Group justify="space-between" mb="md">
+    <div className="workspace-page catalog-page">
+      <Group className="page-hero page-hero-catalog" justify="space-between">
         <div>
           <Title order={2}>{strings.nav.variations}</Title>
           <Text c="dimmed" size="sm">
@@ -77,14 +77,15 @@ export function VariationsPage() {
         </Button>
       </Group>
 
-      <TextInput
-        placeholder="Buscar por código, nome ou código de barras"
-        leftSection={<Search size={16} />}
-        mb="md"
-        value={search}
-        onChange={(event) => setSearch(event.currentTarget.value)}
-        maw={420}
-      />
+      <Group className="toolbar-card">
+        <TextInput
+          placeholder="Buscar por código, nome ou código de barras"
+          leftSection={<Search size={16} />}
+          value={search}
+          onChange={(event) => setSearch(event.currentTarget.value)}
+          w={{ base: "100%", sm: 520 }}
+        />
+      </Group>
 
       {isLoading && (
         <Group justify="center" mt="xl">
@@ -98,7 +99,7 @@ export function VariationsPage() {
       )}
 
       {!isLoading && !isError && (
-        <Table.ScrollContainer minWidth={600}>
+        <Table.ScrollContainer className="data-table-card" minWidth={900}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -133,10 +134,10 @@ export function VariationsPage() {
         </Table.ScrollContainer>
       )}
 
-      <Modal opened={creating} onClose={() => setCreating(false)} title="Nova variação">
+      <Modal opened={creating} onClose={() => setCreating(false)} title="Nova variação" size="xl">
         <SkuForm onSuccess={() => setCreating(false)} />
       </Modal>
-      <Modal opened={Boolean(editing)} onClose={() => setEditing(null)} title="Editar variação">
+      <Modal opened={Boolean(editing)} onClose={() => setEditing(null)} title="Editar variação" size="xl">
         {editing && <SkuForm sku={editing} onSuccess={() => setEditing(null)} />}
       </Modal>
     </div>

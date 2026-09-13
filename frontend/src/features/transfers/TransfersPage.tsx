@@ -81,8 +81,8 @@ export function TransfersPage() {
   const table = useTable({ features: tableFeatureSet, columns, data: transfers ?? EMPTY_ROWS });
 
   return (
-    <div>
-      <Group justify="space-between" mb="md">
+    <div className="workspace-page logistics-page">
+      <Group className="page-hero page-hero-logistics" justify="space-between">
         <div>
           <Title order={2}>{strings.nav.transfers}</Title>
           <Text c="dimmed" size="sm">
@@ -106,7 +106,7 @@ export function TransfersPage() {
       )}
 
       {!isLoading && !isError && (
-        <Table.ScrollContainer minWidth={600}>
+        <Table.ScrollContainer className="data-table-card" minWidth={920}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -141,7 +141,7 @@ export function TransfersPage() {
         </Table.ScrollContainer>
       )}
 
-      <Modal opened={creating} onClose={() => setCreating(false)} title="Nova transferência" size="lg">
+      <Modal opened={creating} onClose={() => setCreating(false)} title="Nova transferência" size="xl">
         <TransferForm onSuccess={() => setCreating(false)} />
       </Modal>
     </div>
