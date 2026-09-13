@@ -39,8 +39,8 @@ export function MovementsPage() {
   const table = useTable({ features: tableFeatureSet, columns, data: moves ?? EMPTY_ROWS });
 
   return (
-    <div>
-      <Group justify="space-between" mb="md">
+    <div className="workspace-page operation-page">
+      <Group className="page-hero page-hero-operation" justify="space-between">
         <div>
           <Title order={2}>{strings.nav.movements}</Title>
           <Text c="dimmed" size="sm">
@@ -52,7 +52,7 @@ export function MovementsPage() {
         </Button>
       </Group>
 
-      <Group mb="md">
+      <Group className="toolbar-card">
         <Select
           placeholder="Todas as filiais"
           data={branchOptions}
@@ -82,7 +82,7 @@ export function MovementsPage() {
       )}
 
       {!isLoading && !isError && (
-        <Table.ScrollContainer minWidth={700}>
+        <Table.ScrollContainer className="data-table-card" minWidth={980}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -117,7 +117,7 @@ export function MovementsPage() {
         </Table.ScrollContainer>
       )}
 
-      <Modal opened={modalOpen} onClose={() => setModalOpen(false)} title="Nova movimentação">
+      <Modal opened={modalOpen} onClose={() => setModalOpen(false)} title="Nova movimentação" size="xl">
         <MovementForm onSuccess={() => setModalOpen(false)} />
       </Modal>
     </div>

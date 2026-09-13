@@ -4063,24 +4063,30 @@ body.mobile-nav-open {
 
 /* Frontend polish: operational clarity */
 :root {
-  --surface-page: #f4f7fb;
+  --surface-page: #eef2f7;
   --surface-shell: #ffffff;
   --surface-raised: #ffffff;
-  --surface-muted: #eef3f9;
-  --surface-control: #f8fafc;
-  --text-strong: #122033;
-  --text-body: #26364d;
-  --text-muted: #627187;
-  --line-soft: #d9e2ef;
-  --line-strong: #c5d2e3;
-  --accent-main: #2563eb;
-  --accent-strong: #1d4ed8;
+  --surface-muted: #e8eef6;
+  --surface-control: #f6f8fb;
+  --text-strong: #0b1728;
+  --text-body: #1f2f46;
+  --text-muted: #53647a;
+  --line-soft: #cfd8e6;
+  --line-strong: #aebdd0;
+  --accent-main: #1d4ed8;
+  --accent-strong: #123c91;
   --accent-soft: #dbeafe;
+  --accent-catalog: #0f766e;
+  --accent-operation: #1d4ed8;
+  --accent-logistics: #7c3aed;
+  --accent-count: #b45309;
+  --accent-report: #334155;
   --success-main: #047857;
   --warning-main: #b45309;
   --danger-main: #b91c1c;
   --shadow-shell: 0 18px 44px rgba(15, 31, 54, 0.08);
   --shadow-hover: 0 18px 34px rgba(37, 99, 235, 0.12);
+  --shadow-card: 0 16px 40px rgba(15, 31, 54, 0.07);
   --radius-sm: 8px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -4093,7 +4099,7 @@ html {
 
 body {
   background:
-    linear-gradient(180deg, #f8fbff 0%, var(--surface-page) 40%, #eef3f8 100%);
+    linear-gradient(180deg, #f7f9fc 0%, var(--surface-page) 52%, #e8edf5 100%);
   color: var(--text-body);
 }
 
@@ -4162,7 +4168,7 @@ body {
   background: var(--surface-shell);
   border-right: 1px solid var(--line-soft);
   box-shadow: 10px 0 32px rgba(15, 31, 54, 0.04);
-  padding: 16px 12px;
+  padding: 20px 14px;
 }
 
 .sidebar-header {
@@ -4200,10 +4206,10 @@ td {
 }
 
 .nav-link {
-  min-height: 40px;
+  min-height: 44px;
   border-radius: 9px;
   color: var(--text-body);
-  padding: 9px 10px;
+  padding: 10px 12px;
 }
 
 .nav-link i {
@@ -4260,7 +4266,7 @@ td {
 }
 
 .topbar {
-  height: 72px;
+  height: 78px;
   border-bottom: 1px solid var(--line-soft);
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(18px) saturate(145%);
@@ -4331,8 +4337,14 @@ td {
 }
 
 .page-content {
-  gap: 18px;
-  padding: 24px clamp(18px, 2.6vw, 32px) 34px;
+  gap: 26px;
+  padding: 34px clamp(28px, 4vw, 56px) 44px;
+}
+
+.page-content > * {
+  width: 100%;
+  max-width: 1720px;
+  margin-inline: auto;
 }
 
 .page-head {
@@ -4341,6 +4353,187 @@ td {
 
 .page-head h1 {
   font-size: clamp(1.45rem, 1.8vw, 1.9rem);
+}
+
+.workspace-page {
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+
+.page-hero {
+  min-height: 108px;
+  border: 1px solid var(--line-soft);
+  border-left: 6px solid var(--accent-main);
+  border-radius: 18px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(247, 250, 252, 0.92)),
+    radial-gradient(circle at top right, rgba(29, 78, 216, 0.12), transparent 34rem);
+  box-shadow: var(--shadow-card);
+  padding: 24px clamp(18px, 2vw, 30px);
+  margin-bottom: 0 !important;
+  gap: 16px;
+}
+
+.page-hero h2 {
+  color: var(--text-strong);
+  font-size: clamp(1.45rem, 1.5vw, 2rem);
+  line-height: 1.1;
+}
+
+.page-hero p {
+  max-width: 68ch;
+  color: var(--text-muted);
+}
+
+.page-hero-catalog {
+  border-left-color: var(--accent-catalog);
+}
+
+.page-hero-operation {
+  border-left-color: var(--accent-operation);
+}
+
+.page-hero-logistics {
+  border-left-color: var(--accent-logistics);
+}
+
+.page-hero-count {
+  border-left-color: var(--accent-count);
+}
+
+.page-hero-report {
+  border-left-color: var(--accent-report);
+}
+
+.toolbar-card,
+.dashboard-filter-bar {
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(15, 31, 54, 0.055);
+  padding: 16px;
+  gap: 12px;
+  margin-bottom: 0 !important;
+}
+
+.toolbar-card .mantine-Input-input,
+.dashboard-filter-bar .mantine-Input-input,
+.report-filter-control .mantine-Input-input {
+  min-height: 44px;
+  border-color: var(--line-soft);
+  background: var(--surface-control);
+  color: var(--text-strong);
+}
+
+.toolbar-card .mantine-Input-input:focus,
+.dashboard-filter-bar .mantine-Input-input:focus,
+.report-filter-control .mantine-Input-input:focus {
+  border-color: rgba(29, 78, 216, 0.56);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.1);
+}
+
+.data-table-card {
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: var(--surface-shell);
+  box-shadow: var(--shadow-card);
+  padding: 8px;
+}
+
+.data-table-card table {
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.data-table-card th {
+  height: 48px;
+  background: #eef3f8;
+  color: #243449;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.data-table-card td {
+  padding: 15px 16px;
+  color: var(--text-body);
+  font-size: 0.9rem;
+}
+
+.data-table-card tbody tr:nth-child(even) {
+  background: #fbfdff;
+}
+
+.data-table-card tbody tr:hover {
+  background: #edf6ff;
+}
+
+.workspace-card,
+.kpi-card-shell {
+  border-color: var(--line-soft) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: var(--shadow-card);
+}
+
+.workspace-card {
+  border-radius: 18px !important;
+  padding: 22px !important;
+}
+
+.kpi-panel-grid {
+  gap: 18px;
+}
+
+.kpi-card-shell {
+  min-height: 132px;
+  border-radius: 16px !important;
+  padding: 20px !important;
+}
+
+.kpi-card-shell:hover,
+.workspace-card:hover,
+.data-table-card:hover {
+  border-color: var(--line-strong) !important;
+  box-shadow: var(--shadow-hover);
+}
+
+.report-tabs {
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+}
+
+.report-tabs .mantine-Tabs-list {
+  border-bottom-color: var(--line-soft);
+  gap: 8px;
+}
+
+.report-tabs .mantine-Tabs-tab {
+  border-radius: 10px 10px 0 0;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.report-tabs .mantine-Tabs-tab[data-active] {
+  color: var(--text-strong);
+  background: #eef3f8;
+}
+
+.report-chart-card {
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 16px;
+}
+
+.report-split-panel {
+  gap: 18px;
 }
 
 .panel,
@@ -4581,7 +4774,37 @@ tbody tr:hover {
 
 @media (max-width: 768px) {
   .page-content {
-    padding: 16px 12px 22px;
+    padding: 18px 14px 26px;
+  }
+
+  .workspace-page {
+    gap: 18px;
+  }
+
+  .page-hero {
+    align-items: flex-start;
+    padding: 18px;
+  }
+
+  .page-hero .mantine-Button-root {
+    width: 100%;
+  }
+
+  .toolbar-card,
+  .dashboard-filter-bar,
+  .report-tabs,
+  .workspace-card {
+    border-radius: 14px !important;
+    padding: 14px !important;
+  }
+
+  .data-table-card {
+    border-radius: 14px;
+    padding: 6px;
+  }
+
+  .data-table-card td {
+    padding: 13px 14px;
   }
 
   .panel.pad,

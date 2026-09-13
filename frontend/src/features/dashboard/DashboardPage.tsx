@@ -86,15 +86,15 @@ export function DashboardPage() {
   }
 
   return (
-    <div>
-      <Group justify="space-between" mb="md">
+    <div className="workspace-page dashboard-page">
+      <Group className="page-hero page-hero-operation" justify="space-between">
         <div>
           <Title order={2}>{strings.nav.dashboard}</Title>
           <Text c="dimmed" size="sm">
             Visão geral do estoque
           </Text>
         </div>
-        <Group>
+        <Group className="dashboard-filter-bar">
           <Select
             data={[{ value: "all", label: "Todas as filiais" }, ...data.branches.map((b) => ({ value: String(b.id), label: b.name }))]}
             value={filters.branchId}
@@ -117,9 +117,9 @@ export function DashboardPage() {
         </Group>
       </Group>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} mb="lg">
+      <SimpleGrid className="kpi-panel-grid" cols={{ base: 1, sm: 2, lg: 3 }}>
         {kpis.map((kpi) => (
-          <Card key={kpi.key} withBorder radius="md" padding="md">
+          <Card key={kpi.key} className="kpi-card-shell" withBorder radius="md" padding="md">
             <Text size="sm" c="dimmed">
               {KPI_LABELS[kpi.key]}
             </Text>
@@ -135,11 +135,11 @@ export function DashboardPage() {
         ))}
       </SimpleGrid>
 
-      <Card withBorder radius="md" padding="md">
+      <Card className="workspace-card" withBorder radius="md" padding="md">
         <Title order={4} mb="sm">
           Movimentações recentes
         </Title>
-        <Table.ScrollContainer minWidth={600}>
+        <Table.ScrollContainer className="data-table-card" minWidth={860}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (

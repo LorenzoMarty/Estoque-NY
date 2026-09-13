@@ -50,8 +50,8 @@ export function InventoryCountsPage() {
   const table = useTable({ features: tableFeatureSet, columns, data: counts ?? EMPTY_ROWS });
 
   return (
-    <div>
-      <Group justify="space-between" mb="md">
+    <div className="workspace-page count-page">
+      <Group className="page-hero page-hero-count" justify="space-between">
         <div>
           <Title order={2}>{strings.nav.inventory_count}</Title>
           <Text c="dimmed" size="sm">
@@ -75,7 +75,7 @@ export function InventoryCountsPage() {
       )}
 
       {!isLoading && !isError && (
-        <Table.ScrollContainer minWidth={500}>
+        <Table.ScrollContainer className="data-table-card" minWidth={780}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -110,7 +110,7 @@ export function InventoryCountsPage() {
         </Table.ScrollContainer>
       )}
 
-      <Modal opened={creating} onClose={() => setCreating(false)} title="Nova contagem">
+      <Modal opened={creating} onClose={() => setCreating(false)} title="Nova contagem" size="xl">
         <CreateCountForm onSuccess={() => setCreating(false)} />
       </Modal>
       <CountDetailModal countId={selectedId} onClose={() => setSelectedId(null)} />

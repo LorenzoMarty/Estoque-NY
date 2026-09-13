@@ -28,8 +28,8 @@ export function ReportsPage() {
   const branchOptions = useMemo(() => (branches ?? []).map((b) => ({ value: String(b.id), label: b.name })), [branches]);
 
   return (
-    <div>
-      <Group justify="space-between" mb="md">
+    <div className="workspace-page report-page">
+      <Group className="page-hero page-hero-report" justify="space-between">
         <div>
           <Title order={2}>{strings.nav.reports}</Title>
           <Text c="dimmed" size="sm">
@@ -37,6 +37,7 @@ export function ReportsPage() {
           </Text>
         </div>
         <Select
+          className="report-filter-control"
           placeholder="Todas as filiais"
           data={branchOptions}
           clearable
@@ -45,7 +46,7 @@ export function ReportsPage() {
         />
       </Group>
 
-      <Tabs defaultValue="valuation">
+      <Tabs className="report-tabs" defaultValue="valuation">
         <Tabs.List>
           <Tabs.Tab value="valuation">Valorização</Tabs.Tab>
           <Tabs.Tab value="turnover">Giro</Tabs.Tab>
@@ -59,6 +60,7 @@ export function ReportsPage() {
             <>
               {valuationChart.length > 0 && (
                 <BarChart
+                  className="report-chart-card"
                   h={300}
                   data={valuationChart as unknown as Record<string, unknown>[]}
                   dataKey="label"
@@ -67,7 +69,7 @@ export function ReportsPage() {
                   valueFormatter={(value) => formatMoney(value)}
                 />
               )}
-              <Table.ScrollContainer minWidth={500}>
+              <Table.ScrollContainer className="data-table-card" minWidth={760}>
                 <Table striped>
                   <Table.Thead>
                     <Table.Tr>
@@ -97,7 +99,7 @@ export function ReportsPage() {
           {loadingTurnover ? (
             <Loader />
           ) : (
-            <Table.ScrollContainer minWidth={500}>
+            <Table.ScrollContainer className="data-table-card" minWidth={760}>
               <Table striped>
                 <Table.Thead>
                   <Table.Tr>
@@ -126,7 +128,7 @@ export function ReportsPage() {
           {loadingAbc ? (
             <Loader />
           ) : (
-            <Group align="flex-start">
+            <Group className="report-split-panel" align="flex-start">
               {abcCounts.some((c) => c.count > 0) && (
                 <DonutChart
                   data={abcCounts.map((c) => ({ name: `Classe ${c.class_name}`, value: c.count, color: c.color }))}
@@ -134,7 +136,7 @@ export function ReportsPage() {
                   withLabels
                 />
               )}
-              <Table.ScrollContainer minWidth={400} style={{ flex: 1 }}>
+              <Table.ScrollContainer className="data-table-card" minWidth={680} style={{ flex: 1 }}>
                 <Table striped>
                   <Table.Thead>
                     <Table.Tr>

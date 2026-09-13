@@ -46,8 +46,8 @@ export function ProductsPage() {
   const table = useTable({ features: tableFeatureSet, columns, data: products ?? EMPTY_ROWS });
 
   return (
-    <div>
-      <Group justify="space-between" mb="md">
+    <div className="workspace-page catalog-page">
+      <Group className="page-hero page-hero-catalog" justify="space-between">
         <div>
           <Title order={2}>{strings.nav.products}</Title>
           <Text c="dimmed" size="sm">
@@ -59,14 +59,15 @@ export function ProductsPage() {
         </Button>
       </Group>
 
-      <TextInput
-        placeholder="Buscar por nome"
-        leftSection={<Search size={16} />}
-        mb="md"
-        value={search}
-        onChange={(event) => setSearch(event.currentTarget.value)}
-        maw={360}
-      />
+      <Group className="toolbar-card">
+        <TextInput
+          placeholder="Buscar por nome"
+          leftSection={<Search size={16} />}
+          value={search}
+          onChange={(event) => setSearch(event.currentTarget.value)}
+          w={{ base: "100%", sm: 420 }}
+        />
+      </Group>
 
       {isLoading && (
         <Group justify="center" mt="xl">
@@ -80,7 +81,7 @@ export function ProductsPage() {
       )}
 
       {!isLoading && !isError && (
-        <Table.ScrollContainer minWidth={500}>
+        <Table.ScrollContainer className="data-table-card" minWidth={760}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -115,10 +116,10 @@ export function ProductsPage() {
         </Table.ScrollContainer>
       )}
 
-      <Modal opened={creating} onClose={() => setCreating(false)} title="Novo produto">
+      <Modal opened={creating} onClose={() => setCreating(false)} title="Novo produto" size="xl">
         <ProductForm onSuccess={() => setCreating(false)} />
       </Modal>
-      <Modal opened={Boolean(editing)} onClose={() => setEditing(null)} title="Editar produto">
+      <Modal opened={Boolean(editing)} onClose={() => setEditing(null)} title="Editar produto" size="xl">
         {editing && <ProductForm product={editing} onSuccess={() => setEditing(null)} />}
       </Modal>
     </div>
