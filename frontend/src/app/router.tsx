@@ -1,13 +1,19 @@
+import type { ReactElement } from "react";
 import { createBrowserRouter, Navigate } from "react-router";
 import { LoginPage } from "../features/auth/LoginPage";
+import { DashboardPage } from "../features/dashboard/DashboardPage";
 import { PlaceholderPage } from "../features/placeholder/PlaceholderPage";
 import { AppShell } from "./shell/AppShell";
 import { RequireAuth } from "./shell/RequireAuth";
 import { ROUTES } from "./routes";
 
+const SCREEN_ELEMENTS: Partial<Record<string, ReactElement>> = {
+  dashboard: <DashboardPage />,
+};
+
 const domainRoutes = ROUTES.filter((route) => route.id !== "login").map((route) => ({
   path: `/${route.id}`,
-  element: <PlaceholderPage navKey={route.navKey} />,
+  element: SCREEN_ELEMENTS[route.id] ?? <PlaceholderPage navKey={route.navKey} />,
 }));
 
 export const router = createBrowserRouter([

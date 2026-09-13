@@ -1,0 +1,57 @@
+import { useQuery } from "@tanstack/react-query";
+import { apiClient } from "../../shared/api/httpClient";
+import type { Paginated } from "../../shared/types/pagination";
+import type { Branch, InventoryCount, Location, Sku, StockBalance, StockMove, Transfer } from "../../shared/types/stock";
+import type { DashboardData, DashboardItem } from "./kpis";
+
+const DEFAULT_REORDER_POINT = 12;
+
+function withPaging(path: string, pageSize: number): string {
+  return `${path}${path.includes("?") ? "&" : "?"}page=1&page_size=${pageSize}`;
+}
+
+/** For endpoints whose response_model is `{items, meta}` (branches, locations, transfers, inventory-counts). */
+async function fetchPaginated<T>(path: string, pageSize: number): Promise<T[]> {
+  const page = await apiClient.get<Paginated<T>>(withPaging(path, pageSize));
+  return page.items;
+}
+
+/** For endpoints whose response_model is a plain `list[...]` (stock balances/moves, catalog skus). */
+async function fetchList<T>(path: string, pageSize: number): Promise<T[]> {
+  return apiClient.get<T[]>(withPaging(path, pageSize));
+}
+
+export interface DashboardQueryData extends DashboardData {
+  branches: Branch[];
+  locations: Location[];
+}
+
+export function useDashboardQuery() {
+  return useQuery<DashboardQueryData>({
+    queryKey: ["dashboard"],
+    queryFn: async () => {
+      const [branches, locations, balances, moves, skus, transfers, counts] = await Promise.all([
+        fetchPaginated<Branch>("/branches", 200),
+        fetchPaginated<Location>("/locations", 200),
+        fetchList<StockBalance>("/stock/balances?order=desc", 200),
+        fetchList<StockMove>("/stock/moves?order=desc", 200),
+        fetchList<Sku>("/catalog/skus?order=asc", 200),
+        fetchPaginated<Transfer>("/stock/transfers?order=desc", 50),
+        fetchPaginated<InventoryCount>("/stock/inventory-counts?order=desc", 50),
+      ]);
+
+      const itemsById = new Map<number, DashboardItem>();
+      skus.forEach((sku) => {
+        itemsById.set(sku.id, { id: sku.id, reorder_point: DEFAULT_REORDER_POINT, active: sku.active });
+      });
+      [...balances, ...moves].forEach((row) => {
+        if (!itemsById.has(row.sku_id)) {
+          itemsById.set(row.sku_id, { id: row.sku_id, reorder_point: DEFAULT_REORDER_POINT, active: true });
+        }
+      });
+
+      return { branches, locations, balances, moves, transfers, counts, itemsById };
+    },
+    staleTime: 30_000,
+  });
+}
