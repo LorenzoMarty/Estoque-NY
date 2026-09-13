@@ -1,7 +1,7 @@
 ﻿/*
   CDN: Luxon, Tippy.js + Popper, Lucide.
   API_BASE_URL: configure em `frontend/js/api.js`.
-  Endpoints: GET /skus, POST /skus, PATCH /skus/{id}, GET /products.
+  Endpoints: GET /catalog/skus, POST /catalog/skus, PATCH /catalog/skus/{id}, GET /catalog/products.
   Fallback demo: se a API falhar, usa dataset mock automaticamente e mostra banner discreto.
 */
 

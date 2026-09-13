@@ -16,7 +16,7 @@
   - POST `/stock/transfers/{id}/cancel`
   - GET `/branches`
   - GET `/locations`
-  - GET `/skus`
+  - GET `/catalog/skus`
 
   Modo demonstracao:
   - Se qualquer chamada da API falhar, a pagina entra automaticamente em modo

@@ -126,7 +126,7 @@ async def test_admin_crud_branches_locations_brands(client):
     assert update_location.json()["name"] == "Deposito Principal"
 
     create_brand = await client.post(
-        "/brands",
+        "/catalog/brands",
         json={"name": "Marca Teste"},
         headers=headers,
     )
@@ -134,7 +134,7 @@ async def test_admin_crud_branches_locations_brands(client):
     brand_id = create_brand.json()["id"]
 
     list_brands = await client.get(
-        "/brands?page=1&page_size=20&sort=name&order=asc&q=teste",
+        "/catalog/brands?page=1&page_size=20&sort=name&order=asc&q=teste",
         headers=headers,
     )
     assert list_brands.status_code == 200
@@ -143,7 +143,7 @@ async def test_admin_crud_branches_locations_brands(client):
     assert any(row["id"] == brand_id for row in brands_payload["items"])
 
     update_brand = await client.put(
-        f"/brands/{brand_id}",
+        f"/catalog/brands/{brand_id}",
         json={"name": "Marca Atualizada"},
         headers=headers,
     )
@@ -161,7 +161,7 @@ async def test_admin_crud_branches_locations_brands(client):
     )
 
     delete_brand = await client.delete(
-        f"/brands/{brand_id}",
+        f"/catalog/brands/{brand_id}",
         headers=headers,
     )
     assert delete_brand.status_code == 204
@@ -192,7 +192,7 @@ async def test_marketing_domain_crud_and_catalog_links(client):
     channel_id = create_channel.json()["id"]
 
     create_product = await client.post(
-        "/products",
+        "/catalog/products",
         json={"name": "Produto Campanha", "active": True},
         headers=headers,
     )
@@ -200,7 +200,7 @@ async def test_marketing_domain_crud_and_catalog_links(client):
     product_id = create_product.json()["id"]
 
     create_sku = await client.post(
-        "/skus",
+        "/catalog/skus",
         json={
             "product_id": product_id,
             "sku_code": "SKU-MKT-001",

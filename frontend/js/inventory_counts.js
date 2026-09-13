@@ -17,7 +17,7 @@
   - POST `/stock/inventory-counts/{id}/cancel`
   - GET `/branches`
   - GET `/locations`
-  - GET `/skus`
+  - GET `/catalog/skus`
 
   Modo demonstracao:
   - Em falha da API, a pagina entra automaticamente em modo demo

@@ -20,7 +20,7 @@ from app.schemas.catalog import (
 from app.services import admin_entities_service
 from app.services.audit_service import write_audit_log
 
-router = APIRouter(tags=["catalog"])
+router = APIRouter(prefix="/catalog", tags=["catalog"])
 
 
 @router.post(

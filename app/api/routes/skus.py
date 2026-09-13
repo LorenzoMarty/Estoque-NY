@@ -9,7 +9,7 @@ from app.models.entities import SKU, Product, SKUBarcode, User
 from app.schemas.sku import AddBarcodeIn, SKUCreate, SKUOut, SKUUpdate
 from app.services.audit_service import write_audit_log
 
-router = APIRouter(prefix="/skus", tags=["skus"])
+router = APIRouter(prefix="/catalog/skus", tags=["skus"])
 
 
 async def _validate_product(session: AsyncSession, product_id: int) -> None:

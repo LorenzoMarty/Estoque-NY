@@ -46,13 +46,15 @@ async def _create_product_and_sku(
     price="20.00",
 ) -> tuple[int, int]:
     product_response = await client.post(
-        "/products", json={"name": product_name, "active": True}, headers=headers
+        "/catalog/products",
+        json={"name": product_name, "active": True},
+        headers=headers,
     )
     assert product_response.status_code == 201
     product_id = product_response.json()["id"]
 
     sku_response = await client.post(
-        "/skus",
+        "/catalog/skus",
         json={
             "product_id": product_id,
             "sku_code": sku_code,

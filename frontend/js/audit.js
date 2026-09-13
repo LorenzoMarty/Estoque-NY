@@ -9,7 +9,7 @@
   - Ajuste `API_BASE_URL` em `frontend/js/api.js`.
 
   Endpoint consumido:
-  - GET `/audit-logs?page=&page_size=&filters...`
+  - GET `/admin/audit-logs?page=&page_size=&filters...`
     (filtros: user_id, action, resource_type, from_date, to_date).
 
   Modo demonstracao:
