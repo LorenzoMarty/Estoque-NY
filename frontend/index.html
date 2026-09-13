@@ -3,20 +3,14 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f6f8fb" />
   <title>Estoque FreeShop | Operação</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="./vendor/tippy.css" />
-  <link rel="stylesheet" href="./css/app.css" />
-  <link rel="stylesheet" href="./css/responsive.css" />
-  <script defer src="./vendor/chart.umd.min.js"></script>
-  <script defer src="./vendor/luxon.min.js"></script>
-  <script defer src="./vendor/popper.min.js"></script>
-  <script defer src="./vendor/tippy-bundle.umd.min.js"></script>
-  <script defer src="./vendor/lucide.min.js"></script>
 </head>
 <body class="scrollbar">
+  <a class="skip-link" href="#pageContent">Pular para o conteúdo</a>
   <div class="app-shell" id="appShell">
     <aside class="sidebar border-gradient" id="sidebar" aria-label="Menu lateral">
       <div class="sidebar-header">
@@ -79,68 +73,6 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
   <div id="modalRoot"></div>
-
-  <script type="module">
-    function renderBootstrapError(error) {
-      const target = document.getElementById("pageContent");
-      const message =
-        typeof error === "string"
-          ? error
-          : error?.message || JSON.stringify(error || "Erro desconhecido");
-      if (target) {
-        target.innerHTML = `
-          <section style="padding:24px">
-            <h2 style="margin:0 0 8px;font-size:20px">Falha ao iniciar a interface</h2>
-            <p style="margin:0 0 10px;color:#475569">Abra o console do navegador para detalhes técnicos.</p>
-            <code style="display:block;white-space:pre-wrap;background:#f8fafc;border:1px solid #cbd5e1;padding:12px;border-radius:10px">${message}</code>
-          </section>
-        `;
-      }
-    }
-
-    window.addEventListener("error", (event) => {
-      renderBootstrapError(event.error || event.message || "Erro em tempo de execucao");
-    });
-
-    window.addEventListener("unhandledrejection", (event) => {
-      renderBootstrapError(event.reason || "Promessa rejeitada sem tratamento");
-    });
-
-    const requiredGlobals = [
-      { key: "Chart", src: "./vendor/chart.umd.min.js" },
-      { key: "luxon", src: "./vendor/luxon.min.js" },
-      { key: "Popper", src: "./vendor/popper.min.js" },
-      { key: "tippy", src: "./vendor/tippy-bundle.umd.min.js" },
-      { key: "lucide", src: "./vendor/lucide.min.js" },
-    ];
-
-    function loadScript(src) {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = src;
-        script.async = false;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
-        document.head.appendChild(script);
-      });
-    }
-
-    async function bootstrap() {
-      for (const entry of requiredGlobals) {
-        if (!window[entry.key]) {
-          await loadScript(entry.src);
-        }
-        if (!window[entry.key]) {
-          throw new Error(`Dependencia global indisponivel: ${entry.key}`);
-        }
-      }
-      await import("./js/main.js");
-    }
-
-    bootstrap().catch((error) => {
-      renderBootstrapError(error);
-      console.error("Bootstrap error:", error);
-    });
-  </script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
