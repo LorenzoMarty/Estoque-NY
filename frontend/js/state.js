@@ -301,6 +301,16 @@ export const state = {
     filters: createReportsFiltersDefaults(),
     ui: {},
   },
+  reportsMarketing: {
+    loading: false,
+    loaded: false,
+    error: "",
+    data: null,
+    lastUpdatedIso: null,
+    filters: {
+      threshold: 0.5,
+    },
+  },
   audit: {
     loading: false,
     loaded: false,
@@ -865,6 +875,25 @@ export function mutateReportsData(mutator) {
   }
   mutator(state.reports.data);
   state.reports.lastUpdatedIso = new Date().toISOString();
+  emit();
+}
+
+export function setReportsMarketingLoading(value) {
+  state.reportsMarketing.loading = Boolean(value);
+  emit();
+}
+
+export function setReportsMarketingPayload(payload) {
+  state.reportsMarketing.loading = false;
+  state.reportsMarketing.loaded = true;
+  state.reportsMarketing.error = payload.error || "";
+  state.reportsMarketing.data = payload.data || null;
+  state.reportsMarketing.lastUpdatedIso = new Date().toISOString();
+  emit();
+}
+
+export function updateReportsMarketingFilter(filterKey, value) {
+  state.reportsMarketing.filters[filterKey] = value;
   emit();
 }
 

@@ -1147,6 +1147,65 @@
       fallback_demo: "API indisponível. Exibindo modo demonstração.",
     },
   },
+  reports_marketing: {
+    title: "Marketing",
+    subtitle: "Cruzamento de campanhas, promoções e estoque.",
+    filters: {
+      threshold: "Limite de giro baixo",
+      refresh: "Atualizar marketing",
+    },
+    sections: {
+      campaign_products: {
+        title: "Produtos em campanha",
+        subtitle: "Saldo atual dos produtos vinculados a campanhas.",
+      },
+      promotion_skus: {
+        title: "SKUs em promoção",
+        subtitle: "Custo e preço dos SKUs vinculados a promoções ativas.",
+      },
+      campaigns: {
+        title: "Campanhas por período",
+        subtitle: "Campanhas cadastradas, agrupadas por orçamento.",
+      },
+      low_turnover: {
+        title: "Candidatos a campanha (baixo giro)",
+        subtitle: "SKUs com giro abaixo do limite definido.",
+      },
+      dashboard_summary: {
+        title: "Resumo operacional",
+        subtitle: "Visão consolidada de estoque e marketing.",
+      },
+    },
+    kpis: {
+      stock_valuation_total: "Valorização total de estoque",
+      active_campaigns_count: "Campanhas ativas",
+      active_promotions_count: "Promoções ativas",
+      low_turnover_candidates_count: "Candidatos a baixo giro",
+    },
+    chart: {
+      aria_campaign_products: "Saldo de produtos em campanha",
+      aria_promotion_skus: "Preço e custo de SKUs em promoção",
+      aria_campaigns: "Orçamento de campanhas",
+      aria_low_turnover: "Giro de SKUs candidatos a campanha",
+      aria_top_skus: "Top SKUs por valor de saída",
+      dataset_on_hand: "Saldo",
+      dataset_cost: "Custo",
+      dataset_price: "Preço",
+      dataset_budget: "Orçamento",
+      dataset_turnover: "Giro",
+      dataset_movement_value: "Valor de saída",
+    },
+    empty: {
+      campaign_products: "Nenhum produto em campanha encontrado.",
+      promotion_skus: "Nenhum SKU em promoção encontrado.",
+      campaigns: "Nenhuma campanha encontrada.",
+      low_turnover: "Nenhum candidato a baixo giro no limite atual.",
+      top_skus: "Sem movimentações de saída no período.",
+    },
+    toasts: {
+      error: "Não foi possível carregar os relatórios de marketing.",
+    },
+  },
   audit: {
     title: "Auditoria do sistema",
     subtitle: "Historico completo de acoes realizadas por usuarios no estoque.",
