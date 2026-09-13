@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const rootDir = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const jsDir = join(rootDir, "js");
+const srcDir = join(rootDir, "src");
 const indexPath = join(rootDir, "index.html");
 
 function listJsFiles(dir) {
@@ -43,7 +44,7 @@ function assert(condition, message) {
   }
 }
 
-const jsFiles = listJsFiles(jsDir).sort();
+const jsFiles = [...listJsFiles(jsDir), ...listJsFiles(srcDir)].sort();
 assert(jsFiles.length > 0, "Nenhum arquivo JS encontrado em frontend/js.");
 
 for (const filePath of jsFiles) {
@@ -51,6 +52,11 @@ for (const filePath of jsFiles) {
 }
 
 const indexHtml = readFileSync(indexPath, "utf8");
+assert(
+  indexHtml.includes('type="module" src="/src/main.js"'),
+  "index.html deve iniciar a aplicacao pelo entrypoint Vite /src/main.js"
+);
+
 const requiredAssets = [
   "./vendor/chart.umd.min.js",
   "./vendor/luxon.min.js",
@@ -63,10 +69,6 @@ const requiredAssets = [
 for (const assetPath of requiredAssets) {
   const fullPath = join(rootDir, assetPath.replace("./", ""));
   assert(existsSync(fullPath), `Asset nao encontrado: ${assetPath}`);
-  assert(
-    indexHtml.includes(assetPath),
-    `index.html nao referencia o asset obrigatorio: ${assetPath}`
-  );
 }
 
 console.log(`Checks concluídos: ${jsFiles.length} arquivos JS validados.`);

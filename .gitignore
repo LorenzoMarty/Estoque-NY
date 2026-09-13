@@ -11,6 +11,7 @@ wheels/
 
 # Virtual environments
 .venv
+node_modules/
 
 # Local environment files
 .env
