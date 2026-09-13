@@ -8,6 +8,7 @@ from app.db.session import get_session
 from app.modules.audit.service import list_audit_logs_service
 
 router = APIRouter(
+    prefix="/admin",
     tags=["audit"],
 )
 

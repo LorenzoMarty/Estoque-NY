@@ -15,7 +15,7 @@
   - GET `/reports/stock/movements`
   - GET `/branches`
   - GET `/locations` (opcional)
-  - GET `/categories`, `/products`, `/skus` (opcionais para enriquecer filtros)
+  - GET `/catalog/categories`, `/catalog/products`, `/catalog/skus` (opcionais para enriquecer filtros)
 
   Modo demonstracao:
   - Em falha da API, a pagina entra automaticamente em modo demo

@@ -8,7 +8,7 @@ from app.models.entities import Brand, Category, Product, User
 from app.schemas.product import ProductCreate, ProductOut, ProductUpdate
 from app.services.audit_service import write_audit_log
 
-router = APIRouter(prefix="/products", tags=["products"])
+router = APIRouter(prefix="/catalog/products", tags=["products"])
 
 
 async def _validate_catalog_refs(

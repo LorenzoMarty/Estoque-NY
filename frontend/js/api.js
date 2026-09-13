@@ -16,7 +16,7 @@ function normalizeSingleVariation(variation) {
 }
 
 export async function createProduct(payload) {
-  const created = await requestJson("/products", {
+  const created = await requestJson("/catalog/products", {
     method: "POST",
     body: {
       name: payload.name,
@@ -52,7 +52,7 @@ export async function updateProduct(productId, payload = {}) {
     body.active = payload.active;
   }
 
-  const updated = await requestJson(`/products/${productId}`, {
+  const updated = await requestJson(`/catalog/products/${productId}`, {
     method: "PATCH",
     body,
   });
@@ -60,7 +60,7 @@ export async function updateProduct(productId, payload = {}) {
 }
 
 export async function createProductCategory(name) {
-  const created = await requestJson("/categories", {
+  const created = await requestJson("/catalog/categories", {
     method: "POST",
     body: { name },
   });
@@ -69,7 +69,7 @@ export async function createProductCategory(name) {
 }
 
 export async function createProductBrand(name) {
-  const created = await requestJson("/brands", {
+  const created = await requestJson("/catalog/brands", {
     method: "POST",
     body: { name },
   });
@@ -78,7 +78,7 @@ export async function createProductBrand(name) {
 }
 
 export async function createVariation(payload) {
-  const created = await requestJson("/skus", {
+  const created = await requestJson("/catalog/skus", {
     method: "POST",
     body: {
       product_id: Number(payload.product_id),
@@ -95,7 +95,7 @@ export async function createVariation(payload) {
 }
 
 export async function updateVariation(variationId, payload) {
-  const updated = await requestJson(`/skus/${variationId}`, {
+  const updated = await requestJson(`/catalog/skus/${variationId}`, {
     method: "PATCH",
     body: payload,
   });
@@ -194,11 +194,11 @@ function buildAdminQuery({
 
 export async function listAdminBrands(params = {}) {
   const query = buildAdminQuery(params);
-  return requestJson(`/brands?${query}`, { auth: "required" });
+  return requestJson(`/catalog/brands?${query}`, { auth: "required" });
 }
 
 export async function createAdminBrand(payload) {
-  return requestJson("/brands", {
+  return requestJson("/catalog/brands", {
     method: "POST",
     body: {
       name: payload.name,
@@ -208,7 +208,7 @@ export async function createAdminBrand(payload) {
 }
 
 export async function updateAdminBrand(brandId, payload) {
-  return requestJson(`/brands/${brandId}`, {
+  return requestJson(`/catalog/brands/${brandId}`, {
     method: "PUT",
     body: {
       name: payload.name,
@@ -218,7 +218,7 @@ export async function updateAdminBrand(brandId, payload) {
 }
 
 export async function deleteAdminBrand(brandId) {
-  return requestJson(`/brands/${brandId}`, {
+  return requestJson(`/catalog/brands/${brandId}`, {
     method: "DELETE",
     auth: "required",
   });
@@ -1300,11 +1300,11 @@ async function loadProductsFromApi(filters = {}, sort = {}) {
   const query = buildProductsQuery(filters, sort);
   const [productsPayload, categoriesPayload, brandsPayload, branchesPayload, skusRows, balancesRows] =
     await Promise.all([
-      requestJson(`/products?${query}`),
-      optionalJson("/categories?page=1&page_size=200&sort=name&order=asc"),
-      optionalJson("/brands?page=1&page_size=200&sort=name&order=asc"),
+      requestJson(`/catalog/products?${query}`),
+      optionalJson("/catalog/categories?page=1&page_size=200&sort=name&order=asc"),
+      optionalJson("/catalog/brands?page=1&page_size=200&sort=name&order=asc"),
       optionalJson("/branches"),
-      loadPagedCollection("/skus", { pageSize: 200, maxPages: 8, sort: "id", order: "asc" }),
+      loadPagedCollection("/catalog/skus", { pageSize: 200, maxPages: 8, sort: "id", order: "asc" }),
       loadPagedCollection("/stock/balances", {
         pageSize: 200,
         maxPages: 8,
@@ -1422,7 +1422,7 @@ async function loadVariationsFromApi(filters = {}, sort = {}) {
   const params = buildVariationsParams(filters);
 
   const [skusRows, productsPayload] = await Promise.all([
-    loadPagedCollection("/skus", {
+    loadPagedCollection("/catalog/skus", {
       pageSize: 250,
       maxPages: 12,
       sort: sortKey,
@@ -1430,7 +1430,7 @@ async function loadVariationsFromApi(filters = {}, sort = {}) {
       params,
       required: true,
     }),
-    requestJson("/products?page=1&page_size=600&sort=name&order=asc"),
+    requestJson("/catalog/products?page=1&page_size=600&sort=name&order=asc"),
   ]);
 
   const normalizedProducts = normalizeProducts(productsPayload);
@@ -1923,7 +1923,7 @@ async function loadTransfersFromApi(filters = {}, sort = {}) {
   const [branchesPayload, locationsPayload, skusPayload, transfersPayload] = await Promise.all([
     requestJson("/branches"),
     requestJson("/locations"),
-    optionalJson("/skus?page=1&page_size=1200&order=asc"),
+    optionalJson("/catalog/skus?page=1&page_size=1200&order=asc"),
     requestJson(`/stock/transfers?${query}`),
   ]);
 
@@ -2293,7 +2293,7 @@ async function loadInventoryCountsFromApi(filters = {}, sort = {}) {
   const [branchesPayload, locationsPayload, skusPayload, countsPayload] = await Promise.all([
     requestJson("/branches"),
     requestJson("/locations"),
-    optionalJson("/skus?page=1&page_size=1500&order=asc"),
+    optionalJson("/catalog/skus?page=1&page_size=1500&order=asc"),
     requestJson(`/stock/inventory-counts?${query}`),
   ]);
 
@@ -2691,9 +2691,9 @@ async function loadReportsFromApi(filters = {}) {
     await Promise.all([
       requestJson("/branches"),
       optionalJson("/locations"),
-      optionalJson("/categories?page=1&page_size=400&order=asc"),
-      optionalJson("/products?page=1&page_size=1500&order=asc"),
-      optionalJson("/skus?page=1&page_size=3000&order=asc"),
+      optionalJson("/catalog/categories?page=1&page_size=400&order=asc"),
+      optionalJson("/catalog/products?page=1&page_size=1500&order=asc"),
+      optionalJson("/catalog/skus?page=1&page_size=3000&order=asc"),
     ]);
 
   const [valuationRowsRaw, turnoverRowsRaw, abcRowsRaw, movementRowsRaw] = await Promise.all([
@@ -3006,7 +3006,7 @@ async function fetchAllAuditLogs(filters = {}, options = {}) {
 
   for (let page = 1; page <= maxPages; page += 1) {
     const query = buildAuditQueryParams(filters, page, pageSize);
-    const payload = await requestJson(`/audit-logs?${query}`);
+    const payload = await requestJson(`/admin/audit-logs?${query}`);
     const currentRows = unwrapCollection(payload);
     rows.push(...currentRows);
 
@@ -3908,7 +3908,7 @@ async function loadFromApi() {
 
     const [moreMoves, skus, transfers, counts] = await Promise.all([
       optionalJson("/stock/moves?page=1&page_size=200&order=desc"),
-      optionalJson("/skus?page=1&page_size=200&order=asc"),
+      optionalJson("/catalog/skus?page=1&page_size=200&order=asc"),
       optionalJson("/stock/transfers?page=1&page_size=50&order=desc"),
       optionalJson("/stock/inventory-counts?page=1&page_size=50&order=desc"),
     ]);
@@ -4114,7 +4114,7 @@ async function loadMovementsFromApi(filters = {}) {
     requestJson("/locations", { auth: "required" }),
     requestJson(`/stock/moves?${query}`, { auth: "required" }),
     optionalJson("/stock/balances?page=1&page_size=350&order=desc"),
-    optionalJson("/skus?page=1&page_size=250&order=asc"),
+    optionalJson("/catalog/skus?page=1&page_size=250&order=asc"),
   ]);
 
   const normalizedBranches = normalizeBranches(branches);

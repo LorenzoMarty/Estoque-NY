@@ -8,9 +8,9 @@
   - GET `/stock/moves?page=1&page_size=20&order=desc` (Dashboard)
   - GET `/stock/moves` com filtros (Movimentações)
   - POST `/stock/receipts`, `/stock/issues`, `/stock/adjustments` (Nova movimentação)
-  - GET/POST/PATCH `/products` (Produtos)
-  - GET/POST `/categories` e `/brands` (Produtos, quando disponível)
-  - GET `/skus` (Resumo de variações em Produtos)
+  - GET/POST/PATCH `/catalog/products` (Produtos)
+  - GET/POST `/catalog/categories` e `/catalog/brands` (Produtos, quando disponível)
+  - GET `/catalog/skus` (Resumo de variações em Produtos)
   Fallback demo:
   - Em falhas 5xx/timeout, a interface entra em modo demonstração com dataset mock automaticamente.
   - Em 401/403 na página Movimentações, é exibido aviso de permissão sem trocar para demo.

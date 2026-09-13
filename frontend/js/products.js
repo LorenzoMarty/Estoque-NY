@@ -8,12 +8,12 @@
   - Ajuste `API_BASE_URL` em `frontend/js/api.js`.
 
   Endpoints consumidos:
-  - GET `/products`
-  - POST `/products`
-  - PATCH `/products/{id}`
-  - GET `/skus` (resumo de variacoes)
-  - GET `/categories`, POST `/categories` (quando disponivel)
-  - GET `/brands`, POST `/brands` (quando disponivel)
+  - GET `/catalog/products`
+  - POST `/catalog/products`
+  - PATCH `/catalog/products/{id}`
+  - GET `/catalog/skus` (resumo de variacoes)
+  - GET `/catalog/categories`, POST `/catalog/categories` (quando disponivel)
+  - GET `/catalog/brands`, POST `/catalog/brands` (quando disponivel)
   - GET `/branches` e `/stock/balances` (apoio a visao por filial)
 
   Fallback demo:
