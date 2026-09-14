@@ -4817,3 +4817,183 @@ tbody tr:hover {
     padding-top: 2px;
   }
 }
+
+/* Shell cleanup: lighter chrome, more room for work */
+.app-shell {
+  background: var(--surface-page);
+}
+
+.sidebar {
+  width: 252px;
+  gap: 18px;
+  padding: 18px 12px;
+  border-right: 1px solid rgba(174, 189, 208, 0.58);
+  box-shadow: none;
+}
+
+.sidebar-header {
+  padding: 0 4px 14px;
+  border-bottom: 0;
+}
+
+.brand {
+  gap: 9px;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #0f274a;
+}
+
+.brand-text {
+  font-size: 0.95rem;
+}
+
+.sidebar-nav {
+  gap: 10px;
+  padding-top: 0;
+}
+
+.nav-section {
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.nav-section-label {
+  margin: 12px 10px 5px;
+  color: #6b7c92;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.nav-link {
+  min-height: 38px;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #334155;
+}
+
+.nav-link:hover {
+  background: #f1f5f9;
+}
+
+.nav-link.is-active {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  box-shadow: inset 2px 0 0 var(--accent-main);
+}
+
+.layout-main {
+  min-height: 100vh;
+}
+
+.topbar {
+  height: 58px;
+  min-height: 58px;
+  padding: 8px clamp(24px, 4vw, 48px);
+  border-bottom: 0;
+  background: rgba(238, 242, 247, 0.82);
+  box-shadow: none;
+  backdrop-filter: blur(14px) saturate(128%);
+}
+
+.topbar-left {
+  flex: 1;
+}
+
+.topbar-actions {
+  gap: 8px;
+}
+
+.command-chip {
+  min-height: 36px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text-body);
+  box-shadow: none;
+}
+
+.command-chip:hover {
+  background: #ffffff;
+  border-color: var(--line-strong);
+}
+
+.icon-btn,
+.profile-chip {
+  min-height: 36px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: none;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+}
+
+.profile-chip {
+  padding: 4px 8px;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+}
+
+.profile-meta strong {
+  font-size: 0.78rem;
+}
+
+.profile-meta small {
+  font-size: 0.68rem;
+}
+
+.page-content {
+  padding-top: 24px;
+}
+
+@media (min-width: 64rem) {
+  .sidebar {
+    width: 252px;
+  }
+
+  .app-shell.sidebar-collapsed .sidebar {
+    width: 70px;
+  }
+
+  .app-shell.sidebar-collapsed .nav-link {
+    padding-inline: 0;
+  }
+}
+
+@media (max-width: 1200px) {
+  .topbar {
+    min-height: 58px;
+  }
+
+  .sidebar {
+    box-shadow: 18px 0 46px rgba(15, 31, 54, 0.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .topbar {
+    padding: 8px 14px;
+  }
+
+  .topbar-actions {
+    padding-top: 0;
+  }
+
+  .command-chip .mantine-Button-label {
+    display: none;
+  }
+
+  .profile-chip {
+    padding-inline: 6px;
+  }
+}
