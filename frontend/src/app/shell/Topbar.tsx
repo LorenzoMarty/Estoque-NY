@@ -1,7 +1,6 @@
 import { Button, Kbd, Menu as MantineMenu } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { Bell, Command, LogOut, Menu, Search, UserRound } from "lucide-react";
-import { useState } from "react";
+import { Bell, Command, LogOut, Menu, UserRound } from "lucide-react";
 import { useAuthStore } from "../../features/auth/store";
 import { strings } from "../../shared/strings";
 import { useUiStore } from "../../shared/ui/uiStore";
@@ -14,7 +13,6 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
   const setMobileSidebarOpen = useUiStore((state) => state.setMobileSidebarOpen);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
-  const [search, setSearch] = useState("");
 
   return (
     <header className="topbar border-gradient" id="topbar">
@@ -27,17 +25,6 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
           <Menu size={18} />
         </button>
         <div className="topbar-brand mobile-only">{strings.app_name}</div>
-        <label className="global-search" aria-label="Busca global">
-          <Search size={16} />
-          <input
-            type="search"
-            placeholder={strings.search_placeholder}
-            aria-label={strings.search_placeholder}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-          <span className="search-kbd">Ctrl K</span>
-        </label>
       </div>
 
       <div className="topbar-actions">

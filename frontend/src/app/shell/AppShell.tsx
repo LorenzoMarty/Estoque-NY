@@ -41,10 +41,6 @@ export function AppShell() {
 
         <Sidebar />
 
-        <div className="sidebar-footer border-gradient">
-          <span className="sidebar-footer-label">Sistema</span>
-          <p className="sidebar-footer-text">Painel operacional de estoque</p>
-        </div>
       </aside>
 
       <button
