@@ -10,6 +10,7 @@ import { AuditPage } from "../features/audit/AuditPage";
 import { CadastrosPage } from "../features/cadastros/CadastrosPage";
 import { ReportsPage } from "../features/reports/ReportsPage";
 import { TransfersPage } from "../features/transfers/TransfersPage";
+import { UsersPage } from "../features/users/UsersPage";
 import { VariationsPage } from "../features/variations/VariationsPage";
 import { AppShell } from "./shell/AppShell";
 import { RequireAuth } from "./shell/RequireAuth";
@@ -25,6 +26,7 @@ const SCREEN_ELEMENTS: Partial<Record<string, ReactElement>> = {
   relatorios: <ReportsPage />,
   cadastros: <CadastrosPage />,
   auditoria: <AuditPage />,
+  usuarios: <UsersPage />,
 };
 
 const domainRoutes = ROUTES.filter((route) => route.id !== "login").map((route) => ({
