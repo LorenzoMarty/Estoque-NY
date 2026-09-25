@@ -36,6 +36,7 @@ export function CadastrosPage() {
         <Tabs.Panel value="brands" pt="md">
           <NameOnlyTab
             label="Marca"
+            newLabel="Nova marca"
             query={brandsQuery}
             useCreate={useCreateBrand}
             useUpdate={useUpdateBrand}
@@ -46,6 +47,7 @@ export function CadastrosPage() {
         <Tabs.Panel value="branches" pt="md">
           <NameOnlyTab
             label="Filial"
+            newLabel="Nova filial"
             query={branchesQuery}
             useCreate={useCreateBranch}
             useUpdate={useUpdateBranch}

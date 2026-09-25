@@ -1,7 +1,8 @@
 import { Alert, Button, Group, Loader, Modal, Stack, Table, Text, TextInput } from "@mantine/core";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
+import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 
 interface NamedEntity {
   id: number;
@@ -10,17 +11,20 @@ interface NamedEntity {
 
 interface NameOnlyTabProps<T extends NamedEntity> {
   label: string;
+  newLabel: string;
   query: UseQueryResult<T[]>;
   useCreate: () => UseMutationResult<T, Error, { name: string }>;
   useUpdate: (id: number) => UseMutationResult<T, Error, { name: string }>;
   useDelete: () => UseMutationResult<unknown, Error, number>;
 }
 
-export function NameOnlyTab<T extends NamedEntity>({ label, query, useCreate, useUpdate, useDelete }: NameOnlyTabProps<T>) {
+export function NameOnlyTab<T extends NamedEntity>({ label, newLabel, query, useCreate, useUpdate, useDelete }: NameOnlyTabProps<T>) {
   const [editing, setEditing] = useState<T | null>(null);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<T | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const createMutation = useCreate();
   const updateMutation = useUpdate(editing?.id ?? 0);
@@ -38,7 +42,13 @@ export function NameOnlyTab<T extends NamedEntity>({ label, query, useCreate, us
     setEditing(entity);
   }
 
-  async function handleSave() {
+  function openDelete(entity: T) {
+    setDeleteError(null);
+    setDeleting(entity);
+  }
+
+  async function handleSave(event: FormEvent) {
+    event.preventDefault();
     setError(null);
     if (!name.trim()) {
       setError("Informe o nome.");
@@ -54,11 +64,13 @@ export function NameOnlyTab<T extends NamedEntity>({ label, query, useCreate, us
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete() {
+    if (!deleting) return;
     try {
-      await deleteMutation.mutateAsync(id);
+      await deleteMutation.mutateAsync(deleting.id);
+      setDeleting(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Não foi possível excluir.");
+      setDeleteError(err instanceof Error ? err.message : "Não foi possível excluir.");
     }
   }
 
@@ -66,7 +78,7 @@ export function NameOnlyTab<T extends NamedEntity>({ label, query, useCreate, us
     <div>
       <Group justify="flex-end" mb="md">
         <Button leftSection={<Plus size={16} />} onClick={openCreate}>
-          Novo {label.toLowerCase()}
+          {newLabel}
         </Button>
       </Group>
 
@@ -94,7 +106,7 @@ export function NameOnlyTab<T extends NamedEntity>({ label, query, useCreate, us
                     <Button size="xs" variant="subtle" leftSection={<Pencil size={14} />} onClick={() => openEdit(entity)}>
                       Editar
                     </Button>
-                    <Button size="xs" variant="subtle" color="red" leftSection={<Trash2 size={14} />} onClick={() => handleDelete(entity.id)}>
+                    <Button size="xs" variant="subtle" color="red" leftSection={<Trash2 size={14} />} onClick={() => openDelete(entity)}>
                       Excluir
                     </Button>
                   </Group>
@@ -114,15 +126,33 @@ export function NameOnlyTab<T extends NamedEntity>({ label, query, useCreate, us
         </Table>
       )}
 
-      <Modal opened={creating || Boolean(editing)} onClose={() => { setCreating(false); setEditing(null); }} title={editing ? `Editar ${label.toLowerCase()}` : `Novo ${label.toLowerCase()}`}>
-        <Stack>
-          <TextInput label="Nome" value={name} onChange={(event) => setName(event.currentTarget.value)} />
-          {error && <Alert color="red">{error}</Alert>}
-          <Button onClick={handleSave} loading={createMutation.isPending || updateMutation.isPending}>
-            Salvar
-          </Button>
-        </Stack>
+      <Modal opened={creating || Boolean(editing)} onClose={() => { setCreating(false); setEditing(null); }} title={editing ? `Editar ${label.toLowerCase()}` : newLabel}>
+        <form onSubmit={handleSave}>
+          <Stack>
+            <TextInput
+              label="Nome"
+              value={name}
+              onChange={(event) => {
+                setName(event.currentTarget.value);
+                setError(null);
+              }}
+            />
+            {error && <Alert color="red">{error}</Alert>}
+            <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
+              Salvar
+            </Button>
+          </Stack>
+        </form>
       </Modal>
+
+      <ConfirmDeleteModal
+        opened={Boolean(deleting)}
+        message={`Excluir ${label.toLowerCase()} "${deleting?.name ?? ""}"? Esta ação não pode ser desfeita.`}
+        loading={deleteMutation.isPending}
+        error={deleteError}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleting(null)}
+      />
     </div>
   );
 }
