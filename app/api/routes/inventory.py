@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import domain_error_to_http
-from app.api.pagination import page_meta
+from app.api.pagination import PaginationParams, apply_order_and_pagination, page_meta, pagination_params
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.domain.errors import DomainError
@@ -22,6 +22,7 @@ from app.models.enums import InventoryCountStatus
 from app.schemas.inventory import (
     InventoryCountCreateIn,
     InventoryCountLineOut,
+    InventoryCountListOut,
     InventoryCountOut,
     InventoryCountPatchLinesIn,
 )
@@ -310,7 +311,8 @@ async def cancel_count(
 
 @router.get(
     "",
-    dependencies=[Depends(require_permission("stock.inventory.create"))],
+    response_model=InventoryCountListOut,
+    dependencies=[Depends(require_permission("stock.inventory.read"))],
 )
 async def list_counts(
     status_filter: InventoryCountStatus | None = Query(default=None, alias="status"),
@@ -318,12 +320,9 @@ async def list_counts(
     location_id: int | None = Query(default=None),
     from_date: datetime | None = Query(default=None),
     to_date: datetime | None = Query(default=None),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
-    sort: str = Query("started_at"),
-    order: str = Query("desc", pattern="^(asc|desc)$"),
+    params: PaginationParams = Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> dict:
+) -> InventoryCountListOut:
     stmt = select(InventoryCount)
     if status_filter is not None:
         stmt = stmt.where(InventoryCount.status == status_filter)
@@ -336,19 +335,21 @@ async def list_counts(
     if to_date is not None:
         stmt = stmt.where(InventoryCount.started_at <= to_date)
 
-    if sort not in {"id", "started_at", "status", "closed_at", "posted_at"}:
-        sort = "started_at"
-    column = getattr(InventoryCount, sort)
     total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    stmt = stmt.order_by(column.asc() if order == "asc" else column.desc())
-    stmt = stmt.limit(page_size).offset((page - 1) * page_size)
+    stmt = apply_order_and_pagination(
+        stmt,
+        model=InventoryCount,
+        params=params,
+        allowed_sort_fields={"id", "started_at", "status", "closed_at", "posted_at"},
+        default_sort="started_at",
+    )
 
     counts = list((await session.scalars(stmt)).all())
     items = [await _to_inventory_out(session, count) for count in counts]
-    return {
-        "items": [item.model_dump(mode="json") for item in items],
-        "meta": page_meta(total=int(total), page=page, page_size=page_size),
-    }
+    return InventoryCountListOut(
+        items=items,
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )
 
 
 @router.get(

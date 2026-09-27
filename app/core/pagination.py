@@ -37,8 +37,9 @@ def apply_order_and_pagination(
     model: type[Any],
     params: PaginationParams,
     allowed_sort_fields: set[str],
+    default_sort: str = "created_at",
 ) -> Select[Any]:
-    sort_field = params.sort if params.sort in allowed_sort_fields else "created_at"
+    sort_field = params.sort if params.sort in allowed_sort_fields else default_sort
     column = getattr(model, sort_field, None)
     if column is not None:
         if params.order == "asc":

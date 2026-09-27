@@ -235,6 +235,26 @@ class ContentAssetOut(ContentAssetBase):
     created_at: datetime
 
 
-class MarketingListOut(SchemaBase):
-    items: list[dict]
+class MarketingChannelListOut(SchemaBase):
+    items: list[MarketingChannelOut]
+    meta: dict[str, int | None]
+
+
+class CampaignListOut(SchemaBase):
+    items: list[CampaignOut]
+    meta: dict[str, int | None]
+
+
+class PromotionListOut(SchemaBase):
+    items: list[PromotionOut]
+    meta: dict[str, int | None]
+
+
+class AudienceSegmentListOut(SchemaBase):
+    items: list[AudienceSegmentOut]
+    meta: dict[str, int | None]
+
+
+class ContentAssetListOut(SchemaBase):
+    items: list[ContentAssetOut]
     meta: dict[str, int | None]

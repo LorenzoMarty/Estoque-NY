@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.pagination import PaginationParams, apply_order_and_pagination, page_meta, pagination_params
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.models.entities import SKU, Product, SKUBarcode, User
-from app.schemas.sku import AddBarcodeIn, SKUCreate, SKUOut, SKUUpdate
+from app.schemas.sku import AddBarcodeIn, SKUCreate, SKUListOut, SKUOut, SKUUpdate
 from app.services.audit_service import write_audit_log
 
 router = APIRouter(prefix="/catalog/skus", tags=["skus"])
@@ -250,38 +251,41 @@ async def delete_sku_barcode(
 
 @router.get(
     "",
-    response_model=list[SKUOut],
+    response_model=SKUListOut,
     dependencies=[Depends(require_permission("sku.read"))],
 )
 async def list_skus(
     product_id: int | None = Query(default=None),
     active: bool | None = Query(default=None),
-    q: str | None = Query(default=None),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
-    sort: str = Query("id"),
-    order: str = Query("asc", pattern="^(asc|desc)$"),
+    params: PaginationParams = Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> list[SKU]:
+) -> SKUListOut:
     stmt = select(SKU)
     if product_id is not None:
         stmt = stmt.where(SKU.product_id == product_id)
     if active is not None:
         stmt = stmt.where(SKU.active == active)
-    if q:
+    if params.q:
         stmt = stmt.where(
             or_(
-                SKU.sku_code.ilike(f"%{q}%"),
-                SKU.name.ilike(f"%{q}%"),
-                SKU.barcode.ilike(f"%{q}%"),
+                SKU.sku_code.ilike(f"%{params.q}%"),
+                SKU.name.ilike(f"%{params.q}%"),
+                SKU.barcode.ilike(f"%{params.q}%"),
             )
         )
 
-    if sort not in {"id", "sku_code", "created_at", "name"}:
-        sort = "id"
-    column = getattr(SKU, sort)
-    stmt = stmt.order_by(column.asc() if order == "asc" else column.desc())
-    stmt = stmt.limit(page_size).offset((page - 1) * page_size)
+    total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    stmt = apply_order_and_pagination(
+        stmt,
+        model=SKU,
+        params=params,
+        allowed_sort_fields={"id", "sku_code", "name"},
+        default_sort="id",
+    )
 
     result = await session.scalars(stmt)
-    return list(result.all())
+    items = [SKUOut.model_validate(row) for row in result.all()]
+    return SKUListOut(
+        items=items,
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )

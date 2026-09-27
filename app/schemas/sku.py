@@ -45,3 +45,8 @@ class SKUOut(SchemaBase):
     price: Decimal
     tax_code: str | None
     active: bool
+
+
+class SKUListOut(SchemaBase):
+    items: list[SKUOut]
+    meta: dict[str, int | None]

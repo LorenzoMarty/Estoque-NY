@@ -5,7 +5,7 @@ from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import domain_error_to_http
-from app.api.pagination import page_meta
+from app.api.pagination import PaginationParams, apply_order_and_pagination, page_meta, pagination_params
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.domain.errors import DomainError
@@ -17,7 +17,7 @@ from app.domain.transfer_service import (
 )
 from app.models.entities import TransferOrder, TransferOrderItem, User
 from app.models.enums import TransferStatus
-from app.schemas.transfer import TransferCreateIn, TransferItemOut, TransferOut
+from app.schemas.transfer import TransferCreateIn, TransferItemOut, TransferListOut, TransferOut
 from app.services.audit_service import write_audit_log
 from app.services.idempotency_service import (
     abort_idempotency,
@@ -119,6 +119,7 @@ async def create_transfer_order(
 
 @router.get(
     "",
+    response_model=TransferListOut,
     dependencies=[Depends(require_permission("stock.transfer.read"))],
 )
 async def list_transfer_orders(
@@ -126,12 +127,9 @@ async def list_transfer_orders(
     branch_id: int | None = Query(default=None),
     location_id: int | None = Query(default=None),
     sku_id: int | None = Query(default=None),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
-    sort: str = Query("created_at"),
-    order: str = Query("desc", pattern="^(asc|desc)$"),
+    params: PaginationParams = Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> dict:
+) -> TransferListOut:
     stmt = select(TransferOrder)
     if status_filter is not None:
         stmt = stmt.where(TransferOrder.status == status_filter)
@@ -155,19 +153,20 @@ async def list_transfer_orders(
             )
         )
 
-    if sort not in {"id", "created_at", "status", "shipped_at", "received_at"}:
-        sort = "created_at"
-    column = getattr(TransferOrder, sort)
     total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
-    stmt = stmt.order_by(column.asc() if order == "asc" else column.desc())
-    stmt = stmt.limit(page_size).offset((page - 1) * page_size)
+    stmt = apply_order_and_pagination(
+        stmt,
+        model=TransferOrder,
+        params=params,
+        allowed_sort_fields={"id", "created_at", "status", "shipped_at", "received_at"},
+    )
 
     transfers = list((await session.scalars(stmt)).all())
     items = [await _to_transfer_out(session, transfer) for transfer in transfers]
-    return {
-        "items": [item.model_dump(mode="json") for item in items],
-        "meta": page_meta(total=int(total), page=page, page_size=page_size),
-    }
+    return TransferListOut(
+        items=items,
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )
 
 
 @router.get(

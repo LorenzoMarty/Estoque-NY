@@ -38,3 +38,8 @@ class TransferOut(SchemaBase):
     shipped_at: datetime | None
     received_at: datetime | None
     items: list[TransferItemOut] = []
+
+
+class TransferListOut(SchemaBase):
+    items: list[TransferOut]
+    meta: dict[str, int | None]

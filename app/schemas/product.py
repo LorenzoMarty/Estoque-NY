@@ -30,3 +30,8 @@ class ProductOut(SchemaBase):
     brand: str | None
     active: bool
     created_at: datetime
+
+
+class ProductListOut(SchemaBase):
+    items: list[ProductOut]
+    meta: dict[str, int | None]
