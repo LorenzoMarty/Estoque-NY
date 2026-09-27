@@ -41,3 +41,8 @@ class InventoryCountOut(SchemaBase):
     cancelled_at: datetime | None
     created_by: int | None
     lines: list[InventoryCountLineOut] = []
+
+
+class InventoryCountListOut(SchemaBase):
+    items: list[InventoryCountOut]
+    meta: dict[str, int | None]

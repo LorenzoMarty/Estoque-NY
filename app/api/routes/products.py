@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.pagination import PaginationParams, apply_order_and_pagination, page_meta, pagination_params
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.models.entities import Brand, Category, Product, User
-from app.schemas.product import ProductCreate, ProductOut, ProductUpdate
+from app.schemas.product import ProductCreate, ProductListOut, ProductOut, ProductUpdate
 from app.services.audit_service import write_audit_log
 
 router = APIRouter(prefix="/catalog/products", tags=["products"])
@@ -125,20 +126,16 @@ async def update_product(
 
 @router.get(
     "",
-    response_model=list[ProductOut],
+    response_model=ProductListOut,
     dependencies=[Depends(require_permission("product.read"))],
 )
 async def list_products(
     active: bool | None = Query(default=None),
     category_id: int | None = Query(default=None),
     brand_id: int | None = Query(default=None),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
-    sort: str = Query("id"),
-    order: str = Query("asc", pattern="^(asc|desc)$"),
-    q: str | None = Query(default=None),
+    params: PaginationParams = Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> list[Product]:
+) -> ProductListOut:
     stmt = select(Product)
     if active is not None:
         stmt = stmt.where(Product.active == active)
@@ -146,14 +143,21 @@ async def list_products(
         stmt = stmt.where(Product.category_id == category_id)
     if brand_id is not None:
         stmt = stmt.where(Product.brand_id == brand_id)
-    if q:
-        stmt = stmt.where(Product.name.ilike(f"%{q}%"))
+    if params.q:
+        stmt = stmt.where(Product.name.ilike(f"%{params.q}%"))
 
-    if sort not in {"id", "name", "created_at"}:
-        sort = "id"
-    column = getattr(Product, sort)
-    stmt = stmt.order_by(column.asc() if order == "asc" else column.desc())
-    stmt = stmt.limit(page_size).offset((page - 1) * page_size)
+    total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    stmt = apply_order_and_pagination(
+        stmt,
+        model=Product,
+        params=params,
+        allowed_sort_fields={"id", "name", "created_at"},
+        default_sort="id",
+    )
 
     result = await session.scalars(stmt)
-    return list(result.all())
+    items = [ProductOut.model_validate(row) for row in result.all()]
+    return ProductListOut(
+        items=items,
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )

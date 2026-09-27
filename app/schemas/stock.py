@@ -60,3 +60,13 @@ class StockBalanceOut(SchemaBase):
     location_id: int | None
     on_hand: int
     updated_at: datetime
+
+
+class StockBalanceListOut(SchemaBase):
+    items: list[StockBalanceOut]
+    meta: dict[str, int | None]
+
+
+class StockMoveListOut(SchemaBase):
+    items: list[StockMoveOut]
+    meta: dict[str, int | None]
