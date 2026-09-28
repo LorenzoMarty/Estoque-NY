@@ -6,7 +6,12 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import domain_error_to_http
-from app.api.pagination import PaginationParams, apply_order_and_pagination, page_meta, pagination_params
+from app.api.pagination import (
+    PaginationParams,
+    apply_order_and_pagination,
+    page_meta,
+    pagination_params,
+)
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.domain.errors import DomainError
@@ -269,7 +274,14 @@ async def list_balances(
         stmt,
         model=StockBalance,
         params=params,
-        allowed_sort_fields={"id", "updated_at", "on_hand", "branch_id", "sku_id", "location_id"},
+        allowed_sort_fields={
+            "id",
+            "updated_at",
+            "on_hand",
+            "branch_id",
+            "sku_id",
+            "location_id",
+        },
         default_sort="updated_at",
     )
 
@@ -324,7 +336,9 @@ async def list_moves(
         return stmt
 
     count_stmt = _apply_filters(
-        select(func.count()).select_from(StockMove).join(SKU, SKU.id == StockMove.sku_id)
+        select(func.count())
+        .select_from(StockMove)
+        .join(SKU, SKU.id == StockMove.sku_id)
     )
     total = await session.scalar(count_stmt) or 0
 
@@ -346,7 +360,9 @@ async def list_moves(
         "move_type": StockMove.move_type,
     }
     sort_column = move_sort_fields.get(params.sort, StockMove.occurred_at)
-    stmt = stmt.order_by(sort_column.asc() if params.order == "asc" else sort_column.desc())
+    stmt = stmt.order_by(
+        sort_column.asc() if params.order == "asc" else sort_column.desc()
+    )
     stmt = stmt.limit(params.page_size).offset((params.page - 1) * params.page_size)
 
     rows = (await session.execute(stmt)).all()

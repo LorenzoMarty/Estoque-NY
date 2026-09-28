@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../shared/api/httpClient";
+import type { Paginated } from "../../shared/types/pagination";
 import type { Product } from "../../shared/types/stock";
 import type { ProductFormValues } from "./schema";
 
@@ -11,11 +12,12 @@ export interface ProductsFilters {
 export function useProductsQuery(filters: ProductsFilters) {
   return useQuery({
     queryKey: ["products", filters],
-    queryFn: () => {
+    queryFn: async () => {
       const params = new URLSearchParams({ page: "1", page_size: "200", sort: "name", order: "asc" });
       if (filters.q) params.set("q", filters.q);
       if (filters.active != null) params.set("active", String(filters.active));
-      return apiClient.get<Product[]>(`/catalog/products?${params.toString()}`);
+      const page = await apiClient.get<Paginated<Product>>(`/catalog/products?${params.toString()}`);
+      return page.items;
     },
     staleTime: 10_000,
   });

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../shared/api/httpClient";
+import type { Paginated } from "../../shared/types/pagination";
 import type { StockMove } from "../../shared/types/stock";
 import type { AdjustmentFormValues, IssueFormValues, ReceiptFormValues } from "./schema";
 
@@ -12,12 +13,13 @@ export interface MovementsFilters {
 export function useMovesQuery(filters: MovementsFilters) {
   return useQuery({
     queryKey: ["moves", filters],
-    queryFn: () => {
+    queryFn: async () => {
       const params = new URLSearchParams({ page: "1", page_size: "200", sort: "occurred_at", order: "desc" });
       if (filters.branchId) params.set("branch_id", String(filters.branchId));
       if (filters.locationId) params.set("location_id", String(filters.locationId));
       if (filters.type) params.set("type", filters.type);
-      return apiClient.get<StockMove[]>(`/stock/moves?${params.toString()}`);
+      const page = await apiClient.get<Paginated<StockMove>>(`/stock/moves?${params.toString()}`);
+      return page.items;
     },
     staleTime: 10_000,
   });

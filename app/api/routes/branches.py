@@ -18,7 +18,7 @@ router = APIRouter(prefix="/branches", tags=["branches"])
     "",
     response_model=BranchOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("branch.create"))],
+    dependencies=[Depends(require_permission("stock.branch.create"))],
 )
 async def create_branch(
     payload: BranchCreate,
@@ -53,7 +53,7 @@ async def create_branch(
 @router.get(
     "",
     response_model=BranchListOut,
-    dependencies=[Depends(require_permission("branch.read"))],
+    dependencies=[Depends(require_permission("stock.branch.read"))],
 )
 async def list_branches(
     params=Depends(pagination_params),
@@ -80,7 +80,7 @@ async def list_branches(
 @router.get(
     "/{branch_id}",
     response_model=BranchOut,
-    dependencies=[Depends(require_permission("branch.read"))],
+    dependencies=[Depends(require_permission("stock.branch.read"))],
 )
 async def get_branch(
     branch_id: int,
@@ -99,7 +99,7 @@ async def get_branch(
 @router.put(
     "/{branch_id}",
     response_model=BranchOut,
-    dependencies=[Depends(require_permission("branch.update"))],
+    dependencies=[Depends(require_permission("stock.branch.update"))],
 )
 async def update_branch(
     branch_id: int,
@@ -144,7 +144,7 @@ async def update_branch(
 @router.delete(
     "/{branch_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("branch.delete"))],
+    dependencies=[Depends(require_permission("stock.branch.delete"))],
 )
 async def delete_branch(
     branch_id: int,

@@ -30,6 +30,12 @@ async def _seed(args: argparse.Namespace) -> None:
     from sqlalchemy import func, select
 
     from app.db.session import dispose_engine, get_sessionmaker
+    from app.domain.inventory_service import (
+        close_inventory_count,
+        create_inventory_count,
+        patch_inventory_lines,
+        post_inventory_count,
+    )
     from app.domain.stock_engine import apply_move
     from app.domain.transfer_service import (
         create_transfer,
@@ -38,17 +44,40 @@ async def _seed(args: argparse.Namespace) -> None:
     )
     from app.models.entities import (
         SKU,
+        AudienceSegment,
         Branch,
         Brand,
+        Campaign,
+        CampaignProduct,
         Category,
+        ContentAsset,
+        InventoryCount,
+        InventoryCountLine,
         Location,
+        MarketingChannel,
         Product,
+        Promotion,
+        PromotionSKU,
         SKUBarcode,
         StockMove,
         TransferOrder,
         User,
     )
-    from app.models.enums import LocationType, MoveType, TransferStatus
+    from app.models.enums import (
+        CampaignStatus,
+        DiscountType,
+        InventoryCountStatus,
+        LocationType,
+        MarketingChannelType,
+        MoveType,
+        PromotionStatus,
+        TransferStatus,
+    )
+    from app.schemas.inventory import (
+        InventoryCountCreateIn,
+        InventoryCountLinePatchIn,
+        InventoryCountPatchLinesIn,
+    )
     from app.schemas.transfer import TransferCreateIn, TransferItemIn
     from app.services.auth_service import ensure_rbac_seed
 
@@ -63,6 +92,12 @@ async def _seed(args: argparse.Namespace) -> None:
         "moves_created": 0,
         "transfers_created": 0,
         "transfers_updated": 0,
+        "marketing_channels_created": 0,
+        "campaigns_created": 0,
+        "promotions_created": 0,
+        "audience_segments_created": 0,
+        "content_assets_created": 0,
+        "inventory_counts_created": 0,
     }
 
     sessionmaker = get_sessionmaker()
@@ -763,6 +798,169 @@ async def _seed(args: argparse.Namespace) -> None:
                 target_status=TransferStatus.RECEIVED,
             )
 
+            channel, created = await get_or_create(
+                MarketingChannel,
+                lookup={"name": "Email Semanal"},
+                create={
+                    "name": "Email Semanal",
+                    "type": MarketingChannelType.EMAIL,
+                    "active": True,
+                },
+            )
+            if created:
+                summary["marketing_channels_created"] += 1
+
+            campaign, created = await get_or_create(
+                Campaign,
+                lookup={"name": "Campanha Verao Alpine"},
+                create={
+                    "name": "Campanha Verao Alpine",
+                    "status": CampaignStatus.ACTIVE,
+                    "channel_id": channel.id,
+                    "objective": "Aumentar vendas de agua mineral no verao",
+                    "budget": Decimal("1500.00"),
+                    "starts_at": now_utc - timedelta(days=10),
+                    "ends_at": now_utc + timedelta(days=20),
+                    "created_by": actor_id,
+                },
+            )
+            if created:
+                summary["campaigns_created"] += 1
+
+            campaign_product_exists = await session.scalar(
+                select(CampaignProduct.id).where(
+                    CampaignProduct.campaign_id == campaign.id,
+                    CampaignProduct.product_id == product_by_key["water"].id,
+                )
+            )
+            if campaign_product_exists is None:
+                session.add(
+                    CampaignProduct(
+                        campaign_id=campaign.id,
+                        product_id=product_by_key["water"].id,
+                    )
+                )
+
+            promotion, created = await get_or_create(
+                Promotion,
+                lookup={"name": "Desconto Agua Verao"},
+                create={
+                    "campaign_id": campaign.id,
+                    "name": "Desconto Agua Verao",
+                    "status": PromotionStatus.ACTIVE,
+                    "discount_type": DiscountType.PERCENT,
+                    "discount_value": Decimal("15.00"),
+                    "starts_at": now_utc - timedelta(days=10),
+                    "ends_at": now_utc + timedelta(days=20),
+                },
+            )
+            if created:
+                summary["promotions_created"] += 1
+
+            promotion_sku_exists = await session.scalar(
+                select(PromotionSKU.id).where(
+                    PromotionSKU.promotion_id == promotion.id,
+                    PromotionSKU.sku_id == sku_by_code["ALP-WATER-500"].id,
+                )
+            )
+            if promotion_sku_exists is None:
+                session.add(
+                    PromotionSKU(
+                        promotion_id=promotion.id,
+                        sku_id=sku_by_code["ALP-WATER-500"].id,
+                    )
+                )
+
+            _, created = await get_or_create(
+                AudienceSegment,
+                lookup={"name": "Clientes Frequentes"},
+                create={
+                    "name": "Clientes Frequentes",
+                    "description": "Compradores recorrentes nos ultimos 90 dias",
+                    "rules_json": {"min_orders_90d": 3},
+                    "active": True,
+                },
+            )
+            if created:
+                summary["audience_segments_created"] += 1
+
+            _, created = await get_or_create(
+                ContentAsset,
+                lookup={"title": "Banner Campanha Verao"},
+                create={
+                    "campaign_id": campaign.id,
+                    "title": "Banner Campanha Verao",
+                    "asset_type": "IMAGE",
+                    "url": "https://example.com/assets/banner-verao.png",
+                    "meta_json": {"width": 1200, "height": 628},
+                },
+            )
+            if created:
+                summary["content_assets_created"] += 1
+
+            manhattan_stock_location = location_by_slot[("manhattan", "stock")]
+            existing_posted_count = await session.scalar(
+                select(InventoryCount).where(
+                    InventoryCount.branch_id == branch_by_key["manhattan"].id,
+                    InventoryCount.location_id == manhattan_stock_location.id,
+                    InventoryCount.status == InventoryCountStatus.POSTED,
+                )
+            )
+            if existing_posted_count is None:
+                count = await create_inventory_count(
+                    session=session,
+                    payload=InventoryCountCreateIn(
+                        branch_id=branch_by_key["manhattan"].id,
+                        location_id=manhattan_stock_location.id,
+                        scope="SKUS",
+                        sku_ids=[
+                            sku_by_code["ALP-WATER-500"].id,
+                            sku_by_code["CHARGER-20W"].id,
+                        ],
+                    ),
+                    user_id=actor_id,
+                )
+                lines = list(
+                    (
+                        await session.scalars(
+                            select(InventoryCountLine).where(
+                                InventoryCountLine.count_id == count.id
+                            )
+                        )
+                    ).all()
+                )
+                water_line = next(
+                    line
+                    for line in lines
+                    if line.sku_id == sku_by_code["ALP-WATER-500"].id
+                )
+                charger_line = next(
+                    line
+                    for line in lines
+                    if line.sku_id == sku_by_code["CHARGER-20W"].id
+                )
+                count = await patch_inventory_lines(
+                    session=session,
+                    count_id=count.id,
+                    payload=InventoryCountPatchLinesIn(
+                        lines=[
+                            InventoryCountLinePatchIn(
+                                sku_id=water_line.sku_id,
+                                counted_qty=water_line.system_qty - 3,
+                            ),
+                            InventoryCountLinePatchIn(
+                                sku_id=charger_line.sku_id,
+                                counted_qty=charger_line.system_qty,
+                            ),
+                        ]
+                    ),
+                )
+                count = await close_inventory_count(session=session, count_id=count.id)
+                await post_inventory_count(
+                    session=session, count_id=count.id, user_id=actor_id
+                )
+                summary["inventory_counts_created"] += 1
+
         totals = {
             "branches": await session.scalar(select(func.count()).select_from(Branch))
             or 0,
@@ -785,6 +983,30 @@ async def _seed(args: argparse.Namespace) -> None:
             or 0,
             "transfers": await session.scalar(
                 select(func.count()).select_from(TransferOrder)
+            )
+            or 0,
+            "marketing_channels": await session.scalar(
+                select(func.count()).select_from(MarketingChannel)
+            )
+            or 0,
+            "campaigns": await session.scalar(
+                select(func.count()).select_from(Campaign)
+            )
+            or 0,
+            "promotions": await session.scalar(
+                select(func.count()).select_from(Promotion)
+            )
+            or 0,
+            "audience_segments": await session.scalar(
+                select(func.count()).select_from(AudienceSegment)
+            )
+            or 0,
+            "content_assets": await session.scalar(
+                select(func.count()).select_from(ContentAsset)
+            )
+            or 0,
+            "inventory_counts": await session.scalar(
+                select(func.count()).select_from(InventoryCount)
             )
             or 0,
         }

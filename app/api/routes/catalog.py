@@ -27,7 +27,7 @@ router = APIRouter(prefix="/catalog", tags=["catalog"])
     "/categories",
     response_model=CategoryOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("category.create"))],
+    dependencies=[Depends(require_permission("catalog.category.create"))],
 )
 async def create_category(
     payload: CategoryCreate,
@@ -63,7 +63,7 @@ async def create_category(
 
 @router.get(
     "/categories",
-    dependencies=[Depends(require_permission("category.read"))],
+    dependencies=[Depends(require_permission("catalog.category.read"))],
 )
 async def list_categories(
     request: Request,
@@ -94,7 +94,7 @@ async def list_categories(
     "/brands",
     response_model=BrandOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("brand.create"))],
+    dependencies=[Depends(require_permission("catalog.brand.create"))],
 )
 async def create_brand(
     payload: BrandCreate,
@@ -129,7 +129,7 @@ async def create_brand(
 @router.get(
     "/brands",
     response_model=BrandListOut,
-    dependencies=[Depends(require_permission("brand.read"))],
+    dependencies=[Depends(require_permission("catalog.brand.read"))],
 )
 async def list_brands(
     params=Depends(pagination_params),
@@ -154,7 +154,7 @@ async def list_brands(
 @router.get(
     "/brands/{brand_id}",
     response_model=BrandOut,
-    dependencies=[Depends(require_permission("brand.read"))],
+    dependencies=[Depends(require_permission("catalog.brand.read"))],
 )
 async def get_brand(
     brand_id: int,
@@ -173,7 +173,7 @@ async def get_brand(
 @router.put(
     "/brands/{brand_id}",
     response_model=BrandOut,
-    dependencies=[Depends(require_permission("brand.update"))],
+    dependencies=[Depends(require_permission("catalog.brand.update"))],
 )
 async def update_brand(
     brand_id: int,
@@ -218,7 +218,7 @@ async def update_brand(
 @router.delete(
     "/brands/{brand_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("brand.delete"))],
+    dependencies=[Depends(require_permission("catalog.brand.delete"))],
 )
 async def delete_brand(
     brand_id: int,

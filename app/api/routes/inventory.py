@@ -6,7 +6,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import domain_error_to_http
-from app.api.pagination import PaginationParams, apply_order_and_pagination, page_meta, pagination_params
+from app.api.pagination import (
+    PaginationParams,
+    apply_order_and_pagination,
+    page_meta,
+    pagination_params,
+)
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.domain.errors import DomainError
