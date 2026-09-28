@@ -29,7 +29,10 @@ export function useLocationsQuery(branchId?: number) {
 export function useSkusQuery() {
   return useQuery({
     queryKey: ["skus"],
-    queryFn: () => apiClient.get<Sku[]>("/catalog/skus?page=1&page_size=200&order=asc"),
+    queryFn: async () => {
+      const page = await apiClient.get<Paginated<Sku>>("/catalog/skus?page=1&page_size=200&order=asc");
+      return page.items;
+    },
     staleTime: 60_000,
   });
 }

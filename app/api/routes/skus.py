@@ -3,7 +3,12 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.pagination import PaginationParams, apply_order_and_pagination, page_meta, pagination_params
+from app.api.pagination import (
+    PaginationParams,
+    apply_order_and_pagination,
+    page_meta,
+    pagination_params,
+)
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.models.entities import SKU, Product, SKUBarcode, User
@@ -54,7 +59,7 @@ async def _assert_barcode_is_global_unique(
     "",
     response_model=SKUOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("sku.create"))],
+    dependencies=[Depends(require_permission("catalog.sku.create"))],
 )
 async def create_sku(
     payload: SKUCreate,
@@ -105,7 +110,7 @@ async def create_sku(
 @router.patch(
     "/{sku_id}",
     response_model=SKUOut,
-    dependencies=[Depends(require_permission("sku.update"))],
+    dependencies=[Depends(require_permission("catalog.sku.update"))],
 )
 async def update_sku(
     sku_id: int,
@@ -154,7 +159,7 @@ async def update_sku(
 @router.post(
     "/{sku_id}/barcodes",
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("sku.barcode.create"))],
+    dependencies=[Depends(require_permission("catalog.sku.barcode.create"))],
 )
 async def add_sku_barcodes(
     sku_id: int,
@@ -208,7 +213,7 @@ async def add_sku_barcodes(
 @router.delete(
     "/{sku_id}/barcodes/{barcode}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("sku.barcode.delete"))],
+    dependencies=[Depends(require_permission("catalog.sku.barcode.delete"))],
 )
 async def delete_sku_barcode(
     sku_id: int,
@@ -252,7 +257,7 @@ async def delete_sku_barcode(
 @router.get(
     "",
     response_model=SKUListOut,
-    dependencies=[Depends(require_permission("sku.read"))],
+    dependencies=[Depends(require_permission("catalog.sku.read"))],
 )
 async def list_skus(
     product_id: int | None = Query(default=None),

@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.pagination import PaginationParams, apply_order_and_pagination, page_meta, pagination_params
+from app.api.pagination import (
+    PaginationParams,
+    apply_order_and_pagination,
+    page_meta,
+    pagination_params,
+)
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.models.entities import Brand, Category, Product, User
@@ -40,7 +45,7 @@ async def _validate_catalog_refs(
     "",
     response_model=ProductOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("product.create"))],
+    dependencies=[Depends(require_permission("catalog.product.create"))],
 )
 async def create_product(
     payload: ProductCreate,
@@ -82,7 +87,7 @@ async def create_product(
 @router.patch(
     "/{product_id}",
     response_model=ProductOut,
-    dependencies=[Depends(require_permission("product.update"))],
+    dependencies=[Depends(require_permission("catalog.product.update"))],
 )
 async def update_product(
     product_id: int,
@@ -127,7 +132,7 @@ async def update_product(
 @router.get(
     "",
     response_model=ProductListOut,
-    dependencies=[Depends(require_permission("product.read"))],
+    dependencies=[Depends(require_permission("catalog.product.read"))],
 )
 async def list_products(
     active: bool | None = Query(default=None),

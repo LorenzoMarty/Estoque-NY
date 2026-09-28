@@ -21,18 +21,23 @@ from app.models.entities import (
 from app.models.enums import CampaignStatus, PromotionStatus
 from app.schemas.marketing import (
     AudienceSegmentCreate,
+    AudienceSegmentListOut,
     AudienceSegmentOut,
     AudienceSegmentUpdate,
     CampaignCreate,
+    CampaignListOut,
     CampaignOut,
     CampaignUpdate,
     ContentAssetCreate,
+    ContentAssetListOut,
     ContentAssetOut,
     ContentAssetUpdate,
     MarketingChannelCreate,
+    MarketingChannelListOut,
     MarketingChannelOut,
     MarketingChannelUpdate,
     PromotionCreate,
+    PromotionListOut,
     PromotionOut,
     PromotionUpdate,
 )
@@ -213,13 +218,14 @@ async def create_channel(
 
 @router.get(
     "/channels",
+    response_model=MarketingChannelListOut,
     dependencies=[Depends(require_permission("marketing.channel.read"))],
 )
 async def list_channels(
     active: bool | None = Query(default=None),
     params=Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> dict:
+) -> MarketingChannelListOut:
     stmt = select(MarketingChannel)
     if active is not None:
         stmt = stmt.where(MarketingChannel.active == active)
@@ -234,15 +240,10 @@ async def list_channels(
         allowed_sort_fields={"id", "name", "type", "created_at"},
     )
     rows = list((await session.scalars(stmt)).all())
-    return {
-        "items": [
-            MarketingChannelOut.model_validate(row).model_dump(mode="json")
-            for row in rows
-        ],
-        "meta": page_meta(
-            total=int(total), page=params.page, page_size=params.page_size
-        ),
-    }
+    return MarketingChannelListOut(
+        items=[MarketingChannelOut.model_validate(row) for row in rows],
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )
 
 
 @router.patch(
@@ -341,6 +342,7 @@ async def create_campaign(
 
 @router.get(
     "/campaigns",
+    response_model=CampaignListOut,
     dependencies=[Depends(require_permission("marketing.campaign.read"))],
 )
 async def list_campaigns(
@@ -348,7 +350,7 @@ async def list_campaigns(
     channel_id: int | None = Query(default=None),
     params=Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> dict:
+) -> CampaignListOut:
     stmt = select(Campaign)
     if status_filter is not None:
         stmt = stmt.where(Campaign.status == status_filter)
@@ -365,14 +367,10 @@ async def list_campaigns(
         allowed_sort_fields={"id", "name", "status", "starts_at", "created_at"},
     )
     rows = list((await session.scalars(stmt)).all())
-    return {
-        "items": [
-            (await _campaign_out(session, row)).model_dump(mode="json") for row in rows
-        ],
-        "meta": page_meta(
-            total=int(total), page=params.page, page_size=params.page_size
-        ),
-    }
+    return CampaignListOut(
+        items=[await _campaign_out(session, row) for row in rows],
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )
 
 
 @router.get(
@@ -487,6 +485,7 @@ async def create_promotion(
 
 @router.get(
     "/promotions",
+    response_model=PromotionListOut,
     dependencies=[Depends(require_permission("marketing.promotion.read"))],
 )
 async def list_promotions(
@@ -494,7 +493,7 @@ async def list_promotions(
     campaign_id: int | None = Query(default=None),
     params=Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> dict:
+) -> PromotionListOut:
     stmt = select(Promotion)
     if status_filter is not None:
         stmt = stmt.where(Promotion.status == status_filter)
@@ -511,15 +510,10 @@ async def list_promotions(
         allowed_sort_fields={"id", "name", "status", "starts_at", "created_at"},
     )
     rows = list((await session.scalars(stmt)).all())
-    return {
-        "items": [
-            (await _promotion_out(session, row)).model_dump(mode="json")
-            for row in rows
-        ],
-        "meta": page_meta(
-            total=int(total), page=params.page, page_size=params.page_size
-        ),
-    }
+    return PromotionListOut(
+        items=[await _promotion_out(session, row) for row in rows],
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )
 
 
 @router.patch(
@@ -620,13 +614,14 @@ async def create_audience_segment(
 
 @router.get(
     "/audience-segments",
+    response_model=AudienceSegmentListOut,
     dependencies=[Depends(require_permission("marketing.audience.read"))],
 )
 async def list_audience_segments(
     active: bool | None = Query(default=None),
     params=Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> dict:
+) -> AudienceSegmentListOut:
     stmt = select(AudienceSegment)
     if active is not None:
         stmt = stmt.where(AudienceSegment.active == active)
@@ -641,15 +636,10 @@ async def list_audience_segments(
         allowed_sort_fields={"id", "name", "created_at"},
     )
     rows = list((await session.scalars(stmt)).all())
-    return {
-        "items": [
-            AudienceSegmentOut.model_validate(row).model_dump(mode="json")
-            for row in rows
-        ],
-        "meta": page_meta(
-            total=int(total), page=params.page, page_size=params.page_size
-        ),
-    }
+    return AudienceSegmentListOut(
+        items=[AudienceSegmentOut.model_validate(row) for row in rows],
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )
 
 
 @router.patch(
@@ -737,13 +727,14 @@ async def create_content_asset(
 
 @router.get(
     "/content-assets",
+    response_model=ContentAssetListOut,
     dependencies=[Depends(require_permission("marketing.content.read"))],
 )
 async def list_content_assets(
     campaign_id: int | None = Query(default=None),
     params=Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
-) -> dict:
+) -> ContentAssetListOut:
     stmt = select(ContentAsset)
     if campaign_id is not None:
         stmt = stmt.where(ContentAsset.campaign_id == campaign_id)
@@ -758,14 +749,10 @@ async def list_content_assets(
         allowed_sort_fields={"id", "title", "asset_type", "created_at"},
     )
     rows = list((await session.scalars(stmt)).all())
-    return {
-        "items": [
-            ContentAssetOut.model_validate(row).model_dump(mode="json") for row in rows
-        ],
-        "meta": page_meta(
-            total=int(total), page=params.page, page_size=params.page_size
-        ),
-    }
+    return ContentAssetListOut(
+        items=[ContentAssetOut.model_validate(row) for row in rows],
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
+    )
 
 
 @router.patch(

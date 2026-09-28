@@ -10,15 +10,9 @@ function withPaging(path: string, pageSize: number): string {
   return `${path}${path.includes("?") ? "&" : "?"}page=1&page_size=${pageSize}`;
 }
 
-/** For endpoints whose response_model is `{items, meta}` (branches, locations, transfers, inventory-counts). */
 async function fetchPaginated<T>(path: string, pageSize: number): Promise<T[]> {
   const page = await apiClient.get<Paginated<T>>(withPaging(path, pageSize));
   return page.items;
-}
-
-/** For endpoints whose response_model is a plain `list[...]` (stock balances/moves, catalog skus). */
-async function fetchList<T>(path: string, pageSize: number): Promise<T[]> {
-  return apiClient.get<T[]>(withPaging(path, pageSize));
 }
 
 export interface DashboardQueryData extends DashboardData {
@@ -33,9 +27,9 @@ export function useDashboardQuery() {
       const [branches, locations, balances, moves, skus, transfers, counts] = await Promise.all([
         fetchPaginated<Branch>("/branches", 200),
         fetchPaginated<Location>("/locations", 200),
-        fetchList<StockBalance>("/stock/balances?order=desc", 200),
-        fetchList<StockMove>("/stock/moves?order=desc", 200),
-        fetchList<Sku>("/catalog/skus?order=asc", 200),
+        fetchPaginated<StockBalance>("/stock/balances?order=desc", 200),
+        fetchPaginated<StockMove>("/stock/moves?order=desc", 200),
+        fetchPaginated<Sku>("/catalog/skus?order=asc", 200),
         fetchPaginated<Transfer>("/stock/transfers?order=desc", 50),
         fetchPaginated<InventoryCount>("/stock/inventory-counts?order=desc", 50),
       ]);
