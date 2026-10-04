@@ -5,6 +5,7 @@ Revises: b1a9f3c2d4e5
 Create Date: 2026-09-27 20:36:52.011935
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -12,8 +13,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '3e9f8a87d290'
-down_revision: Union[str, Sequence[str], None] = 'b1a9f3c2d4e5'
+revision: str = "3e9f8a87d290"
+down_revision: Union[str, Sequence[str], None] = "b1a9f3c2d4e5"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -52,9 +53,7 @@ def upgrade() -> None:
     permissions = sa.table("permissions", sa.column("key", sa.String))
     for old_key, new_key in RENAMES:
         op.execute(
-            permissions.update()
-            .where(permissions.c.key == old_key)
-            .values(key=new_key)
+            permissions.update().where(permissions.c.key == old_key).values(key=new_key)
         )
 
 
@@ -63,7 +62,5 @@ def downgrade() -> None:
     permissions = sa.table("permissions", sa.column("key", sa.String))
     for old_key, new_key in RENAMES:
         op.execute(
-            permissions.update()
-            .where(permissions.c.key == new_key)
-            .values(key=old_key)
+            permissions.update().where(permissions.c.key == new_key).values(key=old_key)
         )

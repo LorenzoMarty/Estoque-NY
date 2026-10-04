@@ -1,3 +1,3 @@
-﻿from app.api.routes.catalog import router
+from app.api.routes.catalog import router
 
 __all__ = ["router"]

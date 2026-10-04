@@ -72,9 +72,7 @@ class Settings(BaseSettings):
                 "localhost" in normalized_database_url
                 or "127.0.0.1" in normalized_database_url
             ):
-                raise ValueError(
-                    "DATABASE_URL cannot point to localhost in production"
-                )
+                raise ValueError("DATABASE_URL cannot point to localhost in production")
         return self
 
 

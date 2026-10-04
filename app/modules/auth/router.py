@@ -1,3 +1,3 @@
-﻿from app.api.routes.auth import router
+from app.api.routes.auth import router
 
 __all__ = ["router"]

@@ -1,3 +1,3 @@
-﻿from app.api.routes.branches import router
+from app.api.routes.branches import router
 
 __all__ = ["router"]

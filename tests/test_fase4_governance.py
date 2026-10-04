@@ -16,8 +16,10 @@ from app.db.session import get_sessionmaker
 from app.models.base import Base
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "migrations/versions" / (
-    "3e9f8a87d290_rename_catalog_and_stock_permission_.py"
+MIGRATION = (
+    ROOT
+    / "migrations/versions"
+    / ("3e9f8a87d290_rename_catalog_and_stock_permission_.py")
 )
 
 LEGACY_PREFIXES = ("branch.", "location.", "category.", "brand.", "product.", "sku.")
@@ -246,9 +248,7 @@ async def test_viewer_can_list_inventory_counts_but_not_write(client):
     assert resp.status_code == 200
     assert resp.json()["meta"]["total"] == 0
 
-    write = await client.post(
-        "/catalog/products", json={"name": "X"}, headers=viewer
-    )
+    write = await client.post("/catalog/products", json={"name": "X"}, headers=viewer)
     assert write.status_code == 403
 
 
@@ -357,9 +357,7 @@ def test_migration_upgrade_keeps_permission_ids_and_role_links():
             conn.execute(
                 text("INSERT INTO permissions VALUES (:i, :k)"), {"i": i, "k": old}
             )
-            conn.execute(
-                text("INSERT INTO role_permissions VALUES (1, :i)"), {"i": i}
-            )
+            conn.execute(text("INSERT INTO role_permissions VALUES (1, :i)"), {"i": i})
         conn.execute(text("INSERT INTO permissions VALUES (100, 'auth.user.manage')"))
 
         with Operations.context(MigrationContext.configure(conn)):
@@ -374,9 +372,10 @@ def test_migration_upgrade_keeps_permission_ids_and_role_links():
 
         with Operations.context(MigrationContext.configure(conn)):
             module.downgrade()
-        assert conn.execute(
-            text("SELECT key FROM permissions WHERE id = 1")
-        ).scalar() == module.RENAMES[0][0]
+        assert (
+            conn.execute(text("SELECT key FROM permissions WHERE id = 1")).scalar()
+            == module.RENAMES[0][0]
+        )
 
 
 def _run_seed(db_url: str) -> dict[str, str]:
@@ -390,9 +389,7 @@ def _run_seed(db_url: str) -> dict[str, str]:
         timeout=120,
     )
     assert proc.returncode == 0, proc.stderr
-    return dict(
-        line.split("=", 1) for line in proc.stdout.splitlines() if "=" in line
-    )
+    return dict(line.split("=", 1) for line in proc.stdout.splitlines() if "=" in line)
 
 
 def test_seed_script_is_idempotent_and_seeds_marketing_and_inventory(tmp_path):
@@ -421,9 +418,12 @@ def test_seed_script_is_idempotent_and_seeds_marketing_and_inventory(tmp_path):
         assert con.execute(
             "SELECT count(*) FROM inventory_counts WHERE status = 'POSTED'"
         ).fetchone() == (1,)
-        assert con.execute(
-            "SELECT count(*) FROM stock_moves WHERE inventory_count_id IS NOT NULL"
-        ).fetchone()[0] >= 1
+        assert (
+            con.execute(
+                "SELECT count(*) FROM stock_moves WHERE inventory_count_id IS NOT NULL"
+            ).fetchone()[0]
+            >= 1
+        )
         for table in ("campaign_products", "promotion_skus"):
             assert con.execute(f"SELECT count(*) FROM {table}").fetchone() == (1,)
 

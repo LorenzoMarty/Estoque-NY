@@ -595,17 +595,17 @@ async def marketing_dashboard_summary(
     )
     active_campaigns_count = (
         await session.scalar(
-            select(func.count()).select_from(Campaign).where(
-                Campaign.status == CampaignStatus.ACTIVE
-            )
+            select(func.count())
+            .select_from(Campaign)
+            .where(Campaign.status == CampaignStatus.ACTIVE)
         )
         or 0
     )
     active_promotions_count = (
         await session.scalar(
-            select(func.count()).select_from(Promotion).where(
-                Promotion.status == PromotionStatus.ACTIVE
-            )
+            select(func.count())
+            .select_from(Promotion)
+            .where(Promotion.status == PromotionStatus.ACTIVE)
         )
         or 0
     )
