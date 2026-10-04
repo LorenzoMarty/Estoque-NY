@@ -1,9 +1,10 @@
-import { Alert, Badge, Button, Group, Loader, Modal, NumberInput, Table, Text } from "@mantine/core";
+import { Alert, Button, Group, Loader, Modal, NumberInput, Table, Text } from "@mantine/core";
 import { useEffect, useMemo, useState } from "react";
 import { useSkusQuery } from "../../shared/api/catalog";
+import { StatusPill } from "../../shared/ui/StatusPill";
+import { COUNT_STATUS_LABELS, COUNT_STATUS_TONES } from "./status";
 import { useCloseCount, useInventoryCountQuery, usePatchCountLines, usePostCount, useCancelCount } from "./api";
 
-const STATUS_LABELS: Record<string, string> = { OPEN: "Aberta", CLOSED: "Fechada", POSTED: "Lançada", CANCELLED: "Cancelada" };
 
 export function CountDetailModal({ countId, onClose }: { countId: number | null; onClose: () => void }) {
   const { data: count, isLoading } = useInventoryCountQuery(countId);
@@ -59,7 +60,7 @@ export function CountDetailModal({ countId, onClose }: { countId: number | null;
       {count && (
         <>
           <Group justify="space-between" mb="md">
-            <Badge>{STATUS_LABELS[count.status] ?? count.status}</Badge>
+            <StatusPill tone={COUNT_STATUS_TONES[count.status]}>{COUNT_STATUS_LABELS[count.status]}</StatusPill>
             {count.status === "OPEN" && (
               <Group gap="xs">
                 <Button size="xs" variant="light" onClick={handleSaveLines} loading={patchLines.isPending}>

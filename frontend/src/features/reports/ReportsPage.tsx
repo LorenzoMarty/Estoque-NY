@@ -1,6 +1,10 @@
 import { BarChart, DonutChart } from "@mantine/charts";
-import { Badge, Group, Loader, Select, Table, Tabs, Text, Title } from "@mantine/core";
+import { Group, Loader, Select, Table, Tabs } from "@mantine/core";
 import { useMemo, useState } from "react";
+import { palette } from "../../app/theme";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import { StatusPill } from "../../shared/ui/StatusPill";
+import { DataTable } from "../../shared/ui/DataTable";
 import { useBranchesQuery, useSkusQuery } from "../../shared/api/catalog";
 import { strings } from "../../shared/strings";
 import { useAbcReport, useTurnoverReport, useValuationReport } from "./api";
@@ -29,14 +33,12 @@ export function ReportsPage() {
 
   return (
     <div className="workspace-page report-page">
-      <Group className="page-hero page-hero-report" justify="space-between">
-        <div>
-          <Title order={2}>{strings.nav.reports}</Title>
-          <Text c="dimmed" size="sm">
-            Relatórios de estoque
-          </Text>
-        </div>
-        <Select
+      <PageHeader
+        title={strings.nav.reports}
+        subtitle="Relatórios de estoque"
+        actions={
+          <>
+            <Select
           className="report-filter-control"
           placeholder="Todas as filiais"
           data={branchOptions}
@@ -44,9 +46,11 @@ export function ReportsPage() {
           value={branchId ? String(branchId) : null}
           onChange={(value) => setBranchId(value ? Number(value) : undefined)}
         />
-      </Group>
+          </>
+        }
+      />
 
-      <Tabs className="report-tabs" defaultValue="valuation">
+      <Tabs className="report-tabs" defaultValue="valuation" variant="pills">
         <Tabs.List>
           <Tabs.Tab value="valuation">Valorização</Tabs.Tab>
           <Tabs.Tab value="turnover">Giro</Tabs.Tab>
@@ -64,13 +68,12 @@ export function ReportsPage() {
                   h={300}
                   data={valuationChart as unknown as Record<string, unknown>[]}
                   dataKey="label"
-                  series={[{ name: "valuation", color: "blue.6" }]}
+                  series={[{ name: "valuation", color: palette.chartBlue }]}
                   mb="lg"
                   valueFormatter={(value) => formatMoney(value)}
                 />
               )}
-              <Table.ScrollContainer className="data-table-card" minWidth={760}>
-                <Table striped>
+              <DataTable minWidth={760}>
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th>Variação</Table.Th>
@@ -89,8 +92,7 @@ export function ReportsPage() {
                       </Table.Tr>
                     ))}
                   </Table.Tbody>
-                </Table>
-              </Table.ScrollContainer>
+                </DataTable>
             </>
           )}
         </Tabs.Panel>
@@ -99,8 +101,7 @@ export function ReportsPage() {
           {loadingTurnover ? (
             <Loader />
           ) : (
-            <Table.ScrollContainer className="data-table-card" minWidth={760}>
-              <Table striped>
+            <DataTable minWidth={760}>
                 <Table.Thead>
                   <Table.Tr>
                     <Table.Th>Variação</Table.Th>
@@ -119,8 +120,7 @@ export function ReportsPage() {
                     </Table.Tr>
                   ))}
                 </Table.Tbody>
-              </Table>
-            </Table.ScrollContainer>
+              </DataTable>
           )}
         </Tabs.Panel>
 
@@ -136,8 +136,7 @@ export function ReportsPage() {
                   withLabels
                 />
               )}
-              <Table.ScrollContainer className="data-table-card" minWidth={680} style={{ flex: 1 }}>
-                <Table striped>
+              <DataTable minWidth={680} style={{ flex: 1 }}>
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th>Variação</Table.Th>
@@ -153,15 +152,14 @@ export function ReportsPage() {
                         <Table.Td>{formatMoney(Number(row.movement_value))}</Table.Td>
                         <Table.Td>{row.cumulative_percent.toFixed(1)}%</Table.Td>
                         <Table.Td>
-                          <Badge color={row.class_name === "A" ? "teal" : row.class_name === "B" ? "yellow" : "red"}>
-                            {row.class_name}
-                          </Badge>
+                          <StatusPill tone={row.class_name === "A" ? "good" : row.class_name === "B" ? "warning" : "critical"}>
+                            Classe {row.class_name}
+                          </StatusPill>
                         </Table.Td>
                       </Table.Tr>
                     ))}
                   </Table.Tbody>
-                </Table>
-              </Table.ScrollContainer>
+                </DataTable>
             </Group>
           )}
         </Tabs.Panel>

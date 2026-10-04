@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router";
 import { z } from "zod";
+import { palette } from "../../app/theme";
+import logoFull from "../../assets/brand/logo-ny.svg";
+import DotGrid from "../../shared/reactbits/DotGrid";
 import { strings } from "../../shared/strings";
 import { login } from "./api";
 import { useAuthStore } from "./store";
@@ -37,8 +40,20 @@ export function LoginPage() {
   }
 
   return (
-    <section className="placeholder-page">
-      <article className="placeholder-card border-gradient reveal" style={{ maxWidth: 380 }}>
+    <section className="placeholder-page login-stage">
+      <div className="login-backdrop">
+        <DotGrid
+          dotSize={5}
+          gap={28}
+          baseColor={palette.line}
+          activeColor={palette.primary}
+          proximity={140}
+          shockRadius={220}
+          shockStrength={3}
+        />
+      </div>
+      <article className="placeholder-card border-gradient reveal login-card" style={{ maxWidth: 380 }}>
+        <img alt="New York Free Shop" className="login-logo" height="173" src={logoFull} width="168" />
         <h2>{strings.login.title}</h2>
         <p>{strings.login.subtitle}</p>
         <form onSubmit={handleSubmit(onSubmit)} noValidate>

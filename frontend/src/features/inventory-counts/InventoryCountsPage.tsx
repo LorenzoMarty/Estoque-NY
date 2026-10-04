@@ -1,15 +1,17 @@
-import { Badge, Button, Group, Loader, Modal, Table, Text, Title } from "@mantine/core";
+import { Button, Group, Loader, Modal, Table, Text } from "@mantine/core";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { StatusPill } from "../../shared/ui/StatusPill";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import { DataTable } from "../../shared/ui/DataTable";
 import { strings } from "../../shared/strings";
-import type { InventoryCount, InventoryCountStatus } from "../../shared/types/stock";
+import type { InventoryCount } from "../../shared/types/stock";
 import { useInventoryCountsQuery } from "./api";
 import { CountDetailModal } from "./CountDetailModal";
 import { CreateCountForm } from "./CreateCountForm";
+import { COUNT_STATUS_LABELS, COUNT_STATUS_TONES } from "./status";
 
-const STATUS_COLORS: Record<InventoryCountStatus, string> = { OPEN: "blue", CLOSED: "orange", POSTED: "teal", CANCELLED: "red" };
-const STATUS_LABELS: Record<InventoryCountStatus, string> = { OPEN: "Aberta", CLOSED: "Fechada", POSTED: "Lançada", CANCELLED: "Cancelada" };
 
 const tableFeatureSet = tableFeatures({});
 const columnHelper = createColumnHelper<typeof tableFeatureSet, InventoryCount>();
@@ -28,9 +30,9 @@ export function InventoryCountsPage() {
         columnHelper.accessor("status", {
           header: "Status",
           cell: (info) => (
-            <Badge color={STATUS_COLORS[info.getValue()]} variant="light">
-              {STATUS_LABELS[info.getValue()]}
-            </Badge>
+            <StatusPill tone={COUNT_STATUS_TONES[info.getValue()]}>
+              {COUNT_STATUS_LABELS[info.getValue()]}
+            </StatusPill>
           ),
         }),
         columnHelper.accessor("lines", { header: "Itens", cell: (info) => info.getValue().length }),
@@ -51,17 +53,17 @@ export function InventoryCountsPage() {
 
   return (
     <div className="workspace-page count-page">
-      <Group className="page-hero page-hero-count" justify="space-between">
-        <div>
-          <Title order={2}>{strings.nav.inventory_count}</Title>
-          <Text c="dimmed" size="sm">
-            Contagens de estoque
-          </Text>
-        </div>
-        <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
+      <PageHeader
+        title={strings.nav.inventory_count}
+        subtitle="Contagens de estoque"
+        actions={
+          <>
+            <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
           Nova contagem
         </Button>
-      </Group>
+          </>
+        }
+      />
 
       {isLoading && (
         <Group justify="center" mt="xl">
@@ -75,8 +77,7 @@ export function InventoryCountsPage() {
       )}
 
       {!isLoading && !isError && (
-        <Table.ScrollContainer className="data-table-card" minWidth={780}>
-          <Table striped highlightOnHover>
+        <DataTable minWidth={780}>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <Table.Tr key={headerGroup.id}>
@@ -106,8 +107,7 @@ export function InventoryCountsPage() {
                 </Table.Tr>
               )}
             </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+          </DataTable>
       )}
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Nova contagem" size="xl">
