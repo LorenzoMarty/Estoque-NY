@@ -1,0 +1,109 @@
+version: 1
+
+spec:
+  slug: redesign-ui-estoque
+  status: done
+
+selection:
+  generated_at: "2026-10-04T00:00:00-03:00"
+  inventory_source: "~/.claude/skills + listagem de skills de plugin fornecida pela sessão (2026-10-04)"
+  project_context:
+    framework: "React 19 + Vite + TypeScript, Mantine 9 (core/charts/notifications), recharts 3, TanStack Query/Table, lucide-react, vitest + Testing Library"
+    architecture: "frontend/src por feature (dashboard, products, movements, transfers, inventory-counts, reports, cadastros, users, audit) + app/shell + shared/ui; tema em app/theme.ts (Mantine createTheme, azul + branco); sem Tailwind nem shadcn"
+  notes: ""
+
+selected:
+  - name: dataviz
+    source: local
+    priority: required
+    role: "REQ-4/REQ-5: KPI cards, gráfico de barras entradas vs saídas, donut de categorias, barra de breakdown de estoque; escolha de forma, paleta validada e marcas finas"
+    coverage: [REQ-3, REQ-4, REQ-5]
+    score: {task_fit: 5, project_compatibility: 4, requirement_coverage: 3, instruction_quality: 5, tool_compatibility: 5, historical_evidence: 4, overlap_penalty: 0, context_cost_penalty: 2}
+    reason: "a spec pede gráficos e tiles de KPI sobre dados reais; a skill traz o validador de paleta e as regras de marca/legenda. Funcionou no roadmap anterior."
+    classification: established
+    status: invoked
+    trigger: []
+
+  - name: "superpowers:verification-before-completion"
+    source: plugin
+    priority: required
+    role: "antes de marcar qualquer REQ, rodar npm run build, vitest e o smoke no browser e ler a saída"
+    coverage: [REQ-1, REQ-2, REQ-3, REQ-4, REQ-5, REQ-6, REQ-7]
+    score: {task_fit: 5, project_compatibility: 5, requirement_coverage: 5, instruction_quality: 5, tool_compatibility: 5, historical_evidence: 4, overlap_penalty: 0, context_cost_penalty: 1}
+    reason: "critérios de concluído são todos verificáveis em runtime; invocar no início da fase de verificação, não no fim."
+    classification: verified
+    status: invoked
+    trigger: []
+
+  - name: run
+    source: plugin
+    priority: required
+    role: "subir backend com banco temporário + frontend e dirigir o app para o smoke de todas as telas e os screenshots"
+    coverage: [REQ-7]
+    score: {task_fit: 4, project_compatibility: 4, requirement_coverage: 2, instruction_quality: 4, tool_compatibility: 4, historical_evidence: 1, overlap_penalty: 1, context_cost_penalty: 1}
+    reason: "o critério de concluído exige ver o app funcionando; o hub já documenta a receita (backend .venv-local porta 8010 + VITE_API_URL), a skill ajuda a executá-la."
+    classification: experimental
+    status: invoked
+    trigger: []
+
+  - name: claude-obsidian
+    source: local
+    priority: required
+    role: "ao concluir, Registro no hub New York (Estoque) e marcar o item de UI/UX no backlog"
+    coverage: [REQ-1, REQ-2, REQ-3, REQ-4, REQ-5, REQ-6]
+    score: {task_fit: 4, project_compatibility: 5, requirement_coverage: 5, instruction_quality: 5, tool_compatibility: 5, historical_evidence: 5, overlap_penalty: 0, context_cost_penalty: 1}
+    reason: "regra 3 da política; mudança grande de frontend merece Registro."
+    classification: established
+    status: invoked
+    trigger: []
+
+  - name: "accesslint:audit"
+    source: plugin
+    priority: conditional
+    role: "auditar contraste/foco/teclado nos componentes interativos novos"
+    coverage: [REQ-1, REQ-3, REQ-5]
+    score: {task_fit: 4, project_compatibility: 4, requirement_coverage: 3, instruction_quality: 4, tool_compatibility: 3, historical_evidence: 0, overlap_penalty: 1, context_cost_penalty: 2}
+    reason: "sidebar com item ativo escuro, abas e alternância lista/grid são controles novos; contraste do item ativo e das pills é o risco real."
+    classification: experimental
+    status: invoked
+    trigger: ["a sidebar, as abas do dashboard, a alternância lista/grid ou as pills de status forem implementadas com cores/estados novos"]
+
+  - name: react-best-practices
+    source: local
+    priority: optional
+    role: "consulta pontual ao extrair os componentes compartilhados (re-render, memo em tabelas)"
+    coverage: [REQ-3]
+    score: {task_fit: 3, project_compatibility: 3, requirement_coverage: 2, instruction_quality: 4, tool_compatibility: 5, historical_evidence: 0, overlap_penalty: 1, context_cost_penalty: 2}
+    reason: "foco Next.js/bundle; só ajuda de leve neste SPA Vite."
+    classification: verified
+    status: skipped-justified
+    trigger: []
+
+excluded:
+  - name: ui-styling
+    reason: "baseada em shadcn/Tailwind; o projeto usa Mantine e a spec proíbe dependência nova."
+  - name: frontend-design:frontend-design
+    reason: "direção visual já fixada pela referência Behance e pelo tema azul atual."
+  - name: ui-ux-pro-max
+    reason: "banco de paletas/estilos; a paleta está decidida (manter o azul)."
+  - name: web-design-guidelines
+    reason: "redundante com accesslint:audit para o risco principal; reconsiderar se a revisão pedir."
+  - name: motion-design
+    reason: "animação não faz parte dos requisitos."
+  - name: "example-skills:webapp-testing"
+    reason: "cobre o mesmo smoke que a skill run + Playwright MCP; uma só para a necessidade."
+
+unavailable: []
+
+conflicts:
+  - candidates: [react-best-practices, "vercel:react-best-practices"]
+    decision: react-best-practices
+    reason: "skill própria vence a de plugin genérico; ambas voltadas a Next.js, por isso fica só optional."
+
+discovered_during_implementation: []
+
+validation:
+  required: [review-spec]
+
+outcome:
+  status: ok

@@ -1,6 +1,6 @@
 ---
 slug: ci-testes-backend
-status: in-progress
+status: done
 revision_count: 1
 created: 2026-10-04
 ---
@@ -15,7 +15,7 @@ implementado do roadmap `roadmap-new-york` (eixo Engenharia).
 
 ## Requisitos
 
-- [~] REQ-1: `.github/workflows/ci.yml` roda em push e pull_request para `master`, com dois jobs
+- [x] REQ-1: `.github/workflows/ci.yml` roda em push e pull_request para `master`, com dois jobs
   em Linux: backend (Python 3.12: `ruff check`, `ruff format --check`, `pytest`) e frontend
   (`npm ci`, typecheck, `vitest`, build).
 - [x] REQ-2: black sai das dev deps e do `pyproject.toml`; `ruff format` vira o formatter único,
@@ -75,3 +75,6 @@ aprovação).
   sessão; `docs/README.pt-BR.md` trocou o comando black por ruff; `tests/helpers.py` compartilhado.
   Para fechar: fazer push da branch, ver o workflow verde no Actions e então marcar REQ-1 e
   `status: done`.
+- Fechamento (2026-10-04): branch `ci/testes-backend` mesclada em `master` (fast-forward) e enviada.
+  Run 37232518006 do workflow CI em `master`: jobs `backend` e `frontend` verdes (ruff, pytest e
+  build passam; o `mypy` falha e é ignorado por `continue-on-error`, como previsto no REQ-5).
