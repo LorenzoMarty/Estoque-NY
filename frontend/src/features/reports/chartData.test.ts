@@ -1,3 +1,4 @@
+import { statusPalette } from "../../app/theme";
 import { describe, expect, it } from "vitest";
 import type { AbcRow, ValuationRow } from "./api";
 import { countByAbcClass, topValuationByLabel } from "./chartData";
@@ -30,9 +31,9 @@ describe("countByAbcClass", () => {
     ];
     const result = countByAbcClass(rows);
     expect(result).toEqual([
-      { class_name: "A", count: 2, color: "teal.6" },
-      { class_name: "B", count: 1, color: "yellow.6" },
-      { class_name: "C", count: 0, color: "red.6" },
+      { class_name: "A", count: 2, color: statusPalette.good },
+      { class_name: "B", count: 1, color: statusPalette.warning },
+      { class_name: "C", count: 0, color: statusPalette.critical },
     ]);
   });
 });

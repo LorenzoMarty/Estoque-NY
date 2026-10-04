@@ -1,3 +1,4 @@
+import { statusPalette } from "../../app/theme";
 import type { AbcRow, ValuationRow } from "./api";
 
 export interface ValuationChartPoint {
@@ -18,7 +19,11 @@ export interface AbcClassCount {
   color: string;
 }
 
-const ABC_COLORS: Record<AbcRow["class_name"], string> = { A: "teal.6", B: "yellow.6", C: "red.6" };
+const ABC_COLORS: Record<AbcRow["class_name"], string> = {
+  A: statusPalette.good,
+  B: statusPalette.warning,
+  C: statusPalette.critical,
+};
 
 export function countByAbcClass(rows: AbcRow[]): AbcClassCount[] {
   const counts: Record<string, number> = { A: 0, B: 0, C: 0 };

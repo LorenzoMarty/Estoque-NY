@@ -1,7 +1,9 @@
-import { Alert, Group, Loader, Select, Switch, Table, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Group, Loader, Select, Switch, Table, Text, TextInput } from "@mantine/core";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import { DataTable } from "../../shared/ui/DataTable";
 import { useAuthStore } from "../auth/store";
 import { strings } from "../../shared/strings";
 import { useAssignRole, useRolesQuery, useSetUserActive, useUsersQuery, type UserWithRoles } from "./api";
@@ -83,14 +85,10 @@ export function UsersPage() {
 
   return (
     <div className="workspace-page">
-      <Group className="page-hero" justify="space-between">
-        <div>
-          <Title order={2}>{strings.nav.users}</Title>
-          <Text c="dimmed" size="sm">
-            Usuários, papéis e status de acesso
-          </Text>
-        </div>
-      </Group>
+      <PageHeader
+        title={strings.nav.users}
+        subtitle="Usuários, papéis e status de acesso"
+      />
 
       <Group className="toolbar-card">
         <TextInput
@@ -120,8 +118,7 @@ export function UsersPage() {
       )}
 
       {!isLoading && !isError && (
-        <Table.ScrollContainer className="data-table-card" minWidth={760}>
-          <Table striped highlightOnHover>
+        <DataTable minWidth={760}>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <Table.Tr key={headerGroup.id}>
@@ -151,8 +148,7 @@ export function UsersPage() {
                 </Table.Tr>
               )}
             </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+          </DataTable>
       )}
     </div>
   );

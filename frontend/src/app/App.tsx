@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { RouterProvider } from "react-router";
 import { useAuthStore } from "../features/auth/store";
 import { router } from "./router";
-import { theme } from "./theme";
+import { cssVariablesResolver, theme } from "./theme";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +16,7 @@ export function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <MantineProvider theme={theme} defaultColorScheme="light">
+      <MantineProvider theme={theme} cssVariablesResolver={cssVariablesResolver} defaultColorScheme="light">
         <Notifications position="top-right" />
         <RouterProvider router={router} />
       </MantineProvider>

@@ -1,0 +1,734 @@
+/* Redesign layer: loaded after app.css/responsive.css, only overrides what the new layout changes. */
+
+/* Palette values come from app/theme.ts (cssVariablesResolver). Legacy app.css variables are remapped here so every
+   old rule follows the new palette. */
+:root {
+  --zinc-950: var(--rd-page);
+  --zinc-900: var(--rd-surface);
+  --zinc-850: var(--rd-surface-alt);
+  --zinc-800: var(--rd-tint);
+  --zinc-700: var(--rd-line);
+  --zinc-500: var(--rd-muted);
+  --zinc-400: var(--rd-ink-2);
+  --zinc-100: var(--rd-ink);
+  --orange-700: var(--rd-primary-hover);
+  --orange-600: var(--rd-primary);
+  --orange-500: var(--rd-primary);
+  --orange-300: var(--rd-primary);
+  --orange-200: var(--rd-tint-strong);
+  --orange-950: var(--rd-tint);
+}
+
+html,
+body {
+  background: var(--rd-page);
+  color: var(--rd-ink);
+}
+
+/* Mantine's default dimmed grey is ~3:1 on the page background; use the ink-2 shade (>=4.5:1). */
+:root[data-mantine-color-scheme="light"] {
+  --mantine-color-dimmed: var(--rd-ink-2);
+  /* Default placeholder grey measured 1.95:1 on white. */
+  --mantine-color-placeholder: var(--rd-muted);
+}
+
+/* Shape scale shared by cards, toolbars, tables and tabs. */
+:root {
+  --rd-radius: 16px;
+  --rd-radius-sm: 12px;
+}
+
+/* ---------- Shell ---------- */
+.app-shell {
+  background: var(--rd-page);
+}
+
+.app-shell .sidebar {
+  background: var(--rd-surface);
+  border-right: 1px solid var(--rd-line);
+}
+
+.app-shell .nav-link {
+  color: var(--rd-ink-2);
+  font-weight: 500;
+  border: 0;
+}
+
+.app-shell .nav-link i,
+.app-shell .nav-link svg {
+  color: var(--rd-muted);
+}
+
+.app-shell .nav-link:hover {
+  background: var(--rd-tint);
+  color: var(--rd-ink);
+  transform: none;
+}
+
+.app-shell .nav-link.is-active {
+  background: var(--rd-primary);
+  color: #ffffff;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--rd-primary) 28%, transparent);
+}
+
+.app-shell .nav-link.is-active i,
+.app-shell .nav-link.is-active svg {
+  color: #ffffff;
+}
+
+.app-shell .nav-link:focus-visible {
+  outline: 2px solid var(--rd-primary);
+  outline-offset: 2px;
+}
+
+.app-shell .nav-section-label {
+  letter-spacing: 0.08em;
+  color: var(--rd-ink-2);
+}
+
+/* ---------- Page header ---------- */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
+  min-width: 0;
+}
+
+.page-header > div {
+  min-width: 0;
+}
+
+.page-header h2 {
+  color: var(--rd-ink);
+  letter-spacing: -0.02em;
+}
+
+.page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* ---------- KPI tiles ---------- */
+.kpi-tile-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.kpi-tile {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 16px 18px;
+  background: var(--rd-surface);
+  border: 1px solid var(--rd-line);
+  border-radius: 16px;
+  box-shadow: var(--rd-shadow);
+}
+
+.kpi-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: var(--rd-tint);
+  color: var(--rd-primary-hover);
+}
+
+.kpi-tile-label {
+  font-size: 0.82rem;
+  color: var(--rd-muted);
+}
+
+.kpi-tile-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--rd-ink);
+  letter-spacing: -0.02em;
+}
+
+.kpi-tile-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.kpi-tile-trend small {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--rd-muted);
+}
+
+.kpi-tile-trend[data-tone="good"] {
+  color: var(--status-good-text);
+}
+
+.kpi-tile-trend[data-tone="critical"] {
+  color: var(--status-critical);
+}
+
+.kpi-tile-trend[data-tone="neutral"] {
+  color: var(--rd-muted);
+}
+
+/* ---------- Dashboard charts ---------- */
+.dashboard-charts {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+}
+
+.category-donut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 18px 24px;
+  padding-top: 8px;
+}
+
+.category-legend {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 180px;
+  flex: 1;
+}
+
+.category-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--rd-ink-2);
+}
+
+.category-legend .legend-name {
+  flex: 1;
+}
+
+.category-legend strong {
+  color: var(--rd-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* ---------- Tables ---------- */
+.data-table-card {
+  border: 1px solid var(--rd-line);
+  border-radius: var(--rd-radius);
+  background: var(--rd-surface);
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ds-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ds-table thead th:first-child {
+  border-top-left-radius: var(--rd-radius-sm);
+  border-bottom-left-radius: var(--rd-radius-sm);
+}
+
+.ds-table thead th:last-child {
+  border-top-right-radius: var(--rd-radius-sm);
+  border-bottom-right-radius: var(--rd-radius-sm);
+}
+
+.ds-table thead th {
+  background: var(--rd-tint);
+  color: var(--rd-ink-2);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rd-line);
+}
+
+.ds-table tbody td {
+  color: var(--rd-ink);
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--rd-line-soft);
+}
+
+.ds-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ds-table tbody tr:hover {
+  background: var(--rd-page);
+}
+
+.status-pill {
+  font-weight: 600;
+}
+
+/* Light-variant pill text darkened to reach 4.5:1 on its tinted background. */
+.status-pill[data-tone="warning"] {
+  color: var(--status-warning-pill-text);
+}
+
+.status-pill[data-tone="good"] {
+  color: var(--status-good-pill-text);
+}
+
+.mantine-Tabs-tab[data-active] {
+  background: var(--rd-primary);
+  color: #ffffff;
+}
+
+/* ---------- Stock breakdown (products) ---------- */
+.stock-summary {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--rd-surface);
+  border: 1px solid var(--rd-line);
+  border-radius: 16px;
+  box-shadow: var(--rd-shadow);
+}
+
+.stock-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stock-summary-head strong {
+  font-size: 1.6rem;
+  color: var(--rd-ink);
+}
+
+.stock-bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+}
+
+.stock-bar span {
+  min-width: 4px;
+  border-radius: 4px;
+}
+
+.stock-bar [data-status="in_stock"] {
+  background: var(--status-good);
+}
+
+.stock-bar [data-status="low_stock"] {
+  background: var(--status-warning);
+}
+
+.stock-bar [data-status="out_of_stock"] {
+  background: var(--status-critical);
+}
+
+.stock-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.86rem;
+  color: var(--rd-ink-2);
+}
+
+.stock-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stock-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.stock-legend-dot[data-status="in_stock"] {
+  background: var(--status-good);
+}
+
+.stock-legend-dot[data-status="low_stock"] {
+  background: var(--status-warning);
+}
+
+.stock-legend-dot[data-status="out_of_stock"] {
+  background: var(--status-critical);
+}
+
+.stock-legend strong {
+  color: var(--rd-ink);
+}
+
+/* ---------- Product cards ---------- */
+.product-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  min-width: 0;
+}
+
+.product-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: var(--rd-surface);
+  border: 1px solid var(--rd-line);
+  border-radius: 16px;
+  box-shadow: var(--rd-shadow);
+}
+
+.product-card-media {
+  display: grid;
+  place-items: center;
+  height: 110px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--rd-tint), var(--rd-surface-alt));
+  color: var(--rd-primary);
+}
+
+.product-card h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--rd-ink);
+}
+
+.product-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: var(--rd-muted);
+}
+
+/* ---------- Responsive ---------- */
+.workspace-page,
+.dashboard-charts,
+.kpi-tile-grid,
+.toolbar-card,
+.report-tabs,
+.report-split-panel,
+.category-donut,
+.product-card,
+.stock-summary {
+  min-width: 0;
+}
+
+.toolbar-card,
+.report-split-panel {
+  max-width: 100%;
+}
+
+.toolbar-card > *,
+.page-header-actions > *,
+.report-split-panel > * {
+  min-width: 0;
+}
+
+.report-tabs .mantine-Tabs-list {
+  flex-wrap: wrap;
+}
+
+.report-chart-card {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 1100px) {
+  .kpi-tile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    align-items: stretch;
+  }
+
+  .page-header,
+  .page-header-actions,
+  .toolbar-card,
+  .report-split-panel {
+    flex-direction: column;
+  }
+
+  .page-header-actions,
+  .page-header-actions .mantine-InputWrapper-root,
+  .page-header-actions .mantine-Button-root,
+  .toolbar-card .mantine-InputWrapper-root,
+  .toolbar-card .mantine-Button-root,
+  .toolbar-card .mantine-SegmentedControl-root {
+    width: 100%;
+  }
+
+  .kpi-tile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .category-donut {
+    align-items: stretch;
+  }
+
+  .category-legend {
+    width: 100%;
+  }
+}
+
+/* ---------- Login ---------- */
+.login-stage {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+.login-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Brand logo ---------- */
+.brand-logo {
+  display: block;
+  flex-shrink: 0;
+  width: auto;
+  height: 38px;
+}
+
+.login-logo {
+  display: block;
+  width: 168px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 12px;
+}
+
+/* Collapsed sidebar: the brand text only fades out in app.css and still takes space, pushing the logo off-screen. */
+.app-shell.sidebar-collapsed .sidebar-header {
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+
+.app-shell.sidebar-collapsed .brand {
+  width: auto;
+}
+
+.app-shell.sidebar-collapsed .brand-text,
+.app-shell.sidebar-collapsed .nav-label,
+.app-shell.sidebar-collapsed .nav-section-label {
+  display: none;
+}
+
+/* At <= 1200px app.css turns the sidebar into a drawer and ignores the collapsed state. */
+@media (max-width: 1200px) {
+  .app-shell.sidebar-collapsed .sidebar-header {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .app-shell.sidebar-collapsed .brand-text,
+  .app-shell.sidebar-collapsed .nav-label {
+    display: inline;
+  }
+
+  .app-shell.sidebar-collapsed .nav-section-label {
+    display: block;
+  }
+}
+
+/* ---------- Sidebar footer (notifications and account) ---------- */
+.app-shell .sidebar-nav {
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+  overflow-y: auto;
+}
+
+.sidebar-account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--rd-line);
+}
+
+.sidebar-account .profile-chip {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
+  text-align: left;
+  border-color: transparent;
+  background: transparent;
+}
+
+.sidebar-account .profile-chip:hover {
+  background: var(--rd-tint);
+  transform: none;
+}
+
+.sidebar-account .profile-chip:focus-visible,
+.sidebar-account .icon-btn:focus-visible {
+  outline: 2px solid var(--rd-primary);
+  outline-offset: 2px;
+}
+
+.sidebar-account .profile-meta {
+  display: flex;
+  min-width: 0;
+}
+
+.sidebar-account .profile-meta strong,
+.sidebar-account .profile-meta small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-account .avatar {
+  flex-shrink: 0;
+  background: var(--rd-primary);
+}
+
+.sidebar-account .icon-btn {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.app-shell.sidebar-collapsed .sidebar-account {
+  flex-direction: column-reverse;
+  justify-content: center;
+  gap: 10px;
+}
+
+.app-shell.sidebar-collapsed .sidebar-account .profile-chip {
+  flex: none;
+  padding: 4px;
+}
+
+.app-shell.sidebar-collapsed .sidebar-account .profile-meta {
+  display: none;
+}
+
+/* The top bar is gone: below 1200px the sidebar is a drawer, so a floating button opens it. */
+.mobile-menu-btn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 20;
+  box-shadow: var(--rd-shadow);
+}
+
+@media (max-width: 1200px) {
+  .app-shell.sidebar-collapsed .sidebar-account {
+    flex-direction: row;
+  }
+
+  .app-shell.sidebar-collapsed .sidebar-account .profile-chip {
+    flex: 1;
+    padding: 6px 10px;
+  }
+
+  .app-shell.sidebar-collapsed .sidebar-account .profile-meta {
+    display: flex;
+  }
+
+  .page-content {
+    padding-top: 68px;
+  }
+}
+
+/* ---------- Standard shapes ---------- */
+.toolbar-card,
+.stock-summary,
+.kpi-tile,
+.product-card {
+  border-radius: var(--rd-radius);
+}
+
+.mantine-Tabs-list {
+  gap: 6px;
+}
+
+.mantine-Tabs-list::before {
+  display: none;
+}
+
+.mantine-Tabs-tab {
+  border-radius: 999px;
+}
+
+/* Reports: legacy rules gave these tabs square-bottom corners and a grey active state. */
+.report-tabs {
+  border-radius: var(--rd-radius);
+}
+
+.report-tabs .mantine-Tabs-list {
+  border-bottom: 0;
+}
+
+.report-tabs .mantine-Tabs-tab {
+  border-radius: 999px;
+  color: var(--rd-ink-2);
+}
+
+.report-tabs .mantine-Tabs-tab[data-active] {
+  background: var(--rd-primary);
+  color: #ffffff;
+}
+
+.tab-stack {
+  display: grid;
+  gap: 16px;
+}
+
+/* app.css forces 14px with !important on small screens; keep the same shape scale everywhere. */
+@media (max-width: 992px) {
+  .toolbar-card,
+  .report-tabs,
+  .workspace-card {
+    border-radius: var(--rd-radius) !important;
+  }
+}

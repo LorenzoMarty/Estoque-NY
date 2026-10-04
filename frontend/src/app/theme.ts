@@ -1,40 +1,103 @@
-import { createTheme, type MantineColorsTuple } from "@mantine/core";
+import { Badge, Card, createTheme, Table, type CSSVariablesResolver, type MantineColorsTuple } from "@mantine/core";
 
-// frontend/css/app.css defines its palette twice: an original dark zinc/orange
-// `:root` block (lines 1-21) and a later "Light Theme (Blue + White)" `:root`
-// override (lines 1355-1381) that wins the cascade and is the design actually
-// in effect today (confirmed with the user 2026-09-13, since custom properties
-// resolve at used-value time and the later declaration overrides the earlier
-// one for every consumer in the file). This theme mirrors that light palette.
+// "Azul profundo": the single source of the brand palette. Mantine ramps below and the --rd-* CSS variables
+// (cssVariablesResolver) are both derived from it; app.css's legacy --zinc-*/--orange-* variables are remapped to
+// --rd-* in redesign.css.
+export const palette = {
+  primary: "#093B95",
+  primaryHover: "#072F78",
+  tint: "#e7eefb",
+  tintStrong: "#cfdcf5",
+  page: "#f4f8ff",
+  surface: "#ffffff",
+  surfaceAlt: "#f9fbff",
+  line: "#dbe6f7",
+  lineSoft: "#e8eef9",
+  ink: "#0b1b33",
+  ink2: "#4a5d7a",
+  muted: "#5a6b86",
+  // #093B95 is too dark to tell series apart (validator lightness band 0.43-0.77); same family, lighter.
+  chartBlue: "#1d57c7",
+  chartOrange: "#eb6834",
+} as const;
+
 const zinc: MantineColorsTuple = [
-  "#ffffff", // 0 — zinc-900 (surface)
-  "#f8fbff", // 1 — zinc-850
-  "#f5f9ff", // 2 — zinc-950 (page background)
-  "#eef4ff", // 3 — zinc-800
-  "#d8e3f3", // 4 — zinc-700
-  "#c4d2e8", // 5 — zinc-650
-  "#66758f", // 6 — zinc-500
-  "#4f617d", // 7 — zinc-400
-  "#2d3e59", // 8 — zinc-300
-  "#0f1f36", // 9 — zinc-100 (text)
+  palette.surface, // 0
+  palette.surfaceAlt, // 1
+  palette.page, // 2
+  palette.tint, // 3
+  palette.line, // 4
+  "#c5d3ea", // 5
+  palette.muted, // 6
+  palette.ink2, // 7
+  "#2b3d5a", // 8
+  palette.ink, // 9
 ];
 
 const brand: MantineColorsTuple = [
-  "#eff6ff", // 0 — orange-950 (pale blue tint under the new palette)
-  "#dbeafe", // 1 — orange-200
-  "#60a5fa", // 2 — orange-400
-  "#3b82f6", // 3 — orange-500 / orange-300
-  "#3b82f6", // 4
-  "#3b82f6", // 5
-  "#3b82f6", // 6 — orange-500, primary shade
-  "#2563eb", // 7 — orange-600
-  "#1d4ed8", // 8 — orange-700
-  "#1e40af", // 9 — indigo-500
+  palette.tint, // 0
+  palette.tintStrong, // 1
+  "#a6bdea", // 2
+  "#7b9bdd", // 3
+  "#4f78cc", // 4
+  "#2a58b5", // 5
+  palette.primary, // 6 — primary shade
+  palette.primaryHover, // 7
+  "#06255f", // 8
+  "#041b46", // 9
 ];
+
+// Semantic status colors shared by StatusPill, KPI trends and stock bars.
+export const statusTones = {
+  good: "teal",
+  warning: "yellow",
+  critical: "red",
+  info: "brand",
+  neutral: "gray",
+} as const;
+
+export type StatusTone = keyof typeof statusTones;
+
+// Reserved status palette (validated against the light surface). Exposed to CSS as --status-* variables.
+export const statusPalette = {
+  good: "#0ca30c",
+  goodText: "#006300",
+  goodPillText: "#0b5f2e",
+  warning: "#fab219",
+  warningPillText: "#7a4b00",
+  critical: "#d03b3b",
+} as const;
+
+export const cssVariablesResolver: CSSVariablesResolver = () => ({
+  variables: {
+    "--rd-primary": palette.primary,
+    "--rd-primary-hover": palette.primaryHover,
+    "--rd-tint": palette.tint,
+    "--rd-tint-strong": palette.tintStrong,
+    "--rd-page": palette.page,
+    "--rd-surface": palette.surface,
+    "--rd-surface-alt": palette.surfaceAlt,
+    "--rd-line": palette.line,
+    "--rd-line-soft": palette.lineSoft,
+    "--rd-ink": palette.ink,
+    "--rd-ink-2": palette.ink2,
+    "--rd-muted": palette.muted,
+    "--rd-shadow": "0 1px 3px rgba(11, 27, 51, 0.06), 0 4px 12px rgba(11, 27, 51, 0.05)",
+    "--status-good": statusPalette.good,
+    "--status-good-text": statusPalette.goodText,
+    "--status-good-pill-text": statusPalette.goodPillText,
+    "--status-warning": statusPalette.warning,
+    "--status-warning-pill-text": statusPalette.warningPillText,
+    "--status-critical": statusPalette.critical,
+  },
+  light: {},
+  dark: {},
+});
 
 export const theme = createTheme({
   primaryColor: "brand",
   primaryShade: 6,
+  black: palette.ink,
   fontFamily: "Inter, sans-serif",
   radius: {
     sm: "10px",
@@ -45,5 +108,16 @@ export const theme = createTheme({
   colors: {
     zinc,
     brand,
+  },
+  headings: { fontWeight: "700" },
+  shadows: {
+    xs: "0 1px 2px rgba(15, 31, 54, 0.05)",
+    sm: "0 1px 3px rgba(15, 31, 54, 0.06), 0 4px 12px rgba(15, 31, 54, 0.04)",
+    md: "0 8px 24px rgba(15, 31, 54, 0.08)",
+  },
+  components: {
+    Badge: Badge.extend({ defaultProps: { variant: "light", radius: "xl" } }),
+    Card: Card.extend({ defaultProps: { withBorder: true, radius: "lg", shadow: "xs" } }),
+    Table: Table.extend({ defaultProps: { verticalSpacing: "sm", highlightOnHover: true } }),
   },
 });
