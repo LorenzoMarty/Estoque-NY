@@ -1,0 +1,139 @@
+version: 1
+
+spec:
+  slug: reactbits-ui-estoque
+  status: done
+
+selection:
+  generated_at: "2026-10-04T00:00:00-03:00"
+  inventory_source: "~/.claude/skills + listagem de skills de plugin fornecida pela sessão (2026-10-04)"
+  project_context:
+    framework: "React 19 + Vite + TypeScript, Mantine 9 (core/charts), TanStack, lucide-react, vitest + Testing Library; sem Tailwind; sem lib de animação instalada"
+    architecture: "frontend/src por feature + shared/ui; tema em app/theme.ts (createTheme + statusPalette/cssVariablesResolver); camada de override css/redesign.css sobre o app.css legado; branch feat/redesign-ui com o redesign anterior ainda sem commit"
+  notes: ""
+
+selected:
+  - name: motion-design
+    source: local
+    priority: required
+    role: "timing, easing e coreografia do CountUp, AnimatedList e SpotlightCard; regras de movimento reduzido"
+    coverage: [REQ-4, REQ-5, REQ-6, REQ-8]
+    score: {task_fit: 5, project_compatibility: 4, requirement_coverage: 4, instruction_quality: 4, tool_compatibility: 5, historical_evidence: 0, overlap_penalty: 1, context_cost_penalty: 2}
+    reason: "a spec é de animação em UI de gestão; os princípios (duração curta, sem animar o que o usuário lê repetidamente, reduced-motion) evitam efeito decorativo que atrapalhe uso diário. Funciona com qualquer sistema, inclusive motion/gsap."
+    classification: verified
+    status: invoked
+    trigger: []
+
+  - name: dataviz
+    source: local
+    priority: required
+    role: "revalidar com validate_palette.js o par azul #2563eb + laranja nos gráficos e a ordem categórica do donut"
+    coverage: [REQ-3]
+    score: {task_fit: 5, project_compatibility: 4, requirement_coverage: 2, instruction_quality: 5, tool_compatibility: 5, historical_evidence: 4, overlap_penalty: 0, context_cost_penalty: 2}
+    reason: "REQ-3 exige validar a paleta com o validador; skill já usada com sucesso na rodada anterior."
+    classification: established
+    status: invoked
+    trigger: []
+
+  - name: "accesslint:audit"
+    source: plugin
+    priority: required
+    role: "medir contraste no DOM após a paleta nova e revisar animação/foco/movimento reduzido nos componentes novos"
+    coverage: [REQ-2, REQ-7, REQ-8]
+    score: {task_fit: 5, project_compatibility: 4, requirement_coverage: 3, instruction_quality: 4, tool_compatibility: 3, historical_evidence: 3, overlap_penalty: 0, context_cost_penalty: 2}
+    reason: "troca de cor primária e fundo animado atrás de formulário são os maiores riscos de contraste e legibilidade; na rodada anterior a auditoria achou 5 falhas reais."
+    classification: verified
+    status: invoked
+    trigger: []
+
+  - name: "superpowers:verification-before-completion"
+    source: plugin
+    priority: required
+    role: "rodar build, vitest e smoke antes de marcar REQs; comparar bundle antes e depois"
+    coverage: [REQ-1, REQ-2, REQ-3, REQ-4, REQ-5, REQ-6, REQ-7, REQ-8, REQ-9, REQ-10]
+    score: {task_fit: 5, project_compatibility: 5, requirement_coverage: 5, instruction_quality: 5, tool_compatibility: 5, historical_evidence: 4, overlap_penalty: 0, context_cost_penalty: 1}
+    reason: "critérios de concluído são todos verificáveis em runtime."
+    classification: verified
+    status: invoked
+    trigger: []
+
+  - name: run
+    source: plugin
+    priority: required
+    role: "subir backend de demonstração + frontend e dirigir o app no browser (movimento normal e reduzido, screenshots)"
+    coverage: [REQ-4, REQ-5, REQ-6, REQ-7, REQ-8]
+    score: {task_fit: 4, project_compatibility: 4, requirement_coverage: 3, instruction_quality: 4, tool_compatibility: 4, historical_evidence: 3, overlap_penalty: 0, context_cost_penalty: 1}
+    reason: "animação só se confirma vendo o app; a receita (backend SQLite temporário + seed + vite) já funcionou na spec anterior."
+    classification: verified
+    status: invoked
+    trigger: []
+
+  - name: claude-obsidian
+    source: local
+    priority: required
+    role: "Registro no hub New York (Estoque) e decisão de dependências novas (motion, gsap) em Decisões.md"
+    coverage: [REQ-9]
+    score: {task_fit: 4, project_compatibility: 5, requirement_coverage: 3, instruction_quality: 5, tool_compatibility: 5, historical_evidence: 5, overlap_penalty: 0, context_cost_penalty: 1}
+    reason: "regra 3 da política; adicionar duas dependências de runtime e a decisão de copiar código do React Bits é decisão permanente."
+    classification: established
+    status: invoked
+    trigger: []
+
+  - name: "gsap-skills:gsap-react"
+    source: plugin
+    priority: conditional
+    role: "limpeza correta de timelines/tweens do DotGrid em React 19 (cleanup, StrictMode)"
+    coverage: [REQ-7]
+    score: {task_fit: 4, project_compatibility: 4, requirement_coverage: 1, instruction_quality: 4, tool_compatibility: 5, historical_evidence: 0, overlap_penalty: 1, context_cost_penalty: 1}
+    reason: "o DotGrid do React Bits usa gsap direto; só vale consultar se o componente copiado vazar listeners/tweens no StrictMode ou precisar de ajuste."
+    classification: experimental
+    status: invoked
+    trigger: ["o DotGrid copiado precisar de alteração no código gsap (cleanup, StrictMode, reduced-motion) além de props"]
+
+excluded:
+  - name: "genjutsu:cast"
+    reason: "propõe tese de interação criativa e carrega sub-skills; sobrepõe motion-design e o escopo aqui já está fixado pelos componentes do React Bits."
+  - name: "gsap-skills:gsap-core"
+    reason: "DotGrid é copiado pronto; só a parte React (cleanup) pode precisar de consulta, coberta pela condicional."
+  - name: ui-ux-pro-max
+    reason: "banco de paletas; a paleta azul profundo já foi escolhida pelo usuário."
+  - name: "example-skills:theme-factory"
+    reason: "gera temas genéricos; o tema é o definido em REQ-1."
+  - name: frontend-design:frontend-design
+    reason: "direção estética já decidida."
+  - name: ui-styling
+    reason: "baseada em shadcn/Tailwind; o projeto usa Mantine."
+
+unavailable: []
+
+conflicts: []
+
+discovered_during_implementation: []
+
+validation:
+  required: [review-spec]
+
+outcome:
+  status: ok
+
+evaluations:
+  - skill: motion-design
+    useful: true
+    requirement_coverage: "perfil Corporate (200-400 ms, curva [0.2,0,0,1], cascata curta) orientou CountUp, AnimatedRow e SpotlightCard; reduced-motion virou requisito de primeira classe"
+    issues: []
+    future_confidence: increased
+  - skill: "accesslint:audit"
+    useful: true
+    requirement_coverage: "REQ-2 e REQ-7; achou placeholder a 1,95:1 que a paleta nova não corrigiria sozinha; audit_live não alcança telas autenticadas, então a medição foi feita no DOM via Playwright"
+    issues: ["audit_live exige sessão autenticada; sem isso a ferramenta automática não cobre as telas do app"]
+    future_confidence: unchanged
+  - skill: "gsap-skills:gsap-react"
+    useful: inconclusive
+    requirement_coverage: "REQ-7; recomenda useGSAP de @gsap/react, que exigiria terceira dependência; usei killTweensOf nos objetos como equivalente"
+    issues: ["recomendação principal conflita com a regra de não adicionar dependência"]
+    future_confidence: unchanged
+  - skill: run
+    useful: inconclusive
+    requirement_coverage: "nenhuma receita de projeto existe; a rotina backend SQLite temporário + seed + vite foi refeita à mão várias vezes"
+    issues: ["recomendar /run-skill-generator para capturar a receita"]
+    future_confidence: unchanged
