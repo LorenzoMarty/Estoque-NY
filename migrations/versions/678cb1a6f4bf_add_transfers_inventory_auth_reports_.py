@@ -282,62 +282,76 @@ def upgrade() -> None:
             "transfer_id", "sku_id", name="uq_transfer_item_transfer_sku"
         ),
     )
-    op.add_column("products", sa.Column("description", sa.Text(), nullable=True))
-    op.add_column("products", sa.Column("category_id", sa.Integer(), nullable=True))
-    op.add_column("products", sa.Column("brand_id", sa.Integer(), nullable=True))
-    op.create_foreign_key(
-        None, "products", "categories", ["category_id"], ["id"], ondelete="SET NULL"
-    )
-    op.create_foreign_key(
-        None, "products", "brands", ["brand_id"], ["id"], ondelete="SET NULL"
-    )
-    op.add_column("skus", sa.Column("name", sa.String(length=200), nullable=True))
-    op.add_column("skus", sa.Column("attributes", sa.JSON(), nullable=True))
-    op.add_column(
-        "skus",
-        sa.Column(
-            "cost",
-            sa.Numeric(precision=12, scale=2),
-            server_default="0",
-            nullable=False,
-        ),
-    )
-    op.add_column(
-        "skus",
-        sa.Column(
-            "price",
-            sa.Numeric(precision=12, scale=2),
-            server_default="0",
-            nullable=False,
-        ),
-    )
-    op.add_column("skus", sa.Column("tax_code", sa.String(length=50), nullable=True))
-    op.add_column(
-        "skus",
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
-            nullable=False,
-        ),
-    )
+    recreate = "always" if op.get_bind().dialect.name == "sqlite" else "never"
+
+    with op.batch_alter_table("products", recreate=recreate) as batch_op:
+        batch_op.add_column(sa.Column("description", sa.Text(), nullable=True))
+        batch_op.add_column(sa.Column("category_id", sa.Integer(), nullable=True))
+        batch_op.add_column(sa.Column("brand_id", sa.Integer(), nullable=True))
+        batch_op.create_foreign_key(
+            "products_category_id_fkey",
+            "categories",
+            ["category_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+        batch_op.create_foreign_key(
+            "products_brand_id_fkey",
+            "brands",
+            ["brand_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+
+    with op.batch_alter_table("skus", recreate=recreate) as batch_op:
+        batch_op.add_column(sa.Column("name", sa.String(length=200), nullable=True))
+        batch_op.add_column(sa.Column("attributes", sa.JSON(), nullable=True))
+        batch_op.add_column(
+            sa.Column(
+                "cost",
+                sa.Numeric(precision=12, scale=2),
+                server_default="0",
+                nullable=False,
+            )
+        )
+        batch_op.add_column(
+            sa.Column(
+                "price",
+                sa.Numeric(precision=12, scale=2),
+                server_default="0",
+                nullable=False,
+            )
+        )
+        batch_op.add_column(sa.Column("tax_code", sa.String(length=50), nullable=True))
+        batch_op.add_column(
+            sa.Column(
+                "created_at",
+                sa.DateTime(timezone=True),
+                server_default=sa.func.now(),
+                nullable=False,
+            )
+        )
     op.create_index("ix_skus_product_id", "skus", ["product_id"], unique=False)
-    op.add_column(
-        "stock_balances", sa.Column("location_id", sa.Integer(), nullable=True)
-    )
-    op.drop_constraint(
-        op.f("uq_stock_balances_branch_sku"), "stock_balances", type_="unique"
-    )
+
+    with op.batch_alter_table("stock_balances", recreate=recreate) as batch_op:
+        batch_op.add_column(sa.Column("location_id", sa.Integer(), nullable=True))
+        batch_op.drop_constraint(op.f("uq_stock_balances_branch_sku"), type_="unique")
+        batch_op.create_unique_constraint(
+            "uq_stock_balances_branch_sku_location",
+            ["branch_id", "sku_id", "location_id"],
+        )
+        batch_op.create_foreign_key(
+            "stock_balances_location_id_fkey",
+            "locations",
+            ["location_id"],
+            ["id"],
+            ondelete="CASCADE",
+        )
     op.create_index(
         "ix_stock_balances_lookup",
         "stock_balances",
         ["branch_id", "location_id", "sku_id"],
         unique=False,
-    )
-    op.create_unique_constraint(
-        "uq_stock_balances_branch_sku_location",
-        "stock_balances",
-        ["branch_id", "sku_id", "location_id"],
     )
     op.create_index(
         "uq_stock_balances_branch_sku_null_location",
@@ -345,15 +359,36 @@ def upgrade() -> None:
         ["branch_id", "sku_id"],
         unique=True,
         postgresql_where=sa.text("location_id IS NULL"),
+        sqlite_where=sa.text("location_id IS NULL"),
     )
-    op.create_foreign_key(
-        None, "stock_balances", "locations", ["location_id"], ["id"], ondelete="CASCADE"
-    )
-    op.add_column("stock_moves", sa.Column("transfer_id", sa.Integer(), nullable=True))
-    op.add_column(
-        "stock_moves", sa.Column("inventory_count_id", sa.Integer(), nullable=True)
-    )
-    op.add_column("stock_moves", sa.Column("created_by", sa.Integer(), nullable=True))
+
+    with op.batch_alter_table("stock_moves", recreate=recreate) as batch_op:
+        batch_op.add_column(sa.Column("transfer_id", sa.Integer(), nullable=True))
+        batch_op.add_column(
+            sa.Column("inventory_count_id", sa.Integer(), nullable=True)
+        )
+        batch_op.add_column(sa.Column("created_by", sa.Integer(), nullable=True))
+        batch_op.create_foreign_key(
+            "stock_moves_inventory_count_id_fkey",
+            "inventory_counts",
+            ["inventory_count_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+        batch_op.create_foreign_key(
+            "stock_moves_created_by_fkey",
+            "users",
+            ["created_by"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+        batch_op.create_foreign_key(
+            "stock_moves_transfer_id_fkey",
+            "transfer_orders",
+            ["transfer_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
     op.create_index(
         "ix_stock_moves_branch_location_sku_created",
         "stock_moves",
@@ -365,25 +400,6 @@ def upgrade() -> None:
         "stock_moves",
         ["move_type", "created_at"],
         unique=False,
-    )
-    op.create_foreign_key(
-        None,
-        "stock_moves",
-        "inventory_counts",
-        ["inventory_count_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
-    op.create_foreign_key(
-        None, "stock_moves", "users", ["created_by"], ["id"], ondelete="SET NULL"
-    )
-    op.create_foreign_key(
-        None,
-        "stock_moves",
-        "transfer_orders",
-        ["transfer_id"],
-        ["id"],
-        ondelete="SET NULL",
     )
     # ### end Alembic commands ###
 

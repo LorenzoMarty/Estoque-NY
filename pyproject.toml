@@ -21,7 +21,6 @@ dependencies = [
 [dependency-groups]
 dev = [
     "asgi-lifespan>=2.1.0",
-    "black>=26.1.0",
     "httpx>=0.28.1",
     "mypy>=1.19.1",
     "pytest>=9.0.2",
@@ -39,10 +38,6 @@ ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/versions/*.py" = ["E501", "I001", "UP007", "UP035"]
-
-[tool.black]
-line-length = 88
-target-version = ["py312"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

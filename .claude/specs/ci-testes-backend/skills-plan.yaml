@@ -1,0 +1,74 @@
+version: 1
+
+spec:
+  slug: ci-testes-backend
+  status: in-progress
+
+selection:
+  generated_at: "2026-10-04T00:00:00-03:00"
+  inventory_source: "~/.claude/skills + listagem de skills de plugin fornecida pela sessão (2026-10-04)"
+  project_context:
+    framework: "FastAPI + SQLAlchemy 2.0 + Alembic, pytest/pytest-asyncio, ruff (Python 3.12); frontend React 19 + Vite + TS + vitest"
+    architecture: "repo Estoque-NY, origin no GitHub (LorenzoMarty/Estoque-NY); deploy Render/Vercel; sem CI hoje; .venv-local é o ambiente Python funcional no Windows"
+  notes: ""
+
+selected:
+  - name: "superpowers:verification-before-completion"
+    source: plugin
+    priority: required
+    role: "antes de declarar REQ-3 e REQ-4 atendidos, rodar de fato alembic upgrade head do zero em SQLite e pytest via .venv-local e confirmar a saída"
+    coverage: [REQ-1, REQ-2, REQ-3, REQ-4, REQ-5]
+    score: {task_fit: 5, project_compatibility: 5, requirement_coverage: 5, instruction_quality: 5, tool_compatibility: 5, historical_evidence: 2, overlap_penalty: 0, context_cost_penalty: 1}
+    reason: "os critérios de concluído são todos verificáveis em runtime (pytest, alembic, workflow); a skill reforça a regra global de verificar antes de concluir."
+    classification: verified
+    status: invoked
+    evaluation:
+      useful: true
+      requirement_coverage: "forçou rodar pytest/ruff/alembic frescos antes de declarar REQs; a simulação do CI em cópia limpa veio da revisão"
+      issues: ["foi invocada depois de boa parte da verificação já feita, não antes de implementar"]
+      future_confidence: unchanged
+    trigger: []
+
+  - name: claude-obsidian
+    source: local
+    priority: required
+    role: "ao concluir, gravar Registro no hub New York (Estoque) e atualizar o item de CI no backlog do hub (regra 3 da política)"
+    coverage: [REQ-1, REQ-2, REQ-3, REQ-4, REQ-5]
+    score: {task_fit: 4, project_compatibility: 5, requirement_coverage: 5, instruction_quality: 5, tool_compatibility: 5, historical_evidence: 5, overlap_penalty: 0, context_cost_penalty: 1}
+    reason: "mudança de pipeline/ferramental e decisão de formatter (black -> ruff) são conhecimento permanente; Decisões.md do Estoque deve receber a decisão do formatter."
+    classification: established
+    status: invoked
+    trigger: []
+
+  - name: knowledge-manager
+    source: local
+    priority: optional
+    role: "atualizar ctx-engenharia-ci-cd (confidence/conteúdo) depois que os gaps de CI/teste/migration forem fechados"
+    coverage: [REQ-1, REQ-3, REQ-4]
+    score: {task_fit: 3, project_compatibility: 5, requirement_coverage: 3, instruction_quality: 5, tool_compatibility: 5, historical_evidence: 4, overlap_penalty: 0, context_cost_penalty: 1}
+    reason: "o contexto cacheado descreve os gaps que esta spec fecha; fica obsoleto se não for atualizado, mas não bloqueia a conclusão."
+    classification: established
+    status: invoked
+    trigger: []
+
+excluded:
+  - name: "superpowers:test-driven-development"
+    reason: "REQ-4 escreve testes para código já existente e estável; ciclo red-green sobre domínio que não muda não se aplica. Os testes novos devem passar de primeira."
+  - name: "vercel:deployments-cicd"
+    reason: "foca CI/CD da Vercel; esta spec usa GitHub Actions e deploy gate está fora de escopo."
+  - name: code-review
+    reason: "sem diff de regra de negócio; a verificação relevante é rodar o pipeline, não revisar lógica. Revisitar se o reformat do ruff tocar muitos arquivos."
+  - name: quality-gate
+    reason: "encadeia code-review + simplify, redundante aqui pelos mesmos motivos."
+
+unavailable: []
+
+conflicts: []
+
+discovered_during_implementation: []
+
+validation:
+  required: [review-spec]
+
+outcome:
+  status: ok
