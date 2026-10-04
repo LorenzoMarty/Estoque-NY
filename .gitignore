@@ -28,3 +28,5 @@ streamlit_app/.env
 
 # Claude knowledge cache (derived, not source of truth)
 .claude/knowledge/
+*.db.bak*
+*.bak-*
