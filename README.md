@@ -8,8 +8,9 @@
 ![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-## Features
+## What it does
 
 - **Stock control** per branch and location, with a dedicated stock engine and domain services that keep business rules out of the routes. Negative stock can be blocked by configuration.
 - **Transfers** between branches, with a transfer service and idempotent write operations (enforced in production via configuration) so retried requests do not duplicate movements.
@@ -19,7 +20,7 @@
 - **Reports and audit trail.**
 - **Health checks** for the API and the database (`/health`, `/health/db`).
 
-## Architecture
+## How it works
 
 ```text
 frontend/ (React 19 + Vite + Mantine)  ──►  FastAPI  ──►  PostgreSQL (SQLite locally)
@@ -29,6 +30,8 @@ frontend/ (React 19 + Vite + Mantine)  ──►  FastAPI  ──►  PostgreSQL
                                         app/domain  (pure business rules:
                                         stock_engine, inventory_service, transfer_service)
 ```
+
+## Tech stack
 
 | Layer | Technology |
 |---|---|
@@ -66,8 +69,23 @@ npm run dev      # also: npm run typecheck · npm run test · npm run build
 
 With Postgres, apply migrations first: `uv run alembic upgrade head`.
 
-## Status and roadmap
+## Quality checks
+
+```bash
+uv run pytest                      # API tests
+cd frontend && npm run typecheck && npm run test
+```
+
+## Status
 
 - The API domains above are implemented.
 - The frontend is being migrated from a legacy vanilla-JS UI to React + TypeScript, feature by feature; the domain screens are still being built.
 - Next: evolve the current API into a multi-frontend admin API with standardized prefixes (`/stock`, `/catalog`, `/marketing`, `/reports`, `/admin`) — see [docs/admin-api-roadmap.md](docs/admin-api-roadmap.md) — and feed a public product catalog to the storefront.
+
+## License
+
+[MIT](LICENSE)
+
+## Author
+
+**Lorenzo Marty** — [GitHub](https://github.com/LorenzoMarty)
