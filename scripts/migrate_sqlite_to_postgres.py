@@ -69,9 +69,7 @@ def _to_sync_postgres_url(database_url: str) -> str:
         return "postgresql+psycopg://" + database_url[len("postgresql+psycopg2://") :]
     if lowered.startswith("postgresql+psycopg://"):
         return database_url
-    raise ValueError(
-        "DATABASE_URL must point to PostgreSQL. " f"Received: {database_url}"
-    )
+    raise ValueError(f"DATABASE_URL must point to PostgreSQL. Received: {database_url}")
 
 
 def _to_sqlite_url(sqlite_path: str) -> str:

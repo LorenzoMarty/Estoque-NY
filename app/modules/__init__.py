@@ -1,4 +1,4 @@
-﻿from app.modules import (
+from app.modules import (
     audit,
     auth,
     branches,

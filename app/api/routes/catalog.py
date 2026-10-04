@@ -145,9 +145,7 @@ async def list_brands(
     )
     return BrandListOut(
         items=[BrandOut.model_validate(row) for row in rows],
-        meta=page_meta(
-            total=int(total), page=params.page, page_size=params.page_size
-        ),
+        meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
     )
 
 
