@@ -1,8 +1,10 @@
-import { Alert, Button, Group, Select, Switch, Table, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Button, Group, Select, Switch, Table, TextInput } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import { DataTable } from "../../shared/ui/DataTable";
 import { useAuthStore } from "../auth/store";
 import { strings } from "../../shared/strings";
 import { UserBranchesModal } from "./UserBranchesModal";
@@ -98,14 +100,10 @@ export function UsersPage() {
   return (
     <div className="workspace-page">
       <UserBranchesModal user={branchesUser} onClose={() => setBranchesUser(null)} />
-      <Group className="page-hero" justify="space-between">
-        <div>
-          <Title order={2}>{strings.nav.users}</Title>
-          <Text c="dimmed" size="sm">
-            Usuários, papéis e status de acesso
-          </Text>
-        </div>
-      </Group>
+      <PageHeader
+        title={strings.nav.users}
+        subtitle="Usuários, papéis e status de acesso"
+      />
 
       <Group className="toolbar-card">
         <TextInput
@@ -125,8 +123,7 @@ export function UsersPage() {
       )}
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(users ?? []).length === 0} errorMessage="Não foi possível carregar os usuários." emptyMessage="Nenhum usuário encontrado." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={760} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
-          <Table striped highlightOnHover>
+        <DataTable minWidth={760}>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <Table.Tr key={headerGroup.id}>
@@ -147,8 +144,7 @@ export function UsersPage() {
                 </Table.Tr>
               ))}
             </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+        </DataTable>
       </QueryState>
     </div>
   );

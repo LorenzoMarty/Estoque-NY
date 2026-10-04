@@ -1,18 +1,22 @@
-import { Badge, Button, Group, Modal, Table, Text, Title } from "@mantine/core";
+import { Button, Group, Modal, Table, Text } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { StatusPill } from "../../shared/ui/StatusPill";
+import type { StatusTone } from "../../app/theme";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import { DataTable } from "../../shared/ui/DataTable";
 import { strings } from "../../shared/strings";
 import type { Transfer, TransferStatus } from "../../shared/types/stock";
 import { useCancelTransfer, useReceiveTransfer, useShipTransfer, useTransfersQuery } from "./api";
 import { TransferForm } from "./TransferForm";
 
-const STATUS_COLORS: Record<TransferStatus, string> = {
-  DRAFT: "gray",
-  SHIPPED: "blue",
-  RECEIVED: "teal",
-  CANCELLED: "red",
+const STATUS_TONES: Record<TransferStatus, StatusTone> = {
+  DRAFT: "neutral",
+  SHIPPED: "info",
+  RECEIVED: "good",
+  CANCELLED: "critical",
 };
 
 const STATUS_LABELS: Record<TransferStatus, string> = {
@@ -41,9 +45,9 @@ export function TransfersPage() {
         columnHelper.accessor("status", {
           header: "Status",
           cell: (info) => (
-            <Badge color={STATUS_COLORS[info.getValue()]} variant="light">
+            <StatusPill tone={STATUS_TONES[info.getValue()]}>
               {STATUS_LABELS[info.getValue()]}
-            </Badge>
+            </StatusPill>
           ),
         }),
         columnHelper.accessor("items", { header: "Itens", cell: (info) => info.getValue().length }),
@@ -83,21 +87,20 @@ export function TransfersPage() {
 
   return (
     <div className="workspace-page logistics-page">
-      <Group className="page-hero page-hero-logistics" justify="space-between">
-        <div>
-          <Title order={2}>{strings.nav.transfers}</Title>
-          <Text c="dimmed" size="sm">
-            Transferências entre filiais
-          </Text>
-        </div>
-        <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
+      <PageHeader
+        title={strings.nav.transfers}
+        subtitle="Transferências entre filiais"
+        actions={
+          <>
+            <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
           Nova transferência
         </Button>
-      </Group>
+          </>
+        }
+      />
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(transfers ?? []).length === 0} errorMessage="Não foi possível carregar as transferências." emptyMessage="Nenhuma transferência encontrada." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={920} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
-          <Table striped highlightOnHover>
+        <DataTable minWidth={920}>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <Table.Tr key={headerGroup.id}>
@@ -118,8 +121,7 @@ export function TransfersPage() {
                 </Table.Tr>
               ))}
             </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+        </DataTable>
       </QueryState>
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Nova transferência" size="xl">

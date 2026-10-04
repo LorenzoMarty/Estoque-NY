@@ -3,6 +3,7 @@ import { QueryState } from "../../shared/ui/QueryState";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
+import { DataTable } from "../../shared/ui/DataTable";
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
 
 interface NamedEntity {
@@ -76,8 +77,8 @@ export function NameOnlyTab<T extends NamedEntity>({ label, newLabel, query, use
   }
 
   return (
-    <div>
-      <Group justify="flex-end" mb="md">
+    <div className="tab-stack">
+      <Group justify="flex-end">
         <Button leftSection={<Plus size={16} />} onClick={openCreate}>
           {newLabel}
         </Button>
@@ -90,7 +91,7 @@ export function NameOnlyTab<T extends NamedEntity>({ label, newLabel, query, use
         errorMessage={`Não foi possível carregar ${label.toLowerCase()}s.`}
         onRetry={() => void query.refetch?.()}
       >
-        <Table striped highlightOnHover>
+        <DataTable minWidth={520}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Nome</Table.Th>
@@ -114,7 +115,7 @@ export function NameOnlyTab<T extends NamedEntity>({ label, newLabel, query, use
               </Table.Tr>
             ))}
           </Table.Tbody>
-        </Table>
+        </DataTable>
       </QueryState>
 
       <Modal opened={creating || Boolean(editing)} onClose={() => { setCreating(false); setEditing(null); }} title={editing ? `Editar ${label.toLowerCase()}` : newLabel}>

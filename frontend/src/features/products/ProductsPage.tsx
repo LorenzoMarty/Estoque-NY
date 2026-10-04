@@ -1,19 +1,31 @@
-import { Badge, Button, Group, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { Button, Group, Modal, SegmentedControl, Table, Text, TextInput } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { notifications } from "@mantine/notifications";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { Download, Pencil, Plus, Search, Upload } from "lucide-react";
+import { Download, LayoutGrid, List, Package, Pencil, Plus, Search, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
+import SpotlightCard from "../../shared/reactbits/SpotlightCard";
+import { STOCK_STATUS_META, stockStatus, summarizeStock } from "../../shared/stock";
 import { strings } from "../../shared/strings";
 import type { Product } from "../../shared/types/stock";
-import { useProductsQuery } from "./api";
+import { DataTable } from "../../shared/ui/DataTable";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import { StatusPill } from "../../shared/ui/StatusPill";
+import { useProductsQuery, useProductStockQuery } from "./api";
 import { downloadCatalogCsv } from "./importApi";
 import { ImportCatalogModal } from "./ImportCatalogModal";
 import { ProductForm } from "./ProductForm";
+import { StockSummaryBar } from "./StockSummaryBar";
+
+interface ProductRow extends Product {
+  on_hand: number;
+}
+
+type ViewMode = "list" | "grid";
 
 const tableFeatureSet = tableFeatures({});
-const columnHelper = createColumnHelper<typeof tableFeatureSet, Product>();
-const EMPTY_ROWS: Product[] = [];
+const columnHelper = createColumnHelper<typeof tableFeatureSet, ProductRow>();
+const EMPTY_ROWS: ProductRow[] = [];
 
 async function exportCsv() {
   try {
@@ -29,22 +41,40 @@ async function exportCsv() {
 
 export function ProductsPage() {
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<ViewMode>("list");
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
   const { data: products, isLoading, isError, refetch } = useProductsQuery({ q: search || undefined });
+  const { data: stockByProduct } = useProductStockQuery();
+
+  const rows: ProductRow[] = useMemo(
+    () => (products ?? []).map((product) => ({ ...product, on_hand: stockByProduct?.get(product.id) ?? 0 })),
+    [products, stockByProduct]
+  );
+  const summary = useMemo(() => summarizeStock(rows.map((row) => row.on_hand)), [rows]);
 
   const columns = useMemo(
     () =>
       columnHelper.columns([
-        columnHelper.accessor("name", { header: "Nome" }),
+        columnHelper.accessor("name", { header: "Produto" }),
         columnHelper.accessor("brand", { header: "Marca", cell: (info) => info.getValue() || "—" }),
+        columnHelper.accessor("on_hand", {
+          header: "Em estoque",
+          cell: (info) => info.getValue().toLocaleString("pt-BR"),
+        }),
+        columnHelper.display({
+          id: "stock_status",
+          header: "Situação",
+          cell: (info) => {
+            const meta = STOCK_STATUS_META[stockStatus(info.row.original.on_hand)];
+            return <StatusPill tone={meta.tone}>{meta.label}</StatusPill>;
+          },
+        }),
         columnHelper.accessor("active", {
-          header: "Status",
+          header: "Cadastro",
           cell: (info) => (
-            <Badge color={info.getValue() ? "teal" : "gray"} variant="light">
-              {info.getValue() ? "Ativo" : "Inativo"}
-            </Badge>
+            <StatusPill tone={info.getValue() ? "good" : "neutral"}>{info.getValue() ? "Ativo" : "Inativo"}</StatusPill>
           ),
         }),
         columnHelper.display({
@@ -60,31 +90,31 @@ export function ProductsPage() {
     []
   );
 
-  const table = useTable({ features: tableFeatureSet, columns, data: products ?? EMPTY_ROWS });
+  const table = useTable({ features: tableFeatureSet, columns, data: rows.length ? rows : EMPTY_ROWS });
 
   return (
     <div className="workspace-page catalog-page">
-      <Group className="page-hero page-hero-catalog" justify="space-between">
-        <div>
-          <Title order={2}>{strings.nav.products}</Title>
-          <Text c="dimmed" size="sm">
-            Catálogo de produtos
-          </Text>
-        </div>
-        <Group gap="xs">
-          <Button variant="default" leftSection={<Download size={16} />} onClick={() => void exportCsv()}>
-            Exportar CSV
-          </Button>
-          <Button variant="default" leftSection={<Upload size={16} />} onClick={() => setImporting(true)}>
-            Importar CSV
-          </Button>
-          <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
-            Novo produto
-          </Button>
-        </Group>
-      </Group>
+      <PageHeader
+        title={strings.nav.products}
+        subtitle="Catálogo de produtos"
+        actions={
+          <>
+            <Button variant="default" leftSection={<Download size={16} />} onClick={() => void exportCsv()}>
+              Exportar CSV
+            </Button>
+            <Button variant="default" leftSection={<Upload size={16} />} onClick={() => setImporting(true)}>
+              Importar CSV
+            </Button>
+            <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
+              Novo produto
+            </Button>
+          </>
+        }
+      />
 
-      <Group className="toolbar-card">
+      {!isLoading && !isError && <StockSummaryBar summary={summary} />}
+
+      <Group justify="space-between" className="toolbar-card">
         <TextInput
           aria-label="Buscar por nome"
           placeholder="Buscar por nome"
@@ -93,33 +123,68 @@ export function ProductsPage() {
           onChange={(event) => setSearch(event.currentTarget.value)}
           w={{ base: "100%", sm: 420 }}
         />
+        <SegmentedControl
+          aria-label="Modo de visualização"
+          value={view}
+          onChange={(value) => setView(value as ViewMode)}
+          data={[
+            { value: "list", label: <List size={16} aria-label="Lista" /> },
+            { value: "grid", label: <LayoutGrid size={16} aria-label="Cards" /> },
+          ]}
+        />
       </Group>
 
-      <QueryState isLoading={isLoading} isError={isError} isEmpty={(products ?? []).length === 0} errorMessage="Não foi possível carregar os produtos." emptyMessage="Nenhum produto encontrado." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={760} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
-          <Table striped highlightOnHover>
-            <Table.Thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <Table.Tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <Table.Th key={header.id}>{header.isPlaceholder ? null : <table.FlexRender header={header} />}</Table.Th>
-                  ))}
-                </Table.Tr>
-              ))}
-            </Table.Thead>
-            <Table.Tbody>
-              {table.getRowModel().rows.map((row) => (
-                <Table.Tr key={row.id}>
-                  {row.getAllCells().map((cell) => (
-                    <Table.Td key={cell.id}>
-                      <table.FlexRender cell={cell} />
-                    </Table.Td>
-                  ))}
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+      <QueryState isLoading={isLoading} isError={isError} isEmpty={rows.length === 0} errorMessage="Não foi possível carregar os produtos." emptyMessage="Nenhum produto encontrado." onRetry={() => void refetch()}>
+      {view === "list" ? (
+        <DataTable minWidth={820}>
+          <Table.Thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <Table.Tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <Table.Th key={header.id}>{header.isPlaceholder ? null : <table.FlexRender header={header} />}</Table.Th>
+                ))}
+              </Table.Tr>
+            ))}
+          </Table.Thead>
+          <Table.Tbody>
+            {table.getRowModel().rows.map((row) => (
+              <Table.Tr key={row.id}>
+                {row.getAllCells().map((cell) => (
+                  <Table.Td key={cell.id}>
+                    <table.FlexRender cell={cell} />
+                  </Table.Td>
+                ))}
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </DataTable>
+      ) : (
+        <div className="product-grid">
+          {rows.map((row) => {
+            const meta = STOCK_STATUS_META[stockStatus(row.on_hand)];
+            return (
+              <SpotlightCard as="article" className="product-card" key={row.id}>
+                <div className="product-card-media" aria-hidden>
+                  <Package size={36} />
+                </div>
+                <div>
+                  <h3>{row.name}</h3>
+                  <Text c="dimmed" size="xs">
+                    {row.brand || "Sem marca"}
+                  </Text>
+                </div>
+                <div className="product-card-meta">
+                  <span>{row.on_hand.toLocaleString("pt-BR")} em estoque</span>
+                  <StatusPill tone={meta.tone}>{meta.label}</StatusPill>
+                </div>
+                <Button size="xs" variant="light" leftSection={<Pencil size={14} />} onClick={() => setEditing(row)}>
+                  Editar
+                </Button>
+              </SpotlightCard>
+            );
+          })}
+        </div>
+      )}
       </QueryState>
 
       <ImportCatalogModal opened={importing} onClose={() => setImporting(false)} />

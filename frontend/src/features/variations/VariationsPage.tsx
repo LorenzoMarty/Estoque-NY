@@ -1,8 +1,11 @@
-import { Badge, Button, Group, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { Button, Group, Modal, Table, Text, TextInput } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Pencil, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { StatusPill } from "../../shared/ui/StatusPill";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import { DataTable } from "../../shared/ui/DataTable";
 import { strings } from "../../shared/strings";
 import type { Sku } from "../../shared/types/stock";
 import { useSkusListQuery } from "./api";
@@ -44,9 +47,9 @@ export function VariationsPage() {
         columnHelper.accessor("active", {
           header: "Status",
           cell: (info) => (
-            <Badge color={info.getValue() ? "teal" : "gray"} variant="light">
+            <StatusPill tone={info.getValue() ? "good" : "neutral"}>
               {info.getValue() ? "Ativo" : "Inativo"}
-            </Badge>
+            </StatusPill>
           ),
         }),
         columnHelper.display({
@@ -66,17 +69,17 @@ export function VariationsPage() {
 
   return (
     <div className="workspace-page catalog-page">
-      <Group className="page-hero page-hero-catalog" justify="space-between">
-        <div>
-          <Title order={2}>{strings.nav.variations}</Title>
-          <Text c="dimmed" size="sm">
-            Variações (SKUs) do catálogo
-          </Text>
-        </div>
-        <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
+      <PageHeader
+        title={strings.nav.variations}
+        subtitle="Variações (SKUs) do catálogo"
+        actions={
+          <>
+            <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
           Nova variação
         </Button>
-      </Group>
+          </>
+        }
+      />
 
       <Group className="toolbar-card">
         <TextInput
@@ -90,8 +93,7 @@ export function VariationsPage() {
       </Group>
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={filtered.length === 0} errorMessage="Não foi possível carregar as variações." emptyMessage="Nenhuma variação encontrada." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={900} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
-          <Table striped highlightOnHover>
+        <DataTable minWidth={900}>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <Table.Tr key={headerGroup.id}>
@@ -112,8 +114,7 @@ export function VariationsPage() {
                 </Table.Tr>
               ))}
             </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+        </DataTable>
       </QueryState>
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Nova variação" size="xl">
