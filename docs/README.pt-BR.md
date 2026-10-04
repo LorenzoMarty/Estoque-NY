@@ -271,6 +271,6 @@ uv run alembic revision --autogenerate -m "descricao_da_mudanca"
 
 ```bash
 uv run ruff check app scripts migrations
-uv run black --check app scripts migrations
+uv run ruff format --check .
 uv run mypy app
 ```
