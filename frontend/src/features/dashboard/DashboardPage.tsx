@@ -166,7 +166,7 @@ export function DashboardPage() {
       </section>
 
       <div className="dashboard-charts">
-        <Card padding="lg">
+        <Card className="workspace-card" padding="lg">
           <Title order={4}>Entradas e saídas</Title>
           <Text c="dimmed" size="sm" mb="md">
             Unidades por intervalo, sem transferências nem ajustes
@@ -193,7 +193,7 @@ export function DashboardPage() {
           )}
         </Card>
 
-        <Card padding="lg">
+        <Card className="workspace-card" padding="lg">
           <Title order={4}>Saldo por categoria</Title>
           <Text c="dimmed" size="sm" mb="md">
             Participação no estoque atual
@@ -226,8 +226,8 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <Card padding="lg">
-        <Group justify="space-between" mb="sm">
+      <Card className="workspace-card" padding="lg">
+        <Group className="section-toolbar" justify="space-between" mb="sm">
           <Title order={4}>Movimentações recentes</Title>
           <Tabs
             value={group}

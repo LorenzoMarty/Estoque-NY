@@ -10,7 +10,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
   return (
     <header className="page-header">
-      <div>
+      <div className="page-header-copy">
         <Title order={2}>{title}</Title>
         {subtitle && (
           <Text c="dimmed" size="sm">
