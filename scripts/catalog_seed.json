@@ -1,0 +1,204 @@
+{
+  "products": [
+    {
+      "code": "pf1",
+      "sector": "Perfumaria",
+      "brand": "Dior",
+      "name": "Sauvage Elixir 60ml",
+      "description": "Leitura intensa e limpa, pensada para presentear com impacto sem perder refinamento.",
+      "price": 129,
+      "featured": true,
+      "image_path": "assets/products/pf1-sauvage-elixir-60ml.webp"
+    },
+    {
+      "code": "pf2",
+      "sector": "Perfumaria",
+      "brand": "Chanel",
+      "name": "No.5 Eau de Parfum",
+      "description": "Uma presenca mais luminosa e elegante, com pegada precisa de corredor premium.",
+      "price": 118,
+      "featured": true,
+      "image_path": "assets/products/pf2-no-5-eau-de-parfum.webp"
+    },
+    {
+      "code": "pf3",
+      "sector": "Perfumaria",
+      "brand": "Carolina Herrera",
+      "name": "212 Sexy Eau de Parfum",
+      "description": "Um perfume de atmosfera urbana, mostrado como objeto de desejo e nao como vitrine pesada.",
+      "price": 112,
+      "featured": false,
+      "image_path": "assets/products/pf3-212-sexy-eau-de-parfum.webp"
+    },
+    {
+      "code": "pf4",
+      "sector": "Perfumaria",
+      "brand": "Dior",
+      "name": "Miss Dior Eau de Parfum",
+      "description": "Assinatura leve com brilho contido, ideal para uma dobra que privilegia respiro e sofisticao.",
+      "price": 124,
+      "featured": false,
+      "image_path": "assets/products/pf4-miss-dior-eau-de-parfum.webp"
+    },
+    {
+      "code": "el1",
+      "sector": "Eletros",
+      "brand": "Apple",
+      "name": "AirPods Pro Travel",
+      "description": "Tecnologia de bolso com leitura limpa e framing pensado para uso em deslocamento.",
+      "price": 249,
+      "featured": true,
+      "image_path": "assets/products/el1-airpods-pro-travel.webp"
+    },
+    {
+      "code": "el2",
+      "sector": "Eletros",
+      "brand": "Apple",
+      "name": "Apple Watch Transit",
+      "description": "Um companion compacto, exposto de forma aspiracional e sem contaminar a dobra com ruido tecnico.",
+      "price": 279,
+      "featured": false,
+      "image_path": "assets/products/el2-apple-watch-transit.webp"
+    },
+    {
+      "code": "el3",
+      "sector": "Eletros",
+      "brand": "Sony",
+      "name": "WH-1000XM5 Quiet Set",
+      "description": "Acabamento calmo e silencioso, tratado como objeto premium dentro de uma vitrine mais leve.",
+      "price": 328,
+      "featured": true,
+      "image_path": "assets/products/el3-wh-1000xm5-quiet-set.webp"
+    },
+    {
+      "code": "el4",
+      "sector": "Eletros",
+      "brand": "JBL",
+      "name": "Clip Speaker",
+      "description": "Forma compacta com presenca forte, apresentada mais como design object do que como item de prateleira comum.",
+      "price": 199,
+      "featured": false,
+      "image_path": "assets/products/el4-clip-speaker.webp"
+    },
+    {
+      "code": "dr1",
+      "sector": "Bebidas",
+      "brand": "Johnnie Walker",
+      "name": "Black Label 1L",
+      "description": "Garrafa de gesto inclinado e aura noturna, perfeita para uma apresentacao mais autoral do setor.",
+      "price": 46,
+      "featured": true,
+      "image_path": "assets/products/dr1-black-label-1l.webp"
+    },
+    {
+      "code": "dr2",
+      "sector": "Bebidas",
+      "brand": "Jack Daniel's",
+      "name": "Old No. 7 1L",
+      "description": "Volume mais marcado e leitura grafica direta, sem copiar o rotulo literalmente.",
+      "price": 48,
+      "featured": false,
+      "image_path": "assets/products/dr2-old-no-7-1l.webp"
+    },
+    {
+      "code": "dr3",
+      "sector": "Bebidas",
+      "brand": "Bombay Sapphire",
+      "name": "Bombay Sapphire 750ml",
+      "description": "A garrafa entra como joia azul do corredor, com brilho contido e bastante respiro ao redor.",
+      "price": 38,
+      "featured": true,
+      "image_path": "assets/products/dr3-bombay-sapphire-750ml.webp"
+    },
+    {
+      "code": "dr4",
+      "sector": "Bebidas",
+      "brand": "Corona",
+      "name": "Corona Extra 330ml",
+      "description": "Long neck solar com leitura leve e uma energia mais aberta dentro da selecao de bebidas.",
+      "price": 19,
+      "featured": false,
+      "image_path": "assets/products/dr4-corona-extra-330ml.webp"
+    },
+    {
+      "code": "fd1",
+      "sector": "Comidas",
+      "brand": "Lindt",
+      "name": "Swiss Gift Selection",
+      "description": "Uma caixa pensada como presente rapido, tratada aqui como objeto dourado de vitrine editorial.",
+      "price": 28,
+      "featured": true,
+      "image_path": "assets/products/fd1-swiss-gift-selection.webp"
+    },
+    {
+      "code": "fd2",
+      "sector": "Comidas",
+      "brand": "Toblerone",
+      "name": "Travel Chocolate Pack",
+      "description": "Chocolate de viagem tratado como destaque leve de vitrine, mais proximo de uma mesa-curadoria do que de uma prateleira comum.",
+      "price": 16,
+      "featured": true,
+      "image_path": "assets/products/fd2-travel-chocolate-pack.webp"
+    },
+    {
+      "code": "fd3",
+      "sector": "Comidas",
+      "brand": "Pringles",
+      "name": "Snack Break Crisps",
+      "description": "Um snack rapido de corredor, escolhido para dar contraste de textura e cor sem transformar a dobra em marketplace.",
+      "price": 12,
+      "featured": false,
+      "image_path": "assets/products/fd3-snack-break-crisps.webp"
+    },
+    {
+      "code": "fd4",
+      "sector": "Comidas",
+      "brand": "Reese's",
+      "name": "Peanut Candy Mix",
+      "description": "Pequeno mix doce para fechar a composicao com calor cromatico e uma leitura mais casual de freeshop.",
+      "price": 9,
+      "featured": false,
+      "image_path": "assets/products/fd4-peanut-candy-mix.webp"
+    },
+    {
+      "code": "vt1",
+      "sector": "Vestuario",
+      "brand": "Polo Ralph Lauren",
+      "name": "Travel Polo Midnight",
+      "description": "Uma polo enxuta, pensada para viagem e mostrada com a mesma calma visual de uma vitrine de downtown Manhattan.",
+      "price": 86,
+      "featured": false,
+      "image_path": "assets/products/vt1-travel-polo-midnight.webp"
+    },
+    {
+      "code": "vt2",
+      "sector": "Vestuario",
+      "brand": "Tommy Hilfiger",
+      "name": "Downtown Bomber",
+      "description": "Jaqueta compacta com leitura grafica forte, apresentada como peca-objeto e sem ruido de marketplace.",
+      "price": 119,
+      "featured": true,
+      "image_path": "assets/products/vt2-downtown-bomber.webp"
+    },
+    {
+      "code": "vt3",
+      "sector": "Vestuario",
+      "brand": "Calvin Klein",
+      "name": "Essential Knit Sand",
+      "description": "Textura minimalista e leitura suave para manter o setor com postura premium e muito respiro.",
+      "price": 94,
+      "featured": false,
+      "image_path": "assets/products/vt3-essential-knit-sand.webp"
+    },
+    {
+      "code": "vt4",
+      "sector": "Vestuario",
+      "brand": "Nike Sportswear",
+      "name": "Manhattan Hoodie",
+      "description": "Uma silhueta casual de viagem, tratada como destaque editorial dentro da dobra e nao como card repetitivo.",
+      "price": 102,
+      "featured": true,
+      "image_path": "assets/products/vt4-manhattan-hoodie.webp"
+    }
+  ]
+}

@@ -5,6 +5,7 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: sh -c "alembic upgrade head && gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
     healthCheckPath: /health
+    autoDeployTrigger: checksPass
     envVars:
       - key: APP_ENV
         value: production
@@ -27,10 +28,11 @@ services:
       - key: IDEMPOTENCY_REQUIRED_IN_PRODUCTION
         value: "true"
       - key: CORS_ORIGINS
-        value: "*"
+        sync: false
   - type: web
     name: estoque-ny-front
     env: static
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: .
+    autoDeployTrigger: checksPass

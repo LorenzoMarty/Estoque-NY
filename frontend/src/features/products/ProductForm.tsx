@@ -25,6 +25,9 @@ export function ProductForm({ product, onSuccess }: { product?: Product; onSucce
       category_id: product?.category_id ?? undefined,
       brand_id: product?.brand_id ?? undefined,
       active: product?.active ?? true,
+      published: product?.published ?? false,
+      featured: product?.featured ?? false,
+      image_url: product?.image_url ?? "",
     },
   });
 
@@ -80,6 +83,32 @@ export function ProductForm({ product, onSuccess }: { product?: Product; onSucce
           render={({ field }) => (
             <Switch label="Produto ativo" checked={field.value} onChange={(event) => field.onChange(event.currentTarget.checked)} />
           )}
+        />
+        <Controller
+          name="published"
+          control={control}
+          render={({ field }) => (
+            <Switch
+              label="Publicado no site"
+              description="Aparece na vitrine do Catálogo. Sem saldo, aparece como esgotado."
+              checked={Boolean(field.value)}
+              onChange={(event) => field.onChange(event.currentTarget.checked)}
+            />
+          )}
+        />
+        <Controller
+          name="featured"
+          control={control}
+          render={({ field }) => (
+            <Switch label="Destaque no site" checked={Boolean(field.value)} onChange={(event) => field.onChange(event.currentTarget.checked)} />
+          )}
+        />
+        <TextInput
+          label="Link da imagem (opcional)"
+          description="Endereço http ou https da foto exibida no site."
+          placeholder="https://..."
+          error={errors.image_url?.message}
+          {...register("image_url")}
         />
         {apiError && <Alert color="red">{apiError}</Alert>}
         <Button type="submit" loading={isSubmitting}>

@@ -22,7 +22,7 @@ export function CadastrosPage() {
     <div className="workspace-page">
       <PageHeader title={strings.nav.cadastros} subtitle="Marcas, filiais e locais do estoque" />
 
-      <Tabs defaultValue="brands" variant="pills">
+      <Tabs className="workspace-tabs" defaultValue="brands" variant="pills">
         <Tabs.List>
           <Tabs.Tab value="brands">Marcas</Tabs.Tab>
           <Tabs.Tab value="branches">Filiais</Tabs.Tab>

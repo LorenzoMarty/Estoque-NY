@@ -36,6 +36,9 @@ body {
 :root {
   --rd-radius: 16px;
   --rd-radius-sm: 12px;
+  --rd-gap-page: 22px;
+  --rd-gap-section: 16px;
+  --rd-pad-card: 18px;
 }
 
 /* ---------- Shell ---------- */
@@ -94,15 +97,20 @@ body {
   justify-content: space-between;
   gap: 14px 24px;
   min-width: 0;
+  padding-bottom: 2px;
 }
 
-.page-header > div {
+.page-header-copy {
+  display: grid;
+  gap: 3px;
   min-width: 0;
 }
 
 .page-header h2 {
   color: var(--rd-ink);
   letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
 }
 
 .page-header-actions {
@@ -236,6 +244,7 @@ body {
   border: 1px solid var(--rd-line);
   border-radius: var(--rd-radius);
   background: var(--rd-surface);
+  box-shadow: var(--rd-shadow);
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
@@ -247,6 +256,7 @@ body {
 .ds-table {
   border-collapse: separate;
   border-spacing: 0;
+  min-width: 100%;
 }
 
 .ds-table thead th:first-child {
@@ -433,11 +443,58 @@ body {
 .dashboard-charts,
 .kpi-tile-grid,
 .toolbar-card,
+.workspace-card,
+.workspace-tabs,
 .report-tabs,
 .report-split-panel,
 .category-donut,
 .product-card,
 .stock-summary {
+  min-width: 0;
+}
+
+.workspace-page {
+  gap: var(--rd-gap-page);
+}
+
+.workspace-card,
+.workspace-tabs,
+.report-tabs,
+.toolbar-card,
+.stock-summary,
+.kpi-tile,
+.product-card {
+  border: 1px solid var(--rd-line);
+  background: var(--rd-surface);
+  box-shadow: var(--rd-shadow);
+}
+
+.workspace-card,
+.workspace-tabs,
+.report-tabs {
+  border-radius: var(--rd-radius);
+}
+
+.workspace-card {
+  padding: var(--rd-pad-card) !important;
+}
+
+.workspace-card .mantine-Card-section {
+  min-width: 0;
+}
+
+.workspace-tabs,
+.report-tabs {
+  padding: var(--rd-pad-card);
+}
+
+.workspace-tabs .mantine-Tabs-list,
+.report-tabs .mantine-Tabs-list {
+  flex-wrap: wrap;
+}
+
+.section-toolbar {
+  gap: 12px;
   min-width: 0;
 }
 
@@ -448,12 +505,9 @@ body {
 
 .toolbar-card > *,
 .page-header-actions > *,
+.section-toolbar > *,
 .report-split-panel > * {
   min-width: 0;
-}
-
-.report-tabs .mantine-Tabs-list {
-  flex-wrap: wrap;
 }
 
 .report-chart-card {
@@ -479,6 +533,7 @@ body {
   .page-header,
   .page-header-actions,
   .toolbar-card,
+  .section-toolbar,
   .report-split-panel {
     flex-direction: column;
   }
@@ -486,6 +541,8 @@ body {
   .page-header-actions,
   .page-header-actions .mantine-InputWrapper-root,
   .page-header-actions .mantine-Button-root,
+  .section-toolbar .mantine-Tabs-root,
+  .section-toolbar .mantine-Pagination-root,
   .toolbar-card .mantine-InputWrapper-root,
   .toolbar-card .mantine-Button-root,
   .toolbar-card .mantine-SegmentedControl-root {
@@ -688,6 +745,12 @@ body {
   border-radius: var(--rd-radius);
 }
 
+.toolbar-card {
+  align-items: center;
+  gap: 12px;
+  padding: var(--rd-pad-card);
+}
+
 .mantine-Tabs-list {
   gap: 6px;
 }
@@ -701,19 +764,23 @@ body {
 }
 
 /* Reports: legacy rules gave these tabs square-bottom corners and a grey active state. */
+.workspace-tabs,
 .report-tabs {
   border-radius: var(--rd-radius);
 }
 
+.workspace-tabs .mantine-Tabs-list,
 .report-tabs .mantine-Tabs-list {
   border-bottom: 0;
 }
 
+.workspace-tabs .mantine-Tabs-tab,
 .report-tabs .mantine-Tabs-tab {
   border-radius: 999px;
   color: var(--rd-ink-2);
 }
 
+.workspace-tabs .mantine-Tabs-tab[data-active],
 .report-tabs .mantine-Tabs-tab[data-active] {
   background: var(--rd-primary);
   color: #ffffff;
@@ -727,6 +794,7 @@ body {
 /* app.css forces 14px with !important on small screens; keep the same shape scale everywhere. */
 @media (max-width: 992px) {
   .toolbar-card,
+  .workspace-tabs,
   .report-tabs,
   .workspace-card {
     border-radius: var(--rd-radius) !important;

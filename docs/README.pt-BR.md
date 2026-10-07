@@ -33,7 +33,7 @@ SQLITE_URL=sqlite+aiosqlite:///./inventory.db
 
 ALLOW_NEGATIVE_STOCK=false
 IDEMPOTENCY_REQUIRED_IN_PRODUCTION=true
-CORS_ORIGINS=*
+CORS_ORIGINS=http://127.0.0.1:8080,http://localhost:8080
 ```
 
 ### Rodar backend local sem Docker
@@ -253,6 +253,21 @@ VITE_API_URL=https://<nome-da-sua-api>.onrender.com
 - Frontend fazendo requests para a URL da API no Render (na aba Network)
 - Sem erro de CORS no console do navegador
 
+## Vitrine publica (Catalogo)
+
+`GET /public/catalog` (tambem em `/api/public/catalog`) e aberto, somente leitura, e alimenta o site Catalogo-NY.
+Devolve so produtos `published` e `active`, por categoria, com marca, preco, `featured`, `image_url` e `in_stock`.
+O preco e o menor `price` > 0 entre os SKUs ativos (`price_is_from` indica que ha variacao de preco). Nunca expoe
+custo, codigos de SKU, quantidades nem filiais. Publicacao, destaque e link da imagem se editam em Produtos.
+
+Para carregar os produtos que antes ficavam fixos no site (local):
+
+```bash
+python scripts/seed_catalog_from_site.py --email <admin> --password <senha> --site-url http://127.0.0.1:5173
+```
+
+Em producao, passe em `--site-url` a origem que serve as imagens, ou troque os links em Produtos.
+
 ## Migracoes
 
 Aplicar ultima migracao:
@@ -274,3 +289,7 @@ uv run ruff check app scripts migrations
 uv run ruff format --check .
 uv run mypy app
 ```
+
+Para rodar `ruff` a cada commit: `uvx pre-commit install` (config em `.pre-commit-config.yaml`).
+
+Em produção (`APP_ENV=production`) a API não inicia com `CORS_ORIGINS=*` ou vazio: liste as origens do frontend separadas por vírgula.
