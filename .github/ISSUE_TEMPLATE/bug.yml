@@ -20,6 +20,14 @@ body:
       value: |
         1. 
   - type: textarea
+    id: pronto
+    attributes:
+      label: Critério de pronto
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
     id: logs
     attributes:
       label: Logs, prints ou trace
