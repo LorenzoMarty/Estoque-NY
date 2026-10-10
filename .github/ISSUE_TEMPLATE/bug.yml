@@ -1,0 +1,33 @@
+name: Bug
+description: Algo quebrado
+title: "fix: "
+labels: [bug]
+body:
+  - type: textarea
+    id: aconteceu
+    attributes:
+      label: O que aconteceu
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que era esperado
+  - type: textarea
+    id: reproduzir
+    attributes:
+      label: Como reproduzir
+      value: |
+        1. 
+  - type: textarea
+    id: pronto
+    attributes:
+      label: Critério de pronto
+      placeholder: "- [ ] O que precisa ser verdade para fechar esta issue"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, prints ou trace
+      render: shell
