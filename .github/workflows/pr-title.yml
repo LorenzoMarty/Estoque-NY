@@ -1,0 +1,17 @@
+name: PR title
+
+# O título do PR vira a mensagem do commit no "Squash and merge": tem que seguir Conventional Commits.
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  conventional:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
