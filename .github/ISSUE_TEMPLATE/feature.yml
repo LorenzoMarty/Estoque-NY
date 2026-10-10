@@ -19,8 +19,7 @@ body:
     id: pronto
     attributes:
       label: Critério de pronto
-      value: |
-        - [ ] 
+      placeholder: "- [ ] O que precisa ser verdade para fechar esta issue"
     validations:
       required: true
   - type: textarea
