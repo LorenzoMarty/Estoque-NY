@@ -1,0 +1,30 @@
+name: Feature
+description: Algo novo ou uma melhoria
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: porque
+    attributes:
+      label: Por quê
+      description: Qual problema isso resolve? Para quem?
+    validations:
+      required: true
+  - type: textarea
+    id: o-que
+    attributes:
+      label: O quê
+      description: O que deve existir quando estiver pronto.
+  - type: textarea
+    id: pronto
+    attributes:
+      label: Critério de pronto
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: notas
+    attributes:
+      label: Notas técnicas
+      description: Arquivos, decisões, riscos, links.
