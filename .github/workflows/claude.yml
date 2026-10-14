@@ -1,6 +1,8 @@
 name: Claude
 
 # Comente @claude numa issue ou PR para pedir explicação, review ou implementação.
+# Aplique a label `ready-for-agent` numa issue para o agente implementá-la sozinho
+# (workflow:implement, das skills em LorenzoMarty/skills).
 on:
   issue_comment:
     types: [created]
@@ -9,16 +11,21 @@ on:
   pull_request_review:
     types: [submitted]
   issues:
-    types: [opened]
+    types: [opened, labeled]
 
 jobs:
   claude:
     # Só o dono e colaboradores podem chamar o Claude (repositório público).
+    # Aplicar label já exige permissão de triagem no repositório.
     if: |
       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
       (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
       (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association)) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')) && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association))
+      (github.event_name == 'issues' && github.event.action == 'opened' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')) && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'ready-for-agent')
+    concurrency:
+      group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,5 +40,10 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          label_trigger: ready-for-agent
+          plugin_marketplaces: https://github.com/LorenzoMarty/skills.git
+          plugins: |
+            workflow@lorenzo-skills
+            dev@lorenzo-skills
           additional_permissions: |
             actions: read
