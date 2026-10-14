@@ -15,3 +15,27 @@ Ver `README.md` na raiz para stack e setup local/deploy.
 - PR segue `.github/pull_request_template.md`, com `Closes #N`; merge por *Squash and merge* (o título vira o commit).
 - Issues usam os modelos de `.github/ISSUE_TEMPLATE/` (Feature/Bug), sempre com critério de pronto.
 - Todo PR fora de draft recebe review automático do Claude (`claude-review.yml`); responder ou corrigir cada ponto antes do merge.
+
+## Comandos
+
+Gate de verificação (o mesmo do CI, `.github/workflows/ci.yml`):
+
+```bash
+# backend (raiz)
+uv sync --frozen --python 3.12
+uv run ruff check . && uv run ruff format --check .
+uv run mypy app        # não bloqueante no CI
+uv run pytest -q
+
+# frontend (frontend/)
+npm ci && npm run build
+```
+
+## Skills e automação
+
+Plugins do marketplace [`lorenzo-skills`](https://github.com/LorenzoMarty/skills), ativados em `.claude/settings.json`.
+
+- Tarefa não trivial começa por `workflow:start`, que escolhe a cadeia: `grill-me` → `write-spec` → `to-tickets` → `implement` → `verify`.
+- Specs em `.claude/specs/<slug>/spec.md` (REQ-N, critérios de concluído, log da entrevista).
+- Pronto = gate de verificação abaixo verde + relatório do `workflow:verify` no PR.
+- **Agente autônomo:** a label `ready-for-agent` numa issue dispara o Claude (`claude.yml`), que implementa com `workflow:implement`, sobe a branch e comenta o link do PR. Issue que precisa de decisão humana recebe `needs-human`.
