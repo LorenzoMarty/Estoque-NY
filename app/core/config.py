@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     # is the proxy's, so the client IP is read from X-Forwarded-For: the entry this many
     # places from the right. Use 2 when Vercel sits in front of Render.
     rate_limit_trusted_proxy_hops: int = 0
+    # Error reporting. Empty DSN = Sentry off. Release is e.g. the git commit SHA.
+    sentry_dsn: str = ""
+    sentry_release: str = ""
+    sentry_traces_sample_rate: float = 0.0
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -5,6 +5,8 @@ from uuid import uuid4
 from fastapi import Request
 from starlette.responses import Response
 
+from app.core.observability import tag_request
+
 
 class _RequestAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
@@ -17,6 +19,7 @@ class _RequestAdapter(logging.LoggerAdapter):
 async def request_context_middleware(request: Request, call_next) -> Response:
     request_id = request.headers.get("X-Request-ID") or str(uuid4())
     request.state.request_id = request_id
+    tag_request(request_id)
 
     logger = _RequestAdapter(
         logging.getLogger("app.request"),

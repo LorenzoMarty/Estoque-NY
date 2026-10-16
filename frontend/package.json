@@ -30,6 +30,7 @@
     "@mantine/core": "^9.6.1",
     "@mantine/hooks": "^9.6.1",
     "@mantine/notifications": "^9.6.1",
+    "@sentry/react": "^11.8.0",
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-table": "^9.2.4",
     "lucide-react": "^1.45.0",
