@@ -1,7 +1,7 @@
 ---
 slug: compliance-loja-franca
 status: draft
-revision_count: 0
+revision_count: 1
 created: 2026-10-16
 ---
 
@@ -29,7 +29,7 @@ ficam para fases seguintes.
 
 ## Requisitos
 
-- [ ] REQ-1: `SKU` ganha `ncm` (8 dígitos, validado no schema e na API; nulo permitido para SKUs
+- [x] REQ-1: `SKU` ganha `ncm` (8 dígitos, validado no schema e na API; nulo permitido para SKUs
   antigos) e `origin` (`FOREIGN`, `NATIONAL`, `EXPORTED_NO_EXIT`; padrão nulo). Migração Alembic roda
   do zero em SQLite e gera SQL equivalente para Postgres. A tela de Variações edita os dois campos.
 - [ ] REQ-2: Entrada de estoque (`RECEIPT`) exige `admission_date` e cria um lote
@@ -52,6 +52,7 @@ ficam para fases seguintes.
   passa, 1 unidade acima barra).
 - [ ] REQ-7: Categorias proibidas (`SKU.restricted`: antidumping, Cap. 71 NCM) não podem ser
   criadas como `active` nem vendidas. Teste de rejeição por NCM começando em 71.
+  *Parcial (2026-10-16): a trava de criar/ativar SKU está feita e testada; a parte "nem vendidas" espera `Sale` (REQ-5).*
 - [ ] REQ-8: Testes de domínio novos passam no CI existente (`ruff`, `mypy`, `pytest`), e a migração
   continua rodando do zero em SQLite.
 
@@ -61,6 +62,13 @@ ficam para fases seguintes.
 - Smoke no browser: cadastrar SKU com NCM e origem, dar entrada com data de admissão, vender
   e ver o limite barrar a compra seguinte. Console sem erro.
 - Validação do conteúdo da norma registrada por contador/despachante (Em aberto, item 1).
+
+## Progresso
+
+- 2026-10-16, ticket (a): REQ-1 e a trava de SKU do REQ-7 implementados na branch
+  `feat/sku-ncm-origin`. Restrição de NCM 71 aplicada só em SKU ativo; `volume_ml`/`weight_g`
+  (Em aberto, item 4) ainda não entraram. Migração `d4a1c9e7b2f6` aponta para `3e9f8a87d290`:
+  quem mergear depois da `c7d2e8f1a3b4` (storefront) precisa reapontar o `down_revision`.
 
 ## Fora de escopo (fases seguintes)
 
