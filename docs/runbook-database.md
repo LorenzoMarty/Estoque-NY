@@ -51,7 +51,8 @@ then switch.
 3. **Check it** with the drill checks: table counts against what you expect, latest
    `StockMove.created_at`, `alembic_version` equal to the head of the deployed code.
 4. **Point the API at it**: change `DATABASE_URL` in the host (Render) and redeploy. The
-   release command runs `alembic upgrade head`, which is a no-op when the version matches.
+   API's start command (`render.yaml`) runs `alembic upgrade head` before gunicorn, which is a
+   no-op when the version matches.
 5. **Verify**: `GET /health`, then log in and open the dashboard and *Movimentações*.
 6. Keep the damaged database until the incident is closed; do not drop it.
 
@@ -65,7 +66,8 @@ uv run python scripts/restore_drill.py --source-url "postgresql://user:pass@host
 # needs pg_dump/pg_restore on PATH, or: --pg-bin /usr/lib/postgresql/16/bin
 ```
 
-It dumps the source, restores into a throw-away `restore_drill_<id>` database on the same
+It dumps the source from an exported snapshot (so a live source does not cause false
+mismatches; the password goes through the environment, not the command line), restores into a throw-away `restore_drill_<id>` database on the same
 server, compares the row count of **every table**, drops the scratch database and prints
 a log row. Exit code 1 means some table did not match. `tests/test_restore_drill.py`
 covers it when a Postgres `TEST_DATABASE_URL` and `pg_dump` are available (the CI
