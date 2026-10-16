@@ -24,7 +24,9 @@ router = APIRouter(prefix="/locations", tags=["locations"])
     "",
     response_model=LocationOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("stock.location.create"))],
+    dependencies=[
+        Depends(require_permission("stock.location.create", branch_scoped=True))
+    ],
 )
 async def create_location(
     payload: LocationCreate,
@@ -64,7 +66,9 @@ async def create_location(
 @router.get(
     "",
     response_model=LocationListOut,
-    dependencies=[Depends(require_permission("stock.location.read"))],
+    dependencies=[
+        Depends(require_permission("stock.location.read", branch_scoped=True))
+    ],
 )
 async def list_locations(
     branch_id: int | None = Query(default=None),
@@ -97,7 +101,9 @@ async def list_locations(
 @router.get(
     "/{location_id}",
     response_model=LocationOut,
-    dependencies=[Depends(require_permission("stock.location.read"))],
+    dependencies=[
+        Depends(require_permission("stock.location.read", branch_scoped=True))
+    ],
 )
 async def get_location(
     location_id: int,
@@ -118,7 +124,9 @@ async def get_location(
 @router.put(
     "/{location_id}",
     response_model=LocationOut,
-    dependencies=[Depends(require_permission("stock.location.update"))],
+    dependencies=[
+        Depends(require_permission("stock.location.update", branch_scoped=True))
+    ],
 )
 async def update_location(
     location_id: int,
@@ -166,7 +174,9 @@ async def update_location(
 @router.delete(
     "/{location_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("stock.location.delete"))],
+    dependencies=[
+        Depends(require_permission("stock.location.delete", branch_scoped=True))
+    ],
 )
 async def delete_location(
     location_id: int,

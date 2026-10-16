@@ -43,7 +43,7 @@ DEFAULT_LOW_TURNOVER_THRESHOLD = 0.5
 
 @router.get(
     "/valuation",
-    dependencies=[Depends(require_permission("reports.read"))],
+    dependencies=[Depends(require_permission("reports.read", branch_scoped=True))],
 )
 async def stock_valuation(
     branch_id: int | None = Query(default=None),
@@ -93,7 +93,7 @@ async def stock_valuation(
 
 @router.get(
     "/turnover",
-    dependencies=[Depends(require_permission("reports.read"))],
+    dependencies=[Depends(require_permission("reports.read", branch_scoped=True))],
 )
 async def stock_turnover(
     branch_id: int | None = Query(default=None),
@@ -165,7 +165,7 @@ async def stock_turnover(
 
 @router.get(
     "/movements",
-    dependencies=[Depends(require_permission("reports.read"))],
+    dependencies=[Depends(require_permission("reports.read", branch_scoped=True))],
     response_model=None,
 )
 async def stock_movements_report(
@@ -240,7 +240,7 @@ async def stock_movements_report(
 
 @router.get(
     "/abc",
-    dependencies=[Depends(require_permission("reports.read"))],
+    dependencies=[Depends(require_permission("reports.read", branch_scoped=True))],
 )
 async def stock_abc_report(
     branch_id: int | None = Query(default=None),
@@ -398,7 +398,9 @@ async def _top_skus_by_value(
 
 @marketing_router.get(
     "/campaign-products",
-    dependencies=[Depends(require_permission("reports.marketing.read"))],
+    dependencies=[
+        Depends(require_permission("reports.marketing.read", branch_scoped=True))
+    ],
 )
 async def campaign_products_report(
     campaign_id: int | None = Query(default=None),
@@ -554,7 +556,9 @@ async def campaigns_report(
 
 @marketing_router.get(
     "/low-turnover-candidates",
-    dependencies=[Depends(require_permission("reports.marketing.read"))],
+    dependencies=[
+        Depends(require_permission("reports.marketing.read", branch_scoped=True))
+    ],
 )
 async def low_turnover_candidates_report(
     branch_id: int | None = Query(default=None),
@@ -589,7 +593,9 @@ async def low_turnover_candidates_report(
 
 @marketing_router.get(
     "/dashboard-summary",
-    dependencies=[Depends(require_permission("reports.marketing.read"))],
+    dependencies=[
+        Depends(require_permission("reports.marketing.read", branch_scoped=True))
+    ],
     response_model=MarketingDashboardSummary,
 )
 async def marketing_dashboard_summary(

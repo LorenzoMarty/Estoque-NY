@@ -13,9 +13,10 @@ Who can do what, and where. Regenerate the table with
 3. In a branch where the user was given a **role**, that role's permissions apply and
    the user's global roles are ignored *for that branch*. In a branch without a role,
    the global roles apply, as before.
-4. A route guarded by a permission lets the user in if their global roles **or** any of
-   their branch roles grant it; each branch-aware endpoint then judges every branch
-   separately. A branch the user cannot use answers `403 no access to branch N`; one
+4. A branch role only counts on **branch-aware** endpoints (stock, transfers, inventory counts, branches,
+   locations and the stock/marketing reports that filter by branch). Global endpoints (catalog, marketing
+   administration, audit, users) judge the user's **global roles only**, so a manager in one branch
+   cannot edit the shared catalog. A branch the user cannot use answers `403 no access to branch N`; one
    where the role is too weak answers `403 your role in branch N does not allow <permission>`.
 
 Branch roles: `manager`, `stockkeeper`, `seller`, `auditor`. `admin` is global only.

@@ -223,3 +223,51 @@ def test_roles_matrix_doc_matches_the_code():
         assert render_matrix_markdown() in doc.read(), (
             "docs/roles-matrix.md is stale; regenerate the table (see its header)"
         )
+
+
+# --- review follow-ups ------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_a_branch_role_does_not_grant_global_endpoints(shop):
+    """A manager in branch A must not edit the shared catalog or marketing."""
+    client = shop["client"]
+    ana_id = await _user_id(client, shop["admin"], "ana@example.com")
+    await client.post(
+        "/auth/roles/assign",
+        json={"user_id": ana_id, "role_name": "viewer"},
+        headers=shop["admin"],
+    )
+    a = shop["branches"]["A"][0]
+    await _put_branches(shop, "ana@example.com", [a], {a: "manager"})
+    ana = shop["ana"]
+
+    create_product = await client.post(
+        "/catalog/products", json={"name": "Intruso", "active": True}, headers=ana
+    )
+    channel = await client.post(
+        "/marketing/channels", json={"name": "X", "type": "SOCIAL"}, headers=ana
+    )
+    receipt_in_a = await _post(shop, "/stock/receipts", ana, "A", qty=1)
+
+    assert create_product.status_code == 403  # global viewer only
+    assert channel.status_code == 403
+    assert receipt_in_a.status_code == 201  # the branch role still works in branch A
+
+
+@pytest.mark.asyncio
+async def test_a_branch_scope_without_a_permission_context_denies(client):
+    from app.core.branch_scope import load_branch_scope
+    from app.db.session import get_sessionmaker
+    from app.models.entities import User
+
+    await register_and_login(client)  # admin
+    await _register(client, "plain@example.com", "Plain")
+    async with get_sessionmaker()() as session:
+        plain = await session.scalar(
+            select(User).where(User.email == "plain@example.com")
+        )
+        scope = await load_branch_scope(session, plain)  # no permission given
+
+    assert scope.allows(1) is False
+    assert scope.visible_ids == frozenset()

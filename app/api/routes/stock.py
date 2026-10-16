@@ -61,7 +61,9 @@ def build_move_out(move: StockMove, balance_after: int) -> StockMoveOut:
     "/receipts",
     response_model=StockMoveOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("stock.receipt.create"))],
+    dependencies=[
+        Depends(require_permission("stock.receipt.create", branch_scoped=True))
+    ],
 )
 async def create_receipt(
     payload: StockReceiptIn,
@@ -124,7 +126,9 @@ async def create_receipt(
     "/issues",
     response_model=StockMoveOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("stock.issue.create"))],
+    dependencies=[
+        Depends(require_permission("stock.issue.create", branch_scoped=True))
+    ],
 )
 async def create_issue(
     payload: StockIssueIn,
@@ -187,7 +191,9 @@ async def create_issue(
     "/adjustments",
     response_model=StockMoveOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("stock.adjustment.create"))],
+    dependencies=[
+        Depends(require_permission("stock.adjustment.create", branch_scoped=True))
+    ],
 )
 async def create_adjustment(
     payload: StockAdjustmentIn,
@@ -249,7 +255,9 @@ async def create_adjustment(
 @router.get(
     "/balances",
     response_model=StockBalanceListOut,
-    dependencies=[Depends(require_permission("stock.balance.read"))],
+    dependencies=[
+        Depends(require_permission("stock.balance.read", branch_scoped=True))
+    ],
 )
 async def list_balances(
     branch_id: int | None = Query(default=None),
@@ -303,7 +311,7 @@ async def list_balances(
 @router.get(
     "/moves",
     response_model=StockMoveListOut,
-    dependencies=[Depends(require_permission("stock.move.read"))],
+    dependencies=[Depends(require_permission("stock.move.read", branch_scoped=True))],
 )
 async def list_moves(
     branch_id: int | None = Query(default=None),
