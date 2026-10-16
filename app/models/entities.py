@@ -649,6 +649,11 @@ class User(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    # Tokens issued before this moment are refused (sessions end on a password change).
+    password_changed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

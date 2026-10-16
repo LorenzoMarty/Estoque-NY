@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,7 @@ from app.api.pagination import (
     pagination_params,
 )
 from app.api.security import get_current_user, require_permission
+from app.core.auth import token_predates_password_change
 from app.core.db import get_session
 from app.core.password_policy import describe, password_problems
 from app.core.security import (
@@ -103,6 +104,33 @@ async def register_user(
     return user
 
 
+async def _record_failed_login(session: AsyncSession, user_id: int) -> None:
+    """Count one failure atomically (concurrent attempts cannot undercount) and lock
+    the account when the limit is reached.
+
+    Accepted trade-off: the lock is per account, so someone who knows an e-mail can lock
+    that person out for `login_lockout_minutes` with a few wrong passwords (an admin
+    included). The per-IP rate limit on /auth/login (separate PR) bounds how fast.
+    """
+    settings = get_settings()
+    attempts = await session.scalar(
+        update(User)
+        .where(User.id == user_id)
+        .values(failed_login_attempts=User.failed_login_attempts + 1)
+        .returning(User.failed_login_attempts)
+    )
+    if attempts is not None and attempts >= settings.login_max_failed_attempts:
+        await session.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                failed_login_attempts=0,
+                locked_until=datetime.now(UTC)
+                + timedelta(minutes=settings.login_lockout_minutes),
+            )
+        )
+
+
 def _as_utc(value: datetime) -> datetime:
     # SQLite drops the time zone of stored datetimes; treat naive values as UTC.
     return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
@@ -113,7 +141,6 @@ async def login_user(
     payload: UserLoginIn,
     session: AsyncSession = Depends(get_session),
 ) -> TokenPairOut:
-    settings = get_settings()
     now = datetime.now(UTC)
     retry_after = 0
     # The failure counter must be committed even though the request ends in an
@@ -131,12 +158,7 @@ async def login_user(
         elif user is None or not verify_password(payload.password, user.password_hash):
             outcome = "invalid"
             if user is not None:
-                user.failed_login_attempts += 1
-                if user.failed_login_attempts >= settings.login_max_failed_attempts:
-                    user.failed_login_attempts = 0
-                    user.locked_until = now + timedelta(
-                        minutes=settings.login_lockout_minutes
-                    )
+                await _record_failed_login(session, user.id)
         elif not user.active:
             outcome = "inactive"
         else:
@@ -168,19 +190,26 @@ async def login_user(
     )
 
 
-@router.post("/change-password", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/change-password", response_model=TokenPairOut)
 async def change_password(
     payload: ChangePasswordIn,
     request: Request,
     current_user: User | None = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
-) -> None:
+) -> TokenPairOut:
+    """Change the password and return a fresh token pair.
+
+    Every token issued before this call stops working, so a stolen session ends
+    here. A wrong current password counts toward the same lockout as a failed login.
+    """
     if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="authentication required",
         )
     if not verify_password(payload.current_password, current_user.password_hash):
+        await _record_failed_login(session, current_user.id)
+        await session.commit()  # keep the count even though the request fails
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="current password is incorrect",
@@ -195,6 +224,7 @@ async def change_password(
     current_user.must_change_password = False
     current_user.failed_login_attempts = 0
     current_user.locked_until = None
+    current_user.password_changed_at = datetime.now(UTC)
     await write_audit_log(
         session,
         request=request,
@@ -206,10 +236,17 @@ async def change_password(
         after=None,
     )
     await session.commit()
+    return TokenPairOut(
+        access_token=create_access_token(current_user.id),
+        refresh_token=create_refresh_token(current_user.id),
+    )
 
 
 @router.post("/refresh", response_model=TokenPairOut)
-async def refresh_access_token(payload: RefreshTokenIn) -> TokenPairOut:
+async def refresh_access_token(
+    payload: RefreshTokenIn,
+    session: AsyncSession = Depends(get_session),
+) -> TokenPairOut:
     try:
         token_payload = decode_token(payload.refresh_token)
     except ValueError as exc:
@@ -231,6 +268,16 @@ async def refresh_access_token(payload: RefreshTokenIn) -> TokenPairOut:
             detail="invalid token subject",
         )
     user_id = int(sub)
+    user = await session.scalar(select(User).where(User.id == user_id))
+    if (
+        user is None
+        or not user.active
+        or token_predates_password_change(token_payload, user)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="session no longer valid; sign in again",
+        )
     return TokenPairOut(
         access_token=create_access_token(user_id),
         refresh_token=create_refresh_token(user_id),

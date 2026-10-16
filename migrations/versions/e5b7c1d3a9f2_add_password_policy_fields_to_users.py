@@ -38,10 +38,14 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column("locked_until", sa.DateTime(timezone=True), nullable=True)
         )
+        batch_op.add_column(
+            sa.Column("password_changed_at", sa.DateTime(timezone=True), nullable=True)
+        )
 
 
 def downgrade() -> None:
     with op.batch_alter_table("users") as batch_op:
+        batch_op.drop_column("password_changed_at")
         batch_op.drop_column("locked_until")
         batch_op.drop_column("failed_login_attempts")
         batch_op.drop_column("must_change_password")
