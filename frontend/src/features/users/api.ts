@@ -79,6 +79,8 @@ export function useAssignRole() {
 export interface UserBranches {
   user_id: number;
   branch_ids: number[];
+  // branch id -> role name; branches without an entry use the user's global roles
+  roles: Record<string, string>;
   unrestricted: boolean;
 }
 
@@ -93,8 +95,15 @@ export function useUserBranchesQuery(userId: number | null) {
 export function useSetUserBranches() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, branchIds }: { userId: number; branchIds: number[] }) =>
-      apiClient.put<UserBranches>(`/auth/users/${userId}/branches`, { branch_ids: branchIds }),
+    mutationFn: ({
+      userId,
+      branchIds,
+      roles,
+    }: {
+      userId: number;
+      branchIds: number[];
+      roles: Record<string, string>;
+    }) => apiClient.put<UserBranches>(`/auth/users/${userId}/branches`, { branch_ids: branchIds, roles }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["user-branches", variables.userId] });
     },
