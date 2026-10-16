@@ -134,6 +134,9 @@ def _decimal(
     except InvalidOperation:
         errors.append(RowError(line, name, f"{name} is not a number: {value!r}"))
         return None
+    if not number.is_finite():  # "NaN" and "Infinity" parse as Decimals
+        errors.append(RowError(line, name, f"{name} is not a number: {value!r}"))
+        return None
     if number < 0:
         errors.append(RowError(line, name, f"{name} cannot be negative"))
         return None

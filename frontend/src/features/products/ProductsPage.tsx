@@ -1,4 +1,5 @@
 import { Badge, Button, Group, Loader, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Download, Pencil, Plus, Search, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -12,6 +13,18 @@ import { ProductForm } from "./ProductForm";
 const tableFeatureSet = tableFeatures({});
 const columnHelper = createColumnHelper<typeof tableFeatureSet, Product>();
 const EMPTY_ROWS: Product[] = [];
+
+async function exportCsv() {
+  try {
+    await downloadCatalogCsv();
+  } catch (error) {
+    notifications.show({
+      color: "red",
+      title: "Não foi possível exportar",
+      message: error instanceof Error ? error.message : "Tente novamente.",
+    });
+  }
+}
 
 export function ProductsPage() {
   const [search, setSearch] = useState("");
@@ -58,7 +71,7 @@ export function ProductsPage() {
           </Text>
         </div>
         <Group gap="xs">
-          <Button variant="default" leftSection={<Download size={16} />} onClick={() => void downloadCatalogCsv()}>
+          <Button variant="default" leftSection={<Download size={16} />} onClick={() => void exportCsv()}>
             Exportar CSV
           </Button>
           <Button variant="default" leftSection={<Upload size={16} />} onClick={() => setImporting(true)}>

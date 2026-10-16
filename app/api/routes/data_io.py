@@ -49,7 +49,7 @@ async def import_catalog(
     try:
         report = await catalog_io_service.import_catalog(
             session,
-            body.decode("utf-8-sig", errors="replace"),
+            _decode(body),
             dry_run=dry_run,
             mode=mode,
             user_id=current_user.id if current_user else None,
@@ -71,6 +71,14 @@ async def import_catalog(
             detail="the catalog changed while importing (another import?); retry",
         ) from exc
     return report.as_dict()
+
+
+def _decode(body: bytes) -> str:
+    """UTF-8 first; Excel in pt-BR saves CSV as Windows-1252, so fall back to it."""
+    try:
+        return body.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return body.decode("cp1252", errors="replace")
 
 
 async def _read_limited(request: Request) -> bytes:
@@ -124,8 +132,9 @@ async def export_catalog(session: AsyncSession = Depends(get_session)):
     writer = csv.writer(buffer, lineterminator="\r\n")
     async for row in catalog_io_service.export_catalog_rows(session):
         writer.writerow(row)
+    # The BOM makes Excel read the accents as UTF-8.
     return StreamingResponse(
-        iter([buffer.getvalue()]),
+        iter(["﻿" + buffer.getvalue()]),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": "attachment; filename=catalog.csv"},
     )
