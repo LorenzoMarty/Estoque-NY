@@ -1,0 +1,156 @@
+{
+  "$defs": {
+    "PublicCatalogMeta": {
+      "properties": {
+        "has_more": {
+          "title": "Has More",
+          "type": "boolean"
+        },
+        "page": {
+          "title": "Page",
+          "type": "integer"
+        },
+        "page_size": {
+          "title": "Page Size",
+          "type": "integer"
+        },
+        "total_products": {
+          "title": "Total Products",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "page",
+        "page_size",
+        "total_products",
+        "has_more"
+      ],
+      "title": "PublicCatalogMeta",
+      "type": "object"
+    },
+    "PublicProductOut": {
+      "properties": {
+        "brand": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Brand"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Description"
+        },
+        "featured": {
+          "title": "Featured",
+          "type": "boolean"
+        },
+        "id": {
+          "title": "Id",
+          "type": "integer"
+        },
+        "image_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Image Url"
+        },
+        "in_stock": {
+          "title": "In Stock",
+          "type": "boolean"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "price_is_from": {
+          "title": "Price Is From",
+          "type": "boolean"
+        },
+        "price_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Price Usd"
+        }
+      },
+      "required": [
+        "id",
+        "brand",
+        "name",
+        "description",
+        "price_usd",
+        "price_is_from",
+        "featured",
+        "image_url",
+        "in_stock"
+      ],
+      "title": "PublicProductOut",
+      "type": "object"
+    },
+    "PublicSectorOut": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "products": {
+          "items": {
+            "$ref": "#/$defs/PublicProductOut"
+          },
+          "title": "Products",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "products"
+      ],
+      "title": "PublicSectorOut",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "meta": {
+      "$ref": "#/$defs/PublicCatalogMeta"
+    },
+    "sectors": {
+      "items": {
+        "$ref": "#/$defs/PublicSectorOut"
+      },
+      "title": "Sectors",
+      "type": "array"
+    }
+  },
+  "required": [
+    "sectors",
+    "meta"
+  ],
+  "title": "PublicCatalogOut",
+  "type": "object"
+}
