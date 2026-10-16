@@ -73,6 +73,12 @@ class Settings(BaseSettings):
                 or "127.0.0.1" in normalized_database_url
             ):
                 raise ValueError("DATABASE_URL cannot point to localhost in production")
+            origins = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+            if not origins or "*" in origins:
+                raise ValueError(
+                    "CORS_ORIGINS must list the allowed frontend origins in production"
+                    " (comma-separated, no '*')"
+                )
         return self
 
 
