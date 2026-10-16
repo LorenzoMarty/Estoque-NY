@@ -107,6 +107,23 @@ class ImportReport:
         return asdict(self)
 
 
+_FORMULA_START = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _quote(value: object) -> object:
+    """Neutralise spreadsheet formulas (CSV injection) in exported text cells."""
+    if isinstance(value, str) and value.startswith(_FORMULA_START):
+        return "'" + value
+    return value
+
+
+def _unquote(value: str) -> str:
+    """Undo _quote so an exported file imports back unchanged."""
+    if value.startswith("'") and value[1:].startswith(_FORMULA_START):
+        return value[1:]
+    return value
+
+
 def _decimal(
     value: str, name: str, errors: list[RowError], line: int
 ) -> Decimal | None:
@@ -147,7 +164,7 @@ def _read_rows(text: str) -> tuple[list[Row], list[RowError], int]:
         if total > MAX_ROWS:
             raise ValidationError(f"more than {MAX_ROWS} rows; split the file")
         line = reader.line_num
-        cell = {column: (raw.get(column) or "").strip() for column in COLUMNS}
+        cell = {column: _unquote((raw.get(column) or "").strip()) for column in COLUMNS}
         before = len(errors)
         for column in REQUIRED:
             if not cell[column]:
@@ -180,7 +197,7 @@ def _read_rows(text: str) -> tuple[list[Row], list[RowError], int]:
                     sku_code=cell["sku_code"],
                     sku_name=cell["sku_name"],
                     barcode=cell["barcode"],
-                    unit=(cell["unit"] or "UN").upper(),
+                    unit=cell["unit"].upper(),  # empty = not given
                     cost=cost,
                     price=price,
                     branch=cell["branch"],
@@ -289,9 +306,7 @@ async def import_catalog(
     will_apply = not dry_run and not (mode == "all_or_nothing" and errors)
     await _plan_and_apply(session, rows, report, apply=will_apply, user_id=user_id)
     report.applied = will_apply
-    if will_apply:
-        await session.commit()
-    return report
+    return report  # the caller commits, together with the audit log
 
 
 async def _plan_and_apply(
@@ -364,7 +379,7 @@ async def _plan_and_apply(
                         sku_code=row.sku_code,
                         name=row.sku_name or None,
                         barcode=row.barcode or None,
-                        unit=row.unit,
+                        unit=row.unit or "UN",
                         cost=row.cost or Decimal("0"),
                         price=row.price or Decimal("0"),
                     )
@@ -424,7 +439,7 @@ def _update_sku(sku: SKU, row: Row, *, apply: bool) -> bool:
         changes["name"] = row.sku_name
     if row.barcode and row.barcode != (sku.barcode or ""):
         changes["barcode"] = row.barcode
-    if row.unit != sku.unit and row.unit != "UN":
+    if row.unit and row.unit != sku.unit:
         changes["unit"] = row.unit
     if row.cost is not None and row.cost != sku.cost:
         changes["cost"] = row.cost
@@ -461,16 +476,19 @@ async def export_catalog_rows(session: AsyncSession):
         await session.execute(stmt)
     ).all():
         yield [
-            product.name,
-            brand or product.brand or "",
-            category or "",
-            sku.sku_code,
-            sku.name or "",
-            sku.barcode or "",
-            sku.unit,
-            f"{sku.cost:.2f}",
-            f"{sku.price:.2f}",
-            branch or "",
-            location or "",
-            "" if on_hand is None else on_hand,
+            _quote(c)
+            for c in [
+                product.name,
+                brand or product.brand or "",
+                category or "",
+                sku.sku_code,
+                sku.name or "",
+                sku.barcode or "",
+                sku.unit,
+                f"{sku.cost:.2f}",
+                f"{sku.price:.2f}",
+                branch or "",
+                location or "",
+                "" if on_hand is None else on_hand,
+            ]
         ]

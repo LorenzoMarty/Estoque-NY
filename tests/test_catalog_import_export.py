@@ -293,3 +293,101 @@ async def test_an_exported_file_imports_back_without_changing_anything(client):
 async def test_import_and_export_require_authentication(client):
     assert (await client.post("/data/import/catalog", content=b"x")).status_code == 401
     assert (await client.get("/data/export/catalog.csv")).status_code == 401
+
+
+# --- review follow-ups ------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_a_user_without_the_catalog_permissions_cannot_import(client):
+    await register_and_login(client)  # admin
+    operator = await client.post(
+        "/auth/register",
+        json={"name": "Op", "email": "op@example.com", "password": "Password123!"},
+    )
+    assert operator.status_code == 201
+    login = await client.post(
+        "/auth/login", json={"email": "op@example.com", "password": "Password123!"}
+    )
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    response = await _post(
+        client, headers, _csv(["P,M,C,S-1,,,UN,1,2,,,"]), dry_run="false"
+    )
+
+    assert response.status_code == 403  # an operator lacks brand/category creation
+
+
+@pytest.mark.asyncio
+async def test_exported_text_cells_cannot_start_a_spreadsheet_formula(client):
+    headers = await _setup(client)
+    await _post(
+        client,
+        headers,
+        _csv(['=HYPERLINK("http://evil"),+Marca,@Cat,CAM-1,-nome,,UN,1,2,Filial A,,3']),
+        dry_run="false",
+    )
+
+    exported = (await client.get("/data/export/catalog.csv", headers=headers)).text
+    row = list(csv.DictReader(io.StringIO(exported)))[0]
+
+    assert row["product_name"].startswith("'=")
+    assert row["brand"] == "'+Marca" and row["category"] == "'@Cat"
+    assert row["sku_name"] == "'-nome"
+    # and importing that file back restores the original text, no stray quote
+    before = await _counts()
+    again = await _post(client, headers, exported, dry_run="false")
+    assert again.json()["totals"]["created_products"] == 0
+    assert await _counts() == before
+
+
+@pytest.mark.asyncio
+async def test_unit_can_be_set_back_to_un_and_an_empty_unit_keeps_the_current_one(
+    client,
+):
+    headers = await _setup(client)
+    row = "P,M,C,CAM-1,,,{unit},1,2,Filial A,,1"
+    await _post(client, headers, _csv([row.format(unit="KG")]), dry_run="false")
+    unit = lambda: client.get("/catalog/skus", headers=headers)  # noqa: E731
+
+    await _post(client, headers, _csv([row.format(unit="")]), dry_run="false")
+    assert (await unit()).json()["items"][0]["unit"] == "KG"  # empty = not given
+    await _post(client, headers, _csv([row.format(unit="UN")]), dry_run="false")
+    assert (await unit()).json()["items"][0]["unit"] == "UN"
+
+
+@pytest.mark.asyncio
+async def test_a_real_import_writes_one_audit_entry_and_a_dry_run_none(client):
+    headers = await _setup(client)
+    text = _csv(["P,M,C,CAM-1,,,UN,1,2,Filial A,,1"])
+
+    await _post(client, headers, text)  # dry run
+    await _post(client, headers, text, dry_run="false")
+
+    logs = (await client.get("/admin/audit-logs?page_size=100", headers=headers)).json()
+    actions = [i["action"] for i in logs["items"]]
+    assert actions.count("data.import.catalog") == 1
+
+
+@pytest.mark.asyncio
+async def test_a_body_over_the_size_limit_is_refused_before_it_is_parsed(client):
+    headers = await _setup(client)
+    huge = HEADER + "\n" + ("x" * (5 * 1024 * 1024 + 10))
+
+    response = await _post(client, headers, huge)
+
+    assert response.status_code == 413
+
+
+@pytest.mark.asyncio
+async def test_too_many_rows_are_refused(client, monkeypatch):
+    from app.services import catalog_io_service
+
+    monkeypatch.setattr(catalog_io_service, "MAX_ROWS", 3)
+    headers = await _setup(client)
+    lines = [f"P{i},M,C,S-{i},,,UN,1,2,,," for i in range(4)]
+
+    response = await _post(client, headers, _csv(lines))
+
+    assert response.status_code == 400
+    assert "more than 3 rows" in response.json()["error"]["message"]
