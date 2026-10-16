@@ -261,7 +261,7 @@ async def test_export_lists_every_sku_in_the_import_format(client):
 
     assert response.status_code == 200
     assert "catalog.csv" in response.headers["content-disposition"]
-    rows = list(csv.DictReader(io.StringIO(response.text)))
+    rows = list(csv.DictReader(io.StringIO(response.text.lstrip("\ufeff"))))
     by_code = {r["sku_code"]: r for r in rows}
     assert list(rows[0]) == HEADER.split(",")
     assert by_code["CAM-P"]["opening_qty"] == "5"
@@ -279,7 +279,9 @@ async def test_an_exported_file_imports_back_without_changing_anything(client):
         dry_run="false",
     )
     before = await _counts()
-    exported = (await client.get("/data/export/catalog.csv", headers=headers)).text
+    exported = (
+        await client.get("/data/export/catalog.csv", headers=headers)
+    ).text.removeprefix("﻿")
 
     again = await _post(client, headers, exported, dry_run="false")
 
@@ -328,7 +330,9 @@ async def test_exported_text_cells_cannot_start_a_spreadsheet_formula(client):
         dry_run="false",
     )
 
-    exported = (await client.get("/data/export/catalog.csv", headers=headers)).text
+    exported = (
+        await client.get("/data/export/catalog.csv", headers=headers)
+    ).text.removeprefix("﻿")
     row = list(csv.DictReader(io.StringIO(exported)))[0]
 
     assert row["product_name"].startswith("'=")
@@ -391,3 +395,50 @@ async def test_too_many_rows_are_refused(client, monkeypatch):
 
     assert response.status_code == 400
     assert "more than 3 rows" in response.json()["error"]["message"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("value", ["NaN", "Infinity", "-Infinity", "sNaN"])
+async def test_non_finite_numbers_are_a_row_error_not_a_500(client, value):
+    headers = await _setup(client)
+    text = _csv(
+        [f"P,M,C,S-1,,,UN,{value},2,,,", "Q,M,C,S-2,,,UN,1,2,,,"],
+    )
+
+    response = await _post(client, headers, text, mode="partial")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [e["row"] for e in body["errors"]] == [2]
+    assert body["totals"]["valid_rows"] == 1
+
+
+@pytest.mark.asyncio
+async def test_a_windows_1252_file_from_excel_keeps_its_accents(client):
+    headers = await _setup(client)
+    text = _csv(["Calça Jeans,Marca,Roupas,JEANS-1,,,UN,1,2,,,"])
+
+    response = await client.post(
+        "/data/import/catalog?dry_run=false",
+        content=text.encode("cp1252"),
+        headers={**headers, "content-type": "text/csv"},
+    )
+    again = await client.post(
+        "/data/import/catalog?dry_run=false",
+        content=text.encode("cp1252"),
+        headers={**headers, "content-type": "text/csv"},
+    )
+
+    assert response.json()["totals"]["created_products"] == 1
+    assert again.json()["totals"]["created_products"] == 0  # same name, no duplicate
+    products = (await client.get("/catalog/products", headers=headers)).json()["items"]
+    assert products[0]["name"] == "Calça Jeans"
+
+
+@pytest.mark.asyncio
+async def test_the_export_starts_with_a_bom_for_excel(client):
+    headers = await _setup(client)
+
+    raw = await client.get("/data/export/catalog.csv", headers=headers)
+
+    assert raw.content.startswith(b"\xef\xbb\xbf")

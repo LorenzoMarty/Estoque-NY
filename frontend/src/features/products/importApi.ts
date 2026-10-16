@@ -38,7 +38,7 @@ export function importCatalogCsv(text: string, options: { dryRun: boolean; mode:
 
 export async function downloadCatalogCsv(): Promise<void> {
   const text = await requestText("/data/export/catalog.csv");
-  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+  const url = URL.createObjectURL(new Blob(["﻿", text], { type: "text/csv;charset=utf-8" }));
   const link = document.createElement("a");
   link.href = url;
   link.download = "catalogo.csv";
