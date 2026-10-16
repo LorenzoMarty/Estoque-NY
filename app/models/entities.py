@@ -155,6 +155,16 @@ class SKU(Base):
         server_default="0",
     )
     tax_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # Free-shop compliance (IN RFB 2075/2022): NCM has 8 digits; origin is one of
+    # FOREIGN / NATIONAL / EXPORTED_NO_EXIT (validated in the schema, plain text here).
+    ncm: Mapped[str | None] = mapped_column(String(8), nullable=True)
+    origin: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    restricted: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
     active: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
