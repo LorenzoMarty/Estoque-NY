@@ -415,9 +415,9 @@ async def campaign_products_report(
         stock_balance_join_condition = stock_balance_join_condition & (
             StockBalance.branch_id == branch_id
         )
-    elif scope.ids is not None:
+    elif scope.visible_ids is not None:
         stock_balance_join_condition = stock_balance_join_condition & (
-            StockBalance.branch_id.in_(scope.ids)
+            StockBalance.branch_id.in_(scope.visible_ids)
         )
     stmt = (
         select(

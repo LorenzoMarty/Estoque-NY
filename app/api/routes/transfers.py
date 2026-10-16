@@ -178,10 +178,10 @@ async def list_transfer_orders(
     stmt = select(TransferOrder)
     if branch_id is not None:
         scope.require(branch_id)
-    elif scope.ids is not None:
+    elif scope.visible_ids is not None:
         stmt = stmt.where(
-            TransferOrder.from_branch_id.in_(scope.ids)
-            | TransferOrder.to_branch_id.in_(scope.ids)
+            TransferOrder.from_branch_id.in_(scope.visible_ids)
+            | TransferOrder.to_branch_id.in_(scope.visible_ids)
         )
     if status_filter is not None:
         stmt = stmt.where(TransferOrder.status == status_filter)

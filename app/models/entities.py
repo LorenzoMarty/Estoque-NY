@@ -711,6 +711,11 @@ class UserBranch(Base):
         nullable=False,
         index=True,
     )
+    # Role the user has in this branch; None falls back to their global roles.
+    role_id: Mapped[int | None] = mapped_column(
+        ForeignKey("roles.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
 
 class RolePermission(Base):

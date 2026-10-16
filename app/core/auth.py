@@ -10,7 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import decode_token
 from app.core.settings import get_settings
 from app.db.session import get_session
-from app.models.entities import Permission, RolePermission, User, UserRole
+from app.models.entities import (
+    Permission,
+    RolePermission,
+    User,
+    UserBranch,
+    UserRole,
+)
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -114,6 +120,22 @@ async def _has_permission(
     return permission_id is not None
 
 
+async def _has_branch_role_permission(
+    session: AsyncSession,
+    user_id: int,
+    permission_key: str,
+) -> bool:
+    """True if a role the user holds in some branch grants the permission."""
+    stmt = (
+        select(Permission.id)
+        .join(RolePermission, RolePermission.permission_id == Permission.id)
+        .join(UserBranch, UserBranch.role_id == RolePermission.role_id)
+        .where(UserBranch.user_id == user_id, Permission.key == permission_key)
+        .limit(1)
+    )
+    return await session.scalar(stmt) is not None
+
+
 def require_permission(permission_key: str) -> Callable[..., Any]:
     async def dependency(
         request: Request,
@@ -121,6 +143,8 @@ def require_permission(permission_key: str) -> Callable[..., Any]:
         user: User | None = Depends(get_current_user),
     ) -> User | None:
         settings = get_settings()
+        # Read by BranchScope to judge the same permission per branch.
+        request.state.permission_key = permission_key
         if not settings.auth_enabled:
             return user
 
@@ -138,7 +162,11 @@ def require_permission(permission_key: str) -> Callable[..., Any]:
                 detail="password change required",
             )
 
-        allowed = await _has_permission(session, user.id, permission_key)
+        # Global roles grant it everywhere; a branch role grants it where held, and
+        # BranchScope narrows each branch-aware endpoint to those branches.
+        allowed = await _has_permission(
+            session, user.id, permission_key
+        ) or await _has_branch_role_permission(session, user.id, permission_key)
         if not allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
