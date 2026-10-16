@@ -2,6 +2,7 @@ import { Button, Kbd, Menu as MantineMenu } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { Bell, Command, LogOut, Menu, UserRound } from "lucide-react";
 import { useAuthStore } from "../../features/auth/store";
+import { BranchSwitcher } from "../../features/branch/BranchSwitcher";
 import { strings } from "../../shared/strings";
 import { useUiStore } from "../../shared/ui/uiStore";
 
@@ -25,6 +26,7 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
           <Menu size={18} />
         </button>
         <div className="topbar-brand mobile-only">{strings.app_name}</div>
+        <BranchSwitcher />
       </div>
 
       <div className="topbar-actions">

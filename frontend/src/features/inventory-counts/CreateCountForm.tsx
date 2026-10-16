@@ -1,3 +1,4 @@
+import { useActiveBranch } from "../branch/useActiveBranch";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, Select, Stack } from "@mantine/core";
 import { useMemo, useState } from "react";
@@ -8,13 +9,17 @@ import { inventoryCountCreateSchema, type InventoryCountCreateFormValues } from 
 
 export function CreateCountForm({ onSuccess }: { onSuccess: () => void }) {
   const { data: branches } = useBranchesQuery();
+  const { branchId: activeBranchId } = useActiveBranch();
   const [apiError, setApiError] = useState<string | null>(null);
   const {
     control,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<InventoryCountCreateFormValues>({ resolver: zodResolver(inventoryCountCreateSchema) });
+  } = useForm<InventoryCountCreateFormValues>({
+    resolver: zodResolver(inventoryCountCreateSchema),
+    defaultValues: { branch_id: activeBranchId as never },
+  });
   const branchId = watch("branch_id");
   const { data: locations } = useLocationsQuery(branchId);
   const createCount = useCreateInventoryCount();
