@@ -75,3 +75,28 @@ export function useAssignRole() {
     },
   });
 }
+
+export interface UserBranches {
+  user_id: number;
+  branch_ids: number[];
+  unrestricted: boolean;
+}
+
+export function useUserBranchesQuery(userId: number | null) {
+  return useQuery({
+    queryKey: ["user-branches", userId],
+    queryFn: () => apiClient.get<UserBranches>(`/auth/users/${userId}/branches`),
+    enabled: userId !== null,
+  });
+}
+
+export function useSetUserBranches() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, branchIds }: { userId: number; branchIds: number[] }) =>
+      apiClient.put<UserBranches>(`/auth/users/${userId}/branches`, { branch_ids: branchIds }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["user-branches", variables.userId] });
+    },
+  });
+}
