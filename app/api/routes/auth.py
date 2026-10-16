@@ -547,7 +547,9 @@ async def replace_user_branches(
     actor: User | None = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ) -> UserBranchesOut:
-    user = await session.scalar(select(User).where(User.id == user_id))
+    user = await session.scalar(
+        select(User).where(User.id == user_id).with_for_update()
+    )
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -579,5 +581,12 @@ async def replace_user_branches(
         before={"branch_ids": sorted(before)},
         after={"branch_ids": sorted(wanted)},
     )
-    await session.commit()
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="branches of this user were changed at the same time; retry",
+        ) from exc
     return await _user_branches_out(session, user)

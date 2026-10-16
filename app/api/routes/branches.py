@@ -7,7 +7,7 @@ from app.api.security import get_current_user, require_permission
 from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.domain.errors import DomainError
-from app.models.entities import User
+from app.models.entities import User, UserBranch
 from app.schemas.branch import BranchCreate, BranchListOut, BranchOut, BranchUpdate
 from app.services import admin_entities_service
 from app.services.audit_service import write_audit_log
@@ -25,10 +25,14 @@ async def create_branch(
     payload: BranchCreate,
     request: Request,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> BranchOut:
     try:
         branch = await admin_entities_service.create_branch(session, payload=payload)
+        if current_user is not None and not scope.unrestricted:
+            # A non-admin who may create branches must be able to use the one they made.
+            session.add(UserBranch(user_id=current_user.id, branch_id=branch.id))
         await write_audit_log(
             session,
             request=request,

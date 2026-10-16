@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import select
 
 from tests.helpers import create_branch, create_sku, receipt, register_and_login
 
@@ -407,3 +408,118 @@ async def test_admin_is_reported_as_unrestricted(world):
     read = await w.client.get(f"/auth/users/{admin_id}/branches", headers=w.admin)
 
     assert read.json()["unrestricted"] is True
+
+
+# --- review follow-ups ------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_a_non_admin_who_creates_a_branch_can_use_it(client):
+    from app.db.session import get_sessionmaker
+    from app.models.entities import Permission, Role, RolePermission, User, UserRole
+
+    admin = await register_and_login(client)
+    await _register(client, "maker@example.com", "Maker")  # stock_operator
+    async with get_sessionmaker()() as session:
+        # a custom role: the seed resets the built-in ones on every login
+        role = Role(name="branch_maker")
+        session.add(role)
+        await session.flush()
+        permission = await session.scalar(
+            select(Permission).where(Permission.key == "stock.branch.create")
+        )
+        user = await session.scalar(
+            select(User).where(User.email == "maker@example.com")
+        )
+        session.add(RolePermission(role_id=role.id, permission_id=permission.id))
+        session.add(UserRole(user_id=user.id, role_id=role.id))
+        await session.commit()
+    maker_headers = (
+        await client.post(
+            "/auth/login", json={"email": "maker@example.com", "password": PASSWORD}
+        )
+    ).json()["access_token"]
+    maker = {"Authorization": f"Bearer {maker_headers}"}
+
+    created = await client.post("/branches", json={"name": "Nova"}, headers=maker)
+    listing = await client.get("/branches", headers=maker)
+    admin_view = await client.get("/branches", headers=admin)
+
+    assert created.status_code == 201
+    assert [b["name"] for b in listing.json()["items"]] == ["Nova"]
+    assert len(admin_view.json()["items"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_without_authentication_the_scope_is_unrestricted(client):
+    from app.core.branch_scope import load_branch_scope
+    from app.db.session import get_sessionmaker
+
+    async with get_sessionmaker()() as session:
+        scope = await load_branch_scope(session, None)
+
+    assert scope.unrestricted is True
+    assert scope.allows(12345) is True
+    assert scope.ids is None
+
+
+def test_a_restricted_scope_only_allows_its_own_branches():
+    from fastapi import HTTPException
+
+    from app.core.branch_scope import BranchScope
+
+    scope = BranchScope(frozenset({1, 2}))
+
+    assert scope.allows(1) and not scope.allows(3)
+    assert scope.ids == frozenset({1, 2})
+    with pytest.raises(HTTPException) as denied:
+        scope.require(3)
+    assert denied.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_replacing_a_users_branches_twice_in_a_row_is_idempotent(world):
+    w = world
+    user_id = await _user_id(w.client, w.admin, "op@example.com")
+    body = {"branch_ids": [w.a, w.b]}
+
+    first = await w.client.put(
+        f"/auth/users/{user_id}/branches", json=body, headers=w.admin
+    )
+    second = await w.client.put(
+        f"/auth/users/{user_id}/branches", json=body, headers=w.admin
+    )
+
+    assert (
+        first.json()["branch_ids"] == second.json()["branch_ids"] == sorted([w.a, w.b])
+    )
+
+
+@pytest.mark.asyncio
+async def test_simultaneous_replacements_never_500_or_duplicate_rows(world):
+    import asyncio
+    import os
+
+    if not os.environ.get("TEST_DATABASE_URL", "").startswith("postgres"):
+        pytest.skip("row locks need Postgres")
+    w = world
+    user_id = await _user_id(w.client, w.admin, "op@example.com")
+    lists = [[w.a], [w.b], [w.a, w.b], [w.c], [w.b, w.c], [w.a, w.c]] * 2
+
+    responses = await asyncio.gather(
+        *[
+            w.client.put(
+                f"/auth/users/{user_id}/branches",
+                json={"branch_ids": ids},
+                headers=w.admin,
+            )
+            for ids in lists
+        ]
+    )
+
+    assert {r.status_code for r in responses} <= {200, 409}
+    final = (
+        await w.client.get(f"/auth/users/{user_id}/branches", headers=w.admin)
+    ).json()
+    assert len(final["branch_ids"]) == len(set(final["branch_ids"]))
+    assert sorted(final["branch_ids"]) in [sorted(ids) for ids in lists]
