@@ -111,9 +111,10 @@ describe("BranchSwitcher", () => {
     expect(screen.queryByRole("option", { name: "Todas as filiais", hidden: true })).toBeNull();
   });
 
-  it("renders nothing when there is no branch", () => {
+  it("tells the user when no branch was assigned", () => {
     branches = [];
     renderSwitcher();
     expect(screen.queryByLabelText("Filial ativa")).toBeNull();
+    expect(screen.getByText("Sem filiais atribuídas")).toBeInTheDocument();
   });
 });

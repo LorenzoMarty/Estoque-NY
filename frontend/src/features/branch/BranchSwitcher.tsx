@@ -1,10 +1,17 @@
-import { Select } from "@mantine/core";
+import { Badge, Select } from "@mantine/core";
 import { Store } from "lucide-react";
 import { useActiveBranch } from "./useActiveBranch";
 
 export function BranchSwitcher() {
-  const { branches, active, canConsolidate, select } = useActiveBranch();
-  if (branches.length === 0) return null;
+  const { branches, active, canConsolidate, select, ready } = useActiveBranch();
+  if (!ready) return null;
+  if (branches.length === 0) {
+    return (
+      <Badge color="yellow" variant="light" title="Peça a um administrador para atribuir filiais ao seu usuário">
+        Sem filiais atribuídas
+      </Badge>
+    );
+  }
 
   const data = [
     ...(canConsolidate ? [{ value: "all", label: "Todas as filiais" }] : []),

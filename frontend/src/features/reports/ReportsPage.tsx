@@ -12,11 +12,11 @@ function formatMoney(value: number): string {
 }
 
 export function ReportsPage() {
-  const { branchId } = useActiveBranch();
+  const { branchId, ready } = useActiveBranch();
   const { data: skus } = useSkusQuery();
-  const { data: valuation, isLoading: loadingValuation } = useValuationReport(branchId);
-  const { data: turnover, isLoading: loadingTurnover } = useTurnoverReport(branchId);
-  const { data: abc, isLoading: loadingAbc } = useAbcReport(branchId);
+  const { data: valuation, isLoading: loadingValuation } = useValuationReport(branchId, ready);
+  const { data: turnover, isLoading: loadingTurnover } = useTurnoverReport(branchId, ready);
+  const { data: abc, isLoading: loadingAbc } = useAbcReport(branchId, ready);
 
   const skuLabel = useMemo(() => {
     const map = new Map((skus ?? []).map((s) => [s.id, s.sku_code]));
