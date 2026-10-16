@@ -1,6 +1,6 @@
 # ADR 0001: Catalogo/Estoque contract and data ownership
 
-- Status: accepted (2026-10-16)
+- Status: **proposed** (2026-10-16). Becomes `accepted` once the owner confirms the open choices below (90-day overlap, 60 s cache, no API key).
 - Deciders: Lorenzo Marty
 - Related issues: #57 (this ADR), #58 (versioned endpoint), #59 (contract tests), #70 (fallback detection)
 
@@ -15,6 +15,11 @@ more fields) the rules need to be written down: who owns what, what is public, h
 contract changes, how it is cached and what happens when it fails.
 
 ## Decision
+
+> **What exists today.** `GET /public/catalog` (feed, schema and route in `app/schemas/public.py` and
+> `app/api/routes/public.py`) lives on the `feat/redesign-ui` branch. The `/public/v1` prefix, the
+> `ETag`/`304`, pagination and the contract snapshot are introduced by #58 and #59; until they
+> merge, sections 3 and 4 describe the **target**, not the running behavior.
 
 ### 1. Ownership
 
