@@ -13,7 +13,11 @@ from app.models.base import Base
 @pytest_asyncio.fixture
 async def client(tmp_path):
     db_file = tmp_path / "test_inventory.db"
-    database_url = f"sqlite+aiosqlite:///{db_file.as_posix()}"
+    # CI sets TEST_DATABASE_URL to run the whole suite against Postgres too.
+    database_url = (
+        os.environ.get("TEST_DATABASE_URL")
+        or f"sqlite+aiosqlite:///{db_file.as_posix()}"
+    )
 
     previous_env = {
         "DATABASE_URL": os.environ.get("DATABASE_URL"),
