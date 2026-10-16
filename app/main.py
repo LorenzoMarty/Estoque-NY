@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
             "refresh": settings.rate_limit_refresh_per_minute,
             "public": settings.rate_limit_public_per_minute,
         },
-        trust_forwarded_for=settings.rate_limit_trust_forwarded_for,
+        trusted_proxy_hops=settings.rate_limit_trusted_proxy_hops,
     )
     app.add_middleware(
         CORSMiddleware,
