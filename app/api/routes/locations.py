@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.errors import domain_error_to_http
 from app.api.pagination import page_meta, pagination_params
 from app.api.security import get_current_user, require_permission
+from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.domain.errors import DomainError
 from app.models.entities import User
@@ -29,8 +30,10 @@ async def create_location(
     payload: LocationCreate,
     request: Request,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> LocationOut:
+    scope.require(payload.branch_id)
     try:
         location = await admin_entities_service.create_location(
             session,
@@ -66,8 +69,11 @@ async def create_location(
 async def list_locations(
     branch_id: int | None = Query(default=None),
     params=Depends(pagination_params),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> LocationListOut:
+    if branch_id is not None:
+        scope.require(branch_id)
     rows, total = await admin_entities_service.list_locations(
         session,
         page=params.page,
@@ -76,6 +82,7 @@ async def list_locations(
         order=params.order,
         branch_id=branch_id,
         q=params.q,
+        allowed_ids=scope.ids,
     )
     return LocationListOut(
         items=[LocationOut.model_validate(row) for row in rows],
@@ -94,6 +101,7 @@ async def list_locations(
 )
 async def get_location(
     location_id: int,
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> LocationOut:
     try:
@@ -103,6 +111,7 @@ async def get_location(
         )
     except DomainError as exc:
         raise domain_error_to_http(exc) from exc
+    scope.require(location.branch_id)
     return LocationOut.model_validate(location)
 
 
@@ -116,6 +125,7 @@ async def update_location(
     payload: LocationUpdate,
     request: Request,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> LocationOut:
     try:
@@ -123,6 +133,8 @@ async def update_location(
             session,
             location_id=location_id,
         )
+        scope.require(current.branch_id)
+        scope.require(payload.branch_id)
         before = LocationOut.model_validate(current).model_dump(mode="json")
         location = await admin_entities_service.update_location(
             session,
@@ -160,6 +172,7 @@ async def delete_location(
     location_id: int,
     request: Request,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> None:
     try:
@@ -167,6 +180,7 @@ async def delete_location(
             session,
             location_id=location_id,
         )
+        scope.require(current.branch_id)
         before = LocationOut.model_validate(current).model_dump(mode="json")
         await admin_entities_service.delete_location(session, location_id=location_id)
         await write_audit_log(

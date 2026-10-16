@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.errors import domain_error_to_http
 from app.api.pagination import page_meta, pagination_params
 from app.api.security import get_current_user, require_permission
+from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.domain.errors import DomainError
 from app.models.entities import User
@@ -57,6 +58,7 @@ async def create_branch(
 )
 async def list_branches(
     params=Depends(pagination_params),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> BranchListOut:
     rows, total = await admin_entities_service.list_branches(
@@ -66,6 +68,7 @@ async def list_branches(
         sort=params.sort,
         order=params.order,
         q=params.q,
+        allowed_ids=scope.ids,
     )
     return BranchListOut(
         items=[BranchOut.model_validate(row) for row in rows],
@@ -84,8 +87,10 @@ async def list_branches(
 )
 async def get_branch(
     branch_id: int,
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> BranchOut:
+    scope.require(branch_id)
     try:
         branch = await admin_entities_service.get_branch_or_error(
             session,
@@ -106,8 +111,10 @@ async def update_branch(
     payload: BranchUpdate,
     request: Request,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> BranchOut:
+    scope.require(branch_id)
     try:
         current = await admin_entities_service.get_branch_or_error(
             session,
@@ -150,8 +157,10 @@ async def delete_branch(
     branch_id: int,
     request: Request,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> None:
+    scope.require(branch_id)
     try:
         current = await admin_entities_service.get_branch_or_error(
             session,

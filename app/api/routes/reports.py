@@ -10,6 +10,7 @@ from starlette.responses import StreamingResponse
 
 from app.api.pagination import page_meta
 from app.api.security import require_permission
+from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.models.entities import (
     SKU,
@@ -50,6 +51,7 @@ async def stock_valuation(
     sku_id: int | None = Query(default=None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     valuation_expr = (StockBalance.on_hand * SKU.cost).label("valuation")
@@ -61,8 +63,7 @@ async def stock_valuation(
         SKU.cost,
         valuation_expr,
     ).join(SKU, SKU.id == StockBalance.sku_id)
-    if branch_id is not None:
-        stmt = stmt.where(StockBalance.branch_id == branch_id)
+    stmt = scope.apply(stmt, StockBalance.branch_id, branch_id)
     if location_id is not None:
         stmt = stmt.where(StockBalance.location_id == location_id)
     if sku_id is not None:
@@ -101,6 +102,7 @@ async def stock_turnover(
     to_date: datetime | None = Query(default=None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     issued_qty = func.sum(case((StockMove.qty < 0, -StockMove.qty), else_=0)).label(
@@ -124,8 +126,7 @@ async def stock_turnover(
         .where(StockMove.move_type == MoveType.ISSUE)
         .group_by(StockMove.branch_id, StockMove.location_id, StockMove.sku_id)
     )
-    if branch_id is not None:
-        stmt = stmt.where(StockMove.branch_id == branch_id)
+    stmt = scope.apply(stmt, StockMove.branch_id, branch_id)
     if location_id is not None:
         stmt = stmt.where(StockMove.location_id == location_id)
     if from_date is not None:
@@ -177,11 +178,11 @@ async def stock_movements_report(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     export: str | None = Query(default=None),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict | StreamingResponse:
     stmt = select(StockMove).join(SKU, SKU.id == StockMove.sku_id)
-    if branch_id is not None:
-        stmt = stmt.where(StockMove.branch_id == branch_id)
+    stmt = scope.apply(stmt, StockMove.branch_id, branch_id)
     if location_id is not None:
         stmt = stmt.where(StockMove.location_id == location_id)
     if sku_id is not None:
@@ -248,6 +249,7 @@ async def stock_abc_report(
     to_date: datetime | None = Query(default=None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     movement_value = func.sum(
@@ -264,8 +266,7 @@ async def stock_abc_report(
         .group_by(StockMove.sku_id)
         .order_by(desc("movement_value"))
     )
-    if branch_id is not None:
-        stmt = stmt.where(StockMove.branch_id == branch_id)
+    stmt = scope.apply(stmt, StockMove.branch_id, branch_id)
     if location_id is not None:
         stmt = stmt.where(StockMove.location_id == location_id)
     if from_date is not None:
@@ -308,6 +309,7 @@ async def stock_abc_report(
 
 async def _low_turnover_rows(
     session: AsyncSession,
+    scope: BranchScope,
     *,
     branch_id: int | None,
     location_id: int | None,
@@ -336,8 +338,7 @@ async def _low_turnover_rows(
         .where(StockMove.move_type == MoveType.ISSUE)
         .group_by(StockMove.branch_id, StockMove.location_id, StockMove.sku_id)
     )
-    if branch_id is not None:
-        stmt = stmt.where(StockMove.branch_id == branch_id)
+    stmt = scope.apply(stmt, StockMove.branch_id, branch_id)
     if location_id is not None:
         stmt = stmt.where(StockMove.location_id == location_id)
     if from_date is not None:
@@ -369,7 +370,7 @@ async def _low_turnover_rows(
 
 
 async def _top_skus_by_value(
-    session: AsyncSession, *, limit: int = 5
+    session: AsyncSession, scope: BranchScope, *, limit: int = 5
 ) -> list[TopSKUByValueRow]:
     movement_value = func.sum(
         case(
@@ -385,6 +386,7 @@ async def _top_skus_by_value(
         .order_by(desc("movement_value"))
         .limit(limit)
     )
+    stmt = scope.apply(stmt, StockMove.branch_id)
     rows = (await session.execute(stmt)).all()
     return [
         TopSKUByValueRow(
@@ -403,13 +405,19 @@ async def campaign_products_report(
     branch_id: int | None = Query(default=None),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     on_hand_expr = func.coalesce(func.sum(StockBalance.on_hand), 0).label("on_hand")
     stock_balance_join_condition = StockBalance.sku_id == SKU.id
     if branch_id is not None:
+        scope.require(branch_id)
         stock_balance_join_condition = stock_balance_join_condition & (
             StockBalance.branch_id == branch_id
+        )
+    elif scope.ids is not None:
+        stock_balance_join_condition = stock_balance_join_condition & (
+            StockBalance.branch_id.in_(scope.ids)
         )
     stmt = (
         select(
@@ -556,10 +564,12 @@ async def low_turnover_candidates_report(
     threshold: float = Query(default=DEFAULT_LOW_TURNOVER_THRESHOLD, ge=0),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     candidates = await _low_turnover_rows(
         session,
+        scope,
         branch_id=branch_id,
         location_id=location_id,
         from_date=from_date,
@@ -583,16 +593,14 @@ async def low_turnover_candidates_report(
     response_model=MarketingDashboardSummary,
 )
 async def marketing_dashboard_summary(
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> MarketingDashboardSummary:
-    valuation_total = (
-        await session.scalar(
-            select(func.coalesce(func.sum(StockBalance.on_hand * SKU.cost), 0)).join(
-                SKU, SKU.id == StockBalance.sku_id
-            )
-        )
-        or 0
-    )
+    valuation_stmt = select(
+        func.coalesce(func.sum(StockBalance.on_hand * SKU.cost), 0)
+    ).join(SKU, SKU.id == StockBalance.sku_id)
+    valuation_stmt = scope.apply(valuation_stmt, StockBalance.branch_id)
+    valuation_total = await session.scalar(valuation_stmt) or 0
     active_campaigns_count = (
         await session.scalar(
             select(func.count())
@@ -611,13 +619,14 @@ async def marketing_dashboard_summary(
     )
     low_turnover_candidates = await _low_turnover_rows(
         session,
+        scope,
         branch_id=None,
         location_id=None,
         from_date=None,
         to_date=None,
         threshold=DEFAULT_LOW_TURNOVER_THRESHOLD,
     )
-    top_skus = await _top_skus_by_value(session, limit=5)
+    top_skus = await _top_skus_by_value(session, scope, limit=5)
 
     return MarketingDashboardSummary(
         stock_valuation_total=Decimal(str(valuation_total)),

@@ -13,6 +13,7 @@ from app.api.pagination import (
     pagination_params,
 )
 from app.api.security import get_current_user, require_permission
+from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.domain.errors import DomainError
 from app.domain.inventory_service import (
@@ -68,6 +69,21 @@ async def _to_inventory_out(
     )
 
 
+async def _require_count_access(
+    session: AsyncSession, scope: BranchScope, count_id: int
+) -> InventoryCount:
+    count = await session.scalar(
+        select(InventoryCount).where(InventoryCount.id == count_id)
+    )
+    if count is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"inventory count {count_id} not found",
+        )
+    scope.require(count.branch_id)
+    return count
+
+
 @router.post(
     "",
     response_model=InventoryCountOut,
@@ -79,8 +95,10 @@ async def create_count(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    scope.require(payload.branch_id)
     idempotency = await begin_idempotency(request, payload.model_dump(mode="json"))
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -131,8 +149,10 @@ async def patch_count_lines(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    await _require_count_access(session, scope, count_id)
     idempotency = await begin_idempotency(
         request,
         {"count_id": count_id, **payload.model_dump(mode="json")},
@@ -182,8 +202,10 @@ async def close_count(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    await _require_count_access(session, scope, count_id)
     idempotency = await begin_idempotency(request, {"count_id": count_id})
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -228,8 +250,10 @@ async def post_count(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    await _require_count_access(session, scope, count_id)
     idempotency = await begin_idempotency(request, {"count_id": count_id})
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -278,8 +302,10 @@ async def cancel_count(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    await _require_count_access(session, scope, count_id)
     idempotency = await begin_idempotency(request, {"count_id": count_id})
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -326,13 +352,13 @@ async def list_counts(
     from_date: datetime | None = Query(default=None),
     to_date: datetime | None = Query(default=None),
     params: PaginationParams = Depends(pagination_params),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> InventoryCountListOut:
     stmt = select(InventoryCount)
     if status_filter is not None:
         stmt = stmt.where(InventoryCount.status == status_filter)
-    if branch_id is not None:
-        stmt = stmt.where(InventoryCount.branch_id == branch_id)
+    stmt = scope.apply(stmt, InventoryCount.branch_id, branch_id)
     if location_id is not None:
         stmt = stmt.where(InventoryCount.location_id == location_id)
     if from_date is not None:
@@ -364,14 +390,8 @@ async def list_counts(
 )
 async def get_count(
     count_id: int,
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> InventoryCountOut:
-    count = await session.scalar(
-        select(InventoryCount).where(InventoryCount.id == count_id)
-    )
-    if count is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"inventory count {count_id} not found",
-        )
+    count = await _require_count_access(session, scope, count_id)
     return await _to_inventory_out(session, count)
