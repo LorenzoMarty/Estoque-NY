@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "build": "npm run typecheck && npm run test && vite build",
-    "serve:static": "node ./scripts/serve-static.mjs"
+    "serve:static": "node ./scripts/serve-static.mjs",
+    "build:release": "npm run build && node ./scripts/move-sourcemaps.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

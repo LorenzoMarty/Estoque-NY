@@ -38,3 +38,4 @@ streamlit_app/.env
 # Playwright
 frontend/test-results/
 frontend/playwright-report/
+frontend/sourcemaps/
