@@ -44,6 +44,14 @@ class Settings(BaseSettings):
 
     cors_origins: str = "*"
 
+    # Requests per minute per client IP; 0 disables a bucket.
+    rate_limit_login_per_minute: int = 10
+    rate_limit_refresh_per_minute: int = 30
+    rate_limit_public_per_minute: int = 120
+    # Behind a reverse proxy (Render, Vercel) the socket IP is the proxy's; set
+    # this so the limiter reads the client IP from X-Forwarded-For instead.
+    rate_limit_trust_forwarded_for: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
