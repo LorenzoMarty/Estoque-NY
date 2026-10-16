@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import sys
 from pathlib import Path
 
@@ -27,8 +28,11 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--password",
-        default="Admin123!",
-        help="Admin password (change it after first login).",
+        default=os.environ.get("ADMIN_PASSWORD"),
+        help=(
+            "Admin password. Defaults to the ADMIN_PASSWORD environment variable; "
+            "there is no built-in default. The admin must change it at first login."
+        ),
     )
     parser.add_argument(
         "--reset-password",
@@ -39,6 +43,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 async def _seed_admin(args: argparse.Namespace) -> None:
+    from app.core.password_policy import describe, password_problems
     from app.core.security import hash_password
     from app.db.session import dispose_engine, get_sessionmaker
     from app.models.entities import User
@@ -52,8 +57,11 @@ async def _seed_admin(args: argparse.Namespace) -> None:
     if "@" not in email:
         raise ValueError(f"Invalid admin email: {args.email}")
     password = str(args.password or "")
-    if len(password) < 8:
-        raise ValueError("Admin password must have at least 8 characters.")
+    if not password:
+        raise ValueError("Set ADMIN_PASSWORD or pass --password; there is no default.")
+    problems = password_problems(password, email=email)
+    if problems:
+        raise ValueError(describe(problems))
 
     sessionmaker = get_sessionmaker()
     created = False
@@ -71,6 +79,7 @@ async def _seed_admin(args: argparse.Namespace) -> None:
                     email=email,
                     password_hash=hash_password(password),
                     active=True,
+                    must_change_password=True,
                 )
                 session.add(user)
                 await session.flush()
@@ -80,6 +89,7 @@ async def _seed_admin(args: argparse.Namespace) -> None:
                     user.active = True
                 if args.reset_password:
                     user.password_hash = hash_password(password)
+                    user.must_change_password = True
                     password_reset = True
                 if args.name:
                     user.name = str(args.name).strip() or user.name
@@ -99,10 +109,8 @@ async def _seed_admin(args: argparse.Namespace) -> None:
     print(f"admin_email={email}")
     if created:
         print("result=created")
-        print(f"admin_password={password}")
     elif password_reset:
         print("result=updated_password")
-        print(f"admin_password={password}")
     else:
         print("result=already_exists")
 

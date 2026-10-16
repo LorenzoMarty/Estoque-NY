@@ -114,6 +114,14 @@ def require_permission(permission_key: str) -> Callable[..., Any]:
                 detail="authentication required",
             )
 
+        if user.must_change_password:
+            # /auth/me and /auth/change-password only need get_current_user, so
+            # they stay reachable; everything guarded by a permission does not.
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="password change required",
+            )
+
         allowed = await _has_permission(session, user.id, permission_key)
         if not allowed:
             raise HTTPException(

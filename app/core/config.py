@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     )
     sqlite_url: str = "sqlite+aiosqlite:///./inventory.db"
 
+    # Consecutive wrong passwords before the account is locked, and for how long.
+    login_max_failed_attempts: int = 5
+    login_lockout_minutes: int = 15
+
     allow_negative_stock: bool = False
     idempotency_required_in_production: bool = True
 
