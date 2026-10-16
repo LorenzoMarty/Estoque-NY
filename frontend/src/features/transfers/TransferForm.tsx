@@ -1,3 +1,4 @@
+import { useActiveBranch } from "../branch/useActiveBranch";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ActionIcon, Alert, Button, Group, NumberInput, Select, Stack, Text, TextInput } from "@mantine/core";
 import { Plus, Trash2 } from "lucide-react";
@@ -9,6 +10,7 @@ import { transferCreateSchema, type TransferCreateFormValues } from "./schema";
 
 export function TransferForm({ onSuccess }: { onSuccess: () => void }) {
   const { data: branches } = useBranchesQuery();
+  const { branchId: activeBranchId } = useActiveBranch();
   const { data: skus } = useSkusQuery();
   const [apiError, setApiError] = useState<string | null>(null);
 
@@ -20,7 +22,10 @@ export function TransferForm({ onSuccess }: { onSuccess: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<TransferCreateFormValues>({
     resolver: zodResolver(transferCreateSchema),
-    defaultValues: { items: [{ sku_id: undefined as never, qty: undefined as never }] },
+    defaultValues: {
+      from_branch_id: activeBranchId as never,
+      items: [{ sku_id: undefined as never, qty: undefined as never }],
+    },
   });
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
