@@ -98,3 +98,41 @@ def test_release_traces_and_pii_settings_are_applied(sentry):
     assert options["release"] == "abc123"
     assert options["traces_sample_rate"] == 0.25
     assert options["send_default_pii"] is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "forged", ["x" * 65, "has space", "line\nbreak", "<script>", "a/b", ""]
+)
+async def test_a_forged_request_id_is_replaced_by_a_generated_one(sentry, forged):
+    app = _app_with_boom()
+    init_sentry(_settings(sentry_dsn=DSN), transport=sentry)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app, raise_app_exceptions=False),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.get("/boom", headers={"X-Request-ID": forged})
+    sentry_sdk.flush()
+
+    request_id = response.json()["error"]["request_id"]
+    assert request_id != forged
+    assert len(request_id) == 36  # a generated uuid
+    assert sentry.events[-1]["tags"]["request_id"] == request_id
+
+
+@pytest.mark.asyncio
+async def test_each_request_tags_only_its_own_event(sentry):
+    app = _app_with_boom()
+    init_sentry(_settings(sentry_dsn=DSN), transport=sentry)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app, raise_app_exceptions=False),
+        base_url="http://testserver",
+    ) as client:
+        await client.get("/boom", headers={"X-Request-ID": "first-1"})
+        await client.get("/boom", headers={"X-Request-ID": "second-2"})
+    sentry_sdk.flush()
+
+    tags = [e["tags"]["request_id"] for e in sentry.events if "exception" in e]
+    assert tags == ["first-1", "second-2"]

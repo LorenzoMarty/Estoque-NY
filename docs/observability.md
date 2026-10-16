@@ -18,11 +18,13 @@ search `request_id:<value>` in Sentry; the same id is in the request log line
 
 ### Source maps for readable browser stack traces
 
-`npm run build` writes **hidden** source maps (`*.map`, not referenced from the bundles).
-Upload them for the release and keep them off the public site:
+`npm run build` writes **hidden** source maps (`*.map`, not referenced from the bundles), but they
+still sit in `dist/assets`, so serving the whole `dist/` would publish them. For a release use
+`npm run build:release`: it builds, then **moves the maps out of `dist/`** into `frontend/sourcemaps/`
+(git-ignored). Upload them from there for the release; they never reach the static host.
 
 ```bash
-npx @sentry/cli sourcemaps upload --release "$VITE_SENTRY_RELEASE" frontend/dist/assets
+npx @sentry/cli sourcemaps upload --release "$VITE_SENTRY_RELEASE" frontend/sourcemaps
 ```
 
 Use the same `VITE_SENTRY_RELEASE` value (for example the commit SHA) in the build and
