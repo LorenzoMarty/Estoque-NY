@@ -1,12 +1,27 @@
 from datetime import datetime
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.models.enums import MoveType
 from app.schemas.base import SchemaBase
 
 
-class StockAdjustmentIn(SchemaBase):
+class _MoveInBase(SchemaBase):
+    """Optional text fields arrive as "" from forms; "" is not "no value".
+
+    `reference_id` is unique per move type, so a stored "" would make the second
+    movement without a reference fail with a conflict.
+    """
+
+    @field_validator("reason", "reference_id", mode="before", check_fields=False)
+    @classmethod
+    def blank_to_none(cls, value):
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value.strip() if isinstance(value, str) else value
+
+
+class StockAdjustmentIn(_MoveInBase):
     branch_id: int
     sku_id: int
     qty_delta: int
@@ -16,7 +31,7 @@ class StockAdjustmentIn(SchemaBase):
     occurred_at: datetime | None = None
 
 
-class StockReceiptIn(SchemaBase):
+class StockReceiptIn(_MoveInBase):
     branch_id: int
     sku_id: int
     qty: int = Field(..., gt=0)
@@ -26,7 +41,7 @@ class StockReceiptIn(SchemaBase):
     occurred_at: datetime | None = None
 
 
-class StockIssueIn(SchemaBase):
+class StockIssueIn(_MoveInBase):
     branch_id: int
     sku_id: int
     qty: int = Field(..., gt=0)
