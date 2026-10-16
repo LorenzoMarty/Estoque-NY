@@ -1,9 +1,10 @@
-import { Alert, Group, Loader, Select, Switch, Table, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Button, Group, Loader, Select, Switch, Table, Text, TextInput, Title } from "@mantine/core";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useAuthStore } from "../auth/store";
 import { strings } from "../../shared/strings";
+import { UserBranchesModal } from "./UserBranchesModal";
 import { useAssignRole, useRolesQuery, useSetUserActive, useUsersQuery, type UserWithRoles } from "./api";
 
 const tableFeatureSet = tableFeatures({});
@@ -13,6 +14,7 @@ const EMPTY_ROWS: UserWithRoles[] = [];
 export function UsersPage() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [branchesUser, setBranchesUser] = useState<UserWithRoles | null>(null);
   const currentUser = useAuthStore((state) => state.user);
 
   const { data: users, isLoading, isError } = useUsersQuery({ q: search || undefined });
@@ -60,6 +62,15 @@ export function UsersPage() {
           ),
         }),
         columnHelper.display({
+          id: "branches",
+          header: "Filiais",
+          cell: (info) => (
+            <Button size="compact-xs" variant="light" onClick={() => setBranchesUser(info.row.original)}>
+              Gerenciar
+            </Button>
+          ),
+        }),
+        columnHelper.display({
           id: "active",
           header: "Ativo",
           cell: (info) => (
@@ -83,6 +94,7 @@ export function UsersPage() {
 
   return (
     <div className="workspace-page">
+      <UserBranchesModal user={branchesUser} onClose={() => setBranchesUser(null)} />
       <Group className="page-hero" justify="space-between">
         <div>
           <Title order={2}>{strings.nav.users}</Title>
