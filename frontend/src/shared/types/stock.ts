@@ -50,6 +50,9 @@ export interface Sku {
   cost: string;
   price: string;
   tax_code: string | null;
+  ncm: string | null;
+  origin: "FOREIGN" | "NATIONAL" | "EXPORTED_NO_EXIT" | null;
+  restricted: boolean;
   active: boolean;
 }
 
