@@ -70,10 +70,14 @@ class UserActiveIn(SchemaBase):
 
 class UserBranchesIn(SchemaBase):
     branch_ids: list[int]
+    # Optional role per branch (branch id -> role name). Branches left out keep
+    # using the user's global roles.
+    roles: dict[int, str] = Field(default_factory=dict)
 
 
 class UserBranchesOut(SchemaBase):
     user_id: int
     branch_ids: list[int]
+    roles: dict[int, str] = Field(default_factory=dict)
     # Admins ignore the list: they can use every branch.
     unrestricted: bool

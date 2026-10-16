@@ -2,6 +2,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions import ALL_PERMISSIONS
+from app.core.role_matrix import ROLE_PERMISSIONS
 from app.models.entities import Permission, Role, RolePermission, User, UserRole
 
 ADMIN_ROLE = "admin"
@@ -23,7 +24,7 @@ async def ensure_rbac_seed(session: AsyncSession) -> None:
             session.add(Permission(key=key))
     await session.flush()
 
-    role_names = {ADMIN_ROLE, OPERATOR_ROLE, VIEWER_ROLE}
+    role_names = {ADMIN_ROLE, OPERATOR_ROLE, VIEWER_ROLE, *ROLE_PERMISSIONS}
     existing_roles = {
         name
         for name in (
@@ -77,6 +78,10 @@ async def ensure_rbac_seed(session: AsyncSession) -> None:
     await _sync_role_permissions(session, admin_role.id, admin_perm_ids)
     await _sync_role_permissions(session, operator_role.id, operator_perm_ids)
     await _sync_role_permissions(session, viewer_role.id, viewer_perm_ids)
+    for role_name, keys in ROLE_PERMISSIONS.items():
+        await _sync_role_permissions(
+            session, roles[role_name].id, {permissions[key].id for key in keys}
+        )
 
 
 async def _sync_role_permissions(

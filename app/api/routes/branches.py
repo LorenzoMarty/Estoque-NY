@@ -72,7 +72,7 @@ async def list_branches(
         sort=params.sort,
         order=params.order,
         q=params.q,
-        allowed_ids=scope.ids,
+        allowed_ids=scope.visible_ids,
     )
     return BranchListOut(
         items=[BranchOut.model_validate(row) for row in rows],

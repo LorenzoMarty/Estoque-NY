@@ -82,7 +82,7 @@ async def list_locations(
         order=params.order,
         branch_id=branch_id,
         q=params.q,
-        allowed_ids=scope.ids,
+        allowed_ids=scope.visible_ids,
     )
     return LocationListOut(
         items=[LocationOut.model_validate(row) for row in rows],
