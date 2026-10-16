@@ -1,8 +1,12 @@
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import Field
 
 from app.schemas.base import SchemaBase
+
+SKUOrigin = Literal["FOREIGN", "NATIONAL", "EXPORTED_NO_EXIT"]
+NCM_PATTERN = r"^\d{8}$"
 
 
 class SKUCreate(SchemaBase):
@@ -15,6 +19,9 @@ class SKUCreate(SchemaBase):
     cost: Decimal = Field(default=Decimal("0"))
     price: Decimal = Field(default=Decimal("0"))
     tax_code: str | None = None
+    ncm: str | None = Field(default=None, pattern=NCM_PATTERN)
+    origin: SKUOrigin | None = None
+    restricted: bool = False
     active: bool = True
 
 
@@ -26,6 +33,9 @@ class SKUUpdate(SchemaBase):
     cost: Decimal | None = None
     price: Decimal | None = None
     tax_code: str | None = None
+    ncm: str | None = Field(default=None, pattern=NCM_PATTERN)
+    origin: SKUOrigin | None = None
+    restricted: bool | None = None
     active: bool | None = None
 
 
@@ -44,6 +54,9 @@ class SKUOut(SchemaBase):
     cost: Decimal
     price: Decimal
     tax_code: str | None
+    ncm: str | None
+    origin: str | None
+    restricted: bool
     active: bool
 
 
