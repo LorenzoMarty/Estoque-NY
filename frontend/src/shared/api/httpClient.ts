@@ -219,6 +219,8 @@ async function parseResponsePayload(response: Response): Promise<ApiErrorPayload
 export interface RequestOptions {
   method?: string;
   body?: unknown;
+  /** Sent as is (e.g. CSV text) instead of JSON-encoding `body`. */
+  rawBody?: string;
   headers?: Record<string, string>;
   timeoutMs?: number;
   auth?: "optional" | "required" | "none";
@@ -267,6 +269,7 @@ export async function requestJson<T>(path: string, options: RequestOptions = {})
   const {
     method = "GET",
     body = null,
+    rawBody,
     headers: customHeaders = {},
     timeoutMs = REQUEST_TIMEOUT_MS,
     auth = "optional",
@@ -295,13 +298,13 @@ export async function requestJson<T>(path: string, options: RequestOptions = {})
 
   const headers: Record<string, string> = { Accept: "application/json", ...customHeaders };
   if (token) headers.Authorization = token;
-  if (body != null && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+  if (rawBody === undefined && body != null && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
 
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
-      body: body != null ? JSON.stringify(body) : undefined,
+      body: rawBody !== undefined ? rawBody : body != null ? JSON.stringify(body) : undefined,
       credentials: "same-origin",
       signal: controller.signal,
     });
@@ -339,6 +342,17 @@ export async function requestJson<T>(path: string, options: RequestOptions = {})
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/** GET a text file (e.g. a CSV export) with the current session. */
+export async function requestText(path: string): Promise<string> {
+  const token = normalizeValidToken(resolveRawToken());
+  if (!token) throw buildAuthRequiredError(path);
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers: { Authorization: token } });
+  if (!response.ok) {
+    throw buildHttpError({ path, method: "GET", status: response.status, payload: await parseResponsePayload(response) });
+  }
+  return response.text();
 }
 
 export const apiClient = Object.freeze({

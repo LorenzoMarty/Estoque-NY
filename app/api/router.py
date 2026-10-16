@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes import (
+    data_io,
     health,
 )
 from app.modules import (
@@ -31,5 +32,6 @@ api_router.include_router(transfers.router)
 api_router.include_router(inventory.router)
 api_router.include_router(marketing.router)
 api_router.include_router(audit.router)
+api_router.include_router(data_io.router)
 api_router.include_router(reports.router)
 api_router.include_router(reports.marketing_router)
