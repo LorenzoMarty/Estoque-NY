@@ -76,3 +76,49 @@ def test_table_counts_lists_every_table(source_db):
     source, _ = source_db
 
     assert _load_drill().table_counts(source) == {"empty_one": 0, "items": 25}
+
+
+def test_a_failing_dump_reports_the_tool_error_and_leaves_no_scratch_database(
+    source_db,
+):
+    source, admin_url = source_db
+    drill = _load_drill()
+    missing = psycopg.conninfo.make_conninfo(admin_url, dbname="does_not_exist")
+
+    with pytest.raises(Exception) as failure:
+        drill.run_drill(missing, admin_url, PG_BIN)
+
+    assert "does_not_exist" in str(failure.value) or "database" in str(failure.value)
+    with psycopg.connect(admin_url) as conn:
+        leftovers = conn.execute(
+            "SELECT datname FROM pg_database WHERE datname LIKE 'restore_drill_%'"
+        ).fetchall()
+    assert leftovers == []
+
+
+def test_a_row_count_difference_is_reported_as_a_mismatch(source_db, monkeypatch):
+    source, admin_url = source_db
+    drill = _load_drill()
+    real = drill.table_counts
+
+    def restored_has_one_row_less(url):
+        counts = real(url)
+        if "restore_drill_" in url:
+            counts["items"] -= 1
+        return counts
+
+    monkeypatch.setattr(drill, "table_counts", restored_has_one_row_less)
+
+    result = drill.run_drill(source, admin_url, PG_BIN)
+
+    assert result["mismatched"] == {"items": (25, 24)}
+
+
+def test_the_password_is_not_put_on_the_command_line():
+    drill = _load_drill()
+
+    flags, env = drill._pg_args("postgresql://user:s3cret@db.example.com:5432/app")
+
+    assert "s3cret" not in " ".join(flags)
+    assert env == {"PGPASSWORD": "s3cret"}
+    assert flags == ["-h", "db.example.com", "-p", "5432", "-U", "user"]
