@@ -26,8 +26,10 @@ services:
         value: "false"
       - key: IDEMPOTENCY_REQUIRED_IN_PRODUCTION
         value: "true"
-      - key: RATE_LIMIT_TRUST_FORWARDED_FOR
-        value: "true"
+      # One proxy (Render) in front of the API. Raise to 2 if another proxy (e.g. Vercel)
+      # sits before it, or every visitor would share one rate-limit bucket.
+      - key: RATE_LIMIT_TRUSTED_PROXY_HOPS
+        value: "1"
       - key: CORS_ORIGINS
         sync: false
   - type: web

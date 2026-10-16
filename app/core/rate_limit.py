@@ -22,18 +22,27 @@ _RULES: tuple[tuple[str, str | None, str], ...] = (
 )
 
 _MAX_TRACKED_KEYS = 10_000
+# Hard ceiling: if even after dropping idle entries there are more, forget the oldest.
+_HARD_CAP = 50_000
 
 
 class SlidingWindowLimiter:
     def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
         self._hits: dict[tuple[str, str], deque[float]] = {}
         self._clock = clock
+        self._next_evict = 0.0
 
     def hit(self, key: tuple[str, str], limit: int, window: float) -> float | None:
         """Record a request. Returns None if allowed, else seconds to wait."""
         now = self._clock()
-        if len(self._hits) > _MAX_TRACKED_KEYS:
+        if len(self._hits) > _MAX_TRACKED_KEYS and now >= self._next_evict:
+            # at most one sweep per window, so a flood of new keys cannot make
+            # every request pay for a scan of the whole table
             self._evict(now, window)
+            self._next_evict = now + window
+        if len(self._hits) > _HARD_CAP:
+            for oldest in list(self._hits)[: len(self._hits) - _HARD_CAP]:
+                del self._hits[oldest]  # oldest first (dicts keep insertion order)
         hits = self._hits.setdefault(key, deque())
         while hits and now - hits[0] >= window:
             hits.popleft()
@@ -54,13 +63,13 @@ class RateLimitMiddleware:
         *,
         limits: dict[str, int],
         window_seconds: float = 60.0,
-        trust_forwarded_for: bool = False,
+        trusted_proxy_hops: int = 0,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.app = app
         self.limits = limits
         self.window = window_seconds
-        self.trust_forwarded_for = trust_forwarded_for
+        self.trusted_proxy_hops = trusted_proxy_hops
         self.limiter = SlidingWindowLimiter(clock)
 
     def _bucket(self, scope: Scope) -> str | None:
@@ -75,12 +84,15 @@ class RateLimitMiddleware:
         return None
 
     def _client_ip(self, scope: Scope) -> str:
-        if self.trust_forwarded_for:
-            # The rightmost entry is the one our own proxy appended; anything to
-            # its left can be forged by the client.
+        if self.trusted_proxy_hops > 0:
+            # Each trusted proxy appends the address it saw, so the client is the
+            # `hops`-th entry from the right; anything further left can be forged.
             for name, value in scope["headers"]:
                 if name == b"x-forwarded-for":
-                    return value.decode("latin-1").split(",")[-1].strip()
+                    entries = [e.strip() for e in value.decode("latin-1").split(",")]
+                    entries = [e for e in entries if e]
+                    if entries:
+                        return entries[max(0, len(entries) - self.trusted_proxy_hops)]
         client = scope.get("client")
         return client[0] if client else "unknown"
 

@@ -97,14 +97,91 @@ async def test_public_bucket_is_looser_than_login(client):
     assert statuses[120:] == [429] * 5
 
 
+def _scope(forwarded: bytes | None, client="10.0.0.1"):
+    headers = [] if forwarded is None else [(b"x-forwarded-for", forwarded)]
+    return {"type": "http", "client": (client, 1), "headers": headers}
+
+
 def test_forwarded_for_is_only_trusted_when_enabled():
-    scope = {
-        "type": "http",
-        "client": ("10.0.0.1", 1),
-        "headers": [(b"x-forwarded-for", b"6.6.6.6, 7.7.7.7")],
-    }
+    scope = _scope(b"6.6.6.6, 7.7.7.7")
     direct = RateLimitMiddleware(None, limits={})
-    proxied = RateLimitMiddleware(None, limits={}, trust_forwarded_for=True)
+    one_proxy = RateLimitMiddleware(None, limits={}, trusted_proxy_hops=1)
 
     assert direct._client_ip(scope) == "10.0.0.1"
-    assert proxied._client_ip(scope) == "7.7.7.7"  # rightmost = our proxy's view
+    assert one_proxy._client_ip(scope) == "7.7.7.7"  # appended by our own proxy
+
+
+def test_two_trusted_proxies_read_the_entry_two_places_from_the_right():
+    # the client, then the address the first proxy saw (the second proxy)
+    scope = _scope(b"1.2.3.4, 9.9.9.9")
+    two = RateLimitMiddleware(None, limits={}, trusted_proxy_hops=2)
+
+    assert two._client_ip(scope) == "1.2.3.4"
+
+
+def test_a_forged_left_entry_does_not_change_the_client_ip():
+    one = RateLimitMiddleware(None, limits={}, trusted_proxy_hops=1)
+
+    assert one._client_ip(_scope(b"1.1.1.1, 2.2.2.2, 7.7.7.7")) == "7.7.7.7"
+
+
+@pytest.mark.parametrize("header", [None, b"", b" , "])
+def test_missing_or_empty_forwarded_for_falls_back_to_the_socket_address(header):
+    one = RateLimitMiddleware(None, limits={}, trusted_proxy_hops=1)
+
+    assert one._client_ip(_scope(header)) == "10.0.0.1"
+
+
+def test_fewer_entries_than_hops_uses_the_first_one():
+    three = RateLimitMiddleware(None, limits={}, trusted_proxy_hops=3)
+
+    assert three._client_ip(_scope(b"5.5.5.5")) == "5.5.5.5"
+
+
+def test_idle_keys_are_evicted_but_only_once_per_window(monkeypatch):
+    import app.core.rate_limit as module
+
+    monkeypatch.setattr(module, "_MAX_TRACKED_KEYS", 3)
+    clock = FakeClock()
+    limiter = SlidingWindowLimiter(clock)
+    for ip in "abcd":
+        limiter.hit(("login", ip), 5, 60)
+    assert len(limiter._hits) == 4
+
+    clock.now += 61  # all four are idle now
+    limiter.hit(("login", "e"), 5, 60)
+
+    assert set(limiter._hits) == {("login", "e")}
+    for ip in "fghi":  # a burst of new keys right after: no second sweep in this window
+        limiter.hit(("login", ip), 5, 60)
+    assert len(limiter._hits) == 5
+
+
+def test_the_table_has_a_hard_ceiling(monkeypatch):
+    import app.core.rate_limit as module
+
+    monkeypatch.setattr(module, "_MAX_TRACKED_KEYS", 2)
+    monkeypatch.setattr(module, "_HARD_CAP", 5)
+    limiter = SlidingWindowLimiter(FakeClock())  # clock never advances: nothing is idle
+
+    for index in range(20):
+        limiter.hit(("login", str(index)), 5, 60)
+
+    assert len(limiter._hits) <= 6  # the cap, plus the key added this call
+    assert ("login", "19") in limiter._hits  # the newest survives
+
+
+@pytest.mark.asyncio
+async def test_refresh_has_its_own_looser_budget_than_login(client):
+    body = {"refresh_token": "not-a-token"}
+
+    statuses = [
+        (await client.post("/auth/refresh", json=body)).status_code for _ in range(35)
+    ]
+
+    assert statuses[:30] == [401] * 30
+    assert set(statuses[30:]) == {429}
+    # login is a separate bucket and still has its whole budget
+    assert (
+        await client.post("/auth/login", json={"email": "x@y.com", "password": "x"})
+    ).status_code == 401
