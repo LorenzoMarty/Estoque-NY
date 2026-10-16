@@ -65,7 +65,9 @@ async def _items(client):
 
 
 async def test_public_catalog_is_open_and_empty_without_published_products(client):
-    assert await _items(client) == {"sectors": []}
+    body = await _items(client)
+    assert body["sectors"] == []
+    assert body["meta"]["total_products"] == 0
 
 
 async def test_only_published_and_active_products_are_listed(client):

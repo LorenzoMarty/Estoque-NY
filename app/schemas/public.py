@@ -20,5 +20,15 @@ class PublicSectorOut(SchemaBase):
     products: list[PublicProductOut]
 
 
+class PublicCatalogMeta(SchemaBase):
+    page: int
+    page_size: int
+    total_products: int
+    has_more: bool
+
+
 class PublicCatalogOut(SchemaBase):
+    # Products are paginated before they are grouped, so a sector can continue on
+    # the next page; consumers merge sectors by name.
     sectors: list[PublicSectorOut]
+    meta: PublicCatalogMeta
