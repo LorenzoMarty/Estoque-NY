@@ -30,11 +30,11 @@ const columns = columnHelper.columns([
 const EMPTY_ROWS: StockMove[] = [];
 
 export function MovementsPage() {
-  const { branchId } = useActiveBranch();
+  const { branchId, ready } = useActiveBranch();
   const [localFilters, setFilters] = useState<MovementsFilters>({});
   const filters = useMemo(() => ({ ...localFilters, branchId }), [localFilters, branchId]);
   const [modalOpen, setModalOpen] = useState(false);
-  const { data: moves, isLoading, isError } = useMovesQuery(filters);
+  const { data: moves, isLoading, isError } = useMovesQuery(filters, ready);
 
   const table = useTable({ features: tableFeatureSet, columns, data: moves ?? EMPTY_ROWS });
 

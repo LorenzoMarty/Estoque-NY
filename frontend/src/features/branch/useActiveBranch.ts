@@ -57,6 +57,8 @@ export function useActiveBranch() {
   return {
     branches: list,
     isLoading,
+    /** False until the user's branches arrived; queries that depend on the branch should wait. */
+    ready: !isLoading,
     active,
     /** The chosen branch id, or undefined for the consolidated view / nothing available. */
     branchId: typeof active === "number" ? active : undefined,
