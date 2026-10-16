@@ -26,6 +26,7 @@ test("login rejects a wrong password and accepts the right one", async ({ page }
   await page.getByLabel("Senha").fill("not-the-password");
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/login/);
+  await expect(page.getByText("E-mail ou senha inválidos.")).toBeVisible();
 
   await login(page);
   await expect(page.getByRole("heading", { name: "Visão geral" })).toBeVisible();
@@ -47,9 +48,12 @@ test("registers a stock movement and lists it", async ({ page }) => {
 
   await expect(dialog).toBeHidden();
   // branch B was empty, so the newest move is an entry of 7 leaving a balance of 7
+  // the list shows no reference column text for ours, so find it by what only it has:
+  // an entry of 7 leaving a balance of 7 (branch B was empty) at the top of the list
   const newest = page.getByRole("row").nth(1);
   await expect(newest).toContainText("Entrada");
   await expect(newest.getByRole("cell", { name: "7", exact: true })).toHaveCount(2);
+  await expect(page.getByRole("cell", { name: `e2e-${world.tag}` })).toBeVisible();
 });
 
 test("creates, ships and receives a transfer between branches", async ({ page }) => {

@@ -101,6 +101,7 @@ jobs:
         run: |
           nohup uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 > api.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8000/health && break; sleep 1; done
+          curl -sf http://127.0.0.1:8000/health || { echo 'API did not start'; cat api.log; exit 1; }
       - name: Build and serve the frontend
         working-directory: frontend
         env:
@@ -110,6 +111,7 @@ jobs:
           npx vite build
           nohup npx vite preview --host 127.0.0.1 --port 8080 --strictPort > ../front.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/ > /dev/null && break; sleep 1; done
+          curl -sf http://127.0.0.1:8080/ > /dev/null || { echo 'frontend did not start'; cat ../front.log; exit 1; }
       - name: Install the browser
         working-directory: frontend
         run: npx playwright install --with-deps chromium
@@ -128,4 +130,3 @@ jobs:
             frontend/playwright-report
             frontend/test-results
           retention-days: 7
-
