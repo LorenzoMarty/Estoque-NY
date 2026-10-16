@@ -69,6 +69,16 @@ npm run dev      # also: npm run typecheck · npm run test · npm run build
 
 With Postgres, apply migrations first: `uv run alembic upgrade head`.
 
+## Production configuration
+
+With `APP_ENV=production` the API refuses to boot unless these are set (see `.env.example`):
+
+| Variable | Rule |
+|---|---|
+| `JWT_SECRET` | set and different from the `change-me` default |
+| `DATABASE_URL` | PostgreSQL, not SQLite and not localhost |
+| `CORS_ORIGINS` | comma-separated list of frontend origins; empty or `*` is rejected |
+
 ## Quality checks
 
 ```bash

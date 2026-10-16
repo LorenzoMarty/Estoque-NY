@@ -27,7 +27,7 @@ services:
       - key: IDEMPOTENCY_REQUIRED_IN_PRODUCTION
         value: "true"
       - key: CORS_ORIGINS
-        value: "*"
+        sync: false
   - type: web
     name: estoque-ny-front
     env: static
