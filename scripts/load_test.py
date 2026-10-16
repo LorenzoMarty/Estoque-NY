@@ -133,7 +133,11 @@ async def _worker(client, headers, branches, skus, deadline, samples, statuses):
                 **body,
             }
         started = time.perf_counter()
-        response = await client.request(method, path, json=body, headers=headers)
+        try:
+            response = await client.request(method, path, json=body, headers=headers)
+        except httpx.HTTPError:
+            statuses[op]["network error"] += 1  # reported, and counted as a failure
+            continue
         samples[op].append((time.perf_counter() - started) * 1000)
         statuses[op][response.status_code] += 1
 
@@ -168,10 +172,22 @@ async def main() -> None:
         )
         elapsed = time.monotonic() - started
 
-        balances = (
-            await client.get("/stock/balances?page_size=200", headers=headers)
-        ).json()
-        negative = [b for b in balances["items"] if b["on_hand"] < 0]
+        # Only the branches this run created, every page: a negative balance anywhere
+        # in them (not just on the first 200 rows) fails the run.
+        negative = []
+        for branch_id, _ in branches:
+            page = 1
+            while True:
+                response = await client.get(
+                    f"/stock/balances?branch_id={branch_id}&page={page}&page_size=200",
+                    headers=headers,
+                )
+                response.raise_for_status()
+                items = response.json()["items"]
+                negative += [b for b in items if b["on_hand"] < 0]
+                if len(items) < 200:
+                    break
+                page += 1
 
     total = sum(len(v) for v in samples.values())
     print(
@@ -186,7 +202,10 @@ async def main() -> None:
             f"{dict(statuses[op])}"
         )
     server_errors = sum(
-        n for c in statuses.values() for code, n in c.items() if code >= 500
+        n
+        for c in statuses.values()
+        for code, n in c.items()
+        if code == "network error" or (isinstance(code, int) and code >= 500)
     )
     print(f"\n5xx responses: {server_errors}; negative balances: {len(negative)}")
     if server_errors or negative:
