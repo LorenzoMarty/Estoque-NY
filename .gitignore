@@ -30,3 +30,7 @@ streamlit_app/.env
 .claude/knowledge/
 *.db.bak*
 *.bak-*
+
+# coverage data
+.coverage
+.coverage.*
