@@ -25,7 +25,7 @@ def upgrade() -> None:
             "roles",
             ["role_id"],
             ["id"],
-            ondelete="SET NULL",
+            ondelete="RESTRICT",
         )
 
 

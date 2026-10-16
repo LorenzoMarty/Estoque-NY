@@ -105,6 +105,11 @@ async def load_branch_scope(
     if is_admin is not None:
         return BranchScope(None)
 
+    if permission is None:
+        # Fail closed: a branch check with no permission context could ignore the
+        # role held in the branch (e.g. let an auditor write). Admins returned above.
+        return BranchScope(frozenset())
+
     rows = (
         await session.execute(
             select(UserBranch.branch_id, UserBranch.role_id).where(

@@ -136,7 +136,9 @@ async def _has_branch_role_permission(
     return await session.scalar(stmt) is not None
 
 
-def require_permission(permission_key: str) -> Callable[..., Any]:
+def require_permission(
+    permission_key: str, *, branch_scoped: bool = False
+) -> Callable[..., Any]:
     async def dependency(
         request: Request,
         session: AsyncSession = Depends(get_session),
@@ -162,11 +164,14 @@ def require_permission(permission_key: str) -> Callable[..., Any]:
                 detail="password change required",
             )
 
-        # Global roles grant it everywhere; a branch role grants it where held, and
-        # BranchScope narrows each branch-aware endpoint to those branches.
-        allowed = await _has_permission(
-            session, user.id, permission_key
-        ) or await _has_branch_role_permission(session, user.id, permission_key)
+        # Global roles grant it everywhere. A role held in one branch only counts on
+        # endpoints that then judge each branch (branch_scoped=True); on global
+        # endpoints (catalog, marketing, audit) it must not become a global permission.
+        allowed = await _has_permission(session, user.id, permission_key)
+        if not allowed and branch_scoped:
+            allowed = await _has_branch_role_permission(
+                session, user.id, permission_key
+            )
         if not allowed:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
