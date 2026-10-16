@@ -90,6 +90,11 @@ async def _seed_admin(args: argparse.Namespace) -> None:
                 if args.reset_password:
                     user.password_hash = hash_password(password)
                     user.must_change_password = True
+                    user.failed_login_attempts = 0
+                    user.locked_until = None
+                    from datetime import UTC, datetime
+
+                    user.password_changed_at = datetime.now(UTC)
                     password_reset = True
                 if args.name:
                     user.name = str(args.name).strip() or user.name

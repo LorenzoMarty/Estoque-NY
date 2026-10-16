@@ -100,7 +100,7 @@ async def test_change_password_flow(client):
     assert wrong_current.status_code == 400
     assert weak.status_code == 422
     assert same.status_code == 422
-    assert ok.status_code == 204
+    assert ok.status_code == 200
     assert (await _login(client, password=GOOD)).status_code == 401
     assert (await _login(client, password="Brand-New-Pass-9")).status_code == 200
 
@@ -191,9 +191,10 @@ async def test_user_flagged_for_password_change_is_blocked_until_it_changes(clie
         json={"current_password": GOOD, "new_password": "Brand-New-Pass-9"},
         headers=headers,
     )
-    assert changed.status_code == 204
-    assert (await client.get("/branches", headers=headers)).status_code == 200
-    assert (await client.get("/auth/me", headers=headers)).json()[
+    assert changed.status_code == 200
+    fresh = {"Authorization": f"Bearer {changed.json()['access_token']}"}
+    assert (await client.get("/branches", headers=fresh)).status_code == 200
+    assert (await client.get("/auth/me", headers=fresh)).json()[
         "must_change_password"
     ] is False
 
@@ -255,3 +256,92 @@ def test_seed_rejects_weak_password_from_env(tmp_path):
 def test_repo_ships_no_hardcoded_default_credential():
     with open("scripts/seed_admin_user.py", encoding="utf-8") as seed:
         assert "Admin123" not in seed.read()
+
+
+# --- sessions end on a password change; failures are counted atomically ----------
+
+
+@pytest.mark.asyncio
+async def test_change_password_returns_a_working_token_pair_and_marks_the_change(
+    client,
+):
+    headers = await register_and_login(client)
+
+    changed = await client.post(
+        "/auth/change-password",
+        json={"current_password": GOOD, "new_password": "Brand-New-Pass-9"},
+        headers=headers,
+    )
+
+    assert changed.status_code == 200
+    fresh = {"Authorization": f"Bearer {changed.json()['access_token']}"}
+    assert (await client.get("/auth/me", headers=fresh)).status_code == 200
+    refreshed = await client.post(
+        "/auth/refresh", json={"refresh_token": changed.json()["refresh_token"]}
+    )
+    assert refreshed.status_code == 200
+    assert (await _user("admin@example.com")).password_changed_at is not None
+
+
+@pytest.mark.asyncio
+async def test_tokens_issued_before_the_password_change_are_refused(client):
+    headers = await register_and_login(client)
+    login = await client.post(
+        "/auth/login", json={"email": "admin@example.com", "password": GOOD}
+    )
+    old_refresh = login.json()["refresh_token"]
+    future = datetime.now(UTC) + timedelta(seconds=30)
+    await _update_user("admin@example.com", password_changed_at=future)
+
+    me = await client.get("/auth/me", headers=headers)
+    refresh = await client.post("/auth/refresh", json={"refresh_token": old_refresh})
+
+    assert me.status_code == 401
+    assert refresh.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_refresh_is_refused_for_an_inactive_user(client):
+    await register_and_login(client)
+    login = await client.post(
+        "/auth/login", json={"email": "admin@example.com", "password": GOOD}
+    )
+    await _update_user("admin@example.com", active=False)
+
+    response = await client.post(
+        "/auth/refresh", json={"refresh_token": login.json()["refresh_token"]}
+    )
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_a_wrong_current_password_counts_toward_the_lockout(client):
+    headers = await register_and_login(client)
+
+    for _ in range(5):
+        response = await client.post(
+            "/auth/change-password",
+            json={
+                "current_password": "not-it-at-all-1",
+                "new_password": "Brand-New-Pass-9",
+            },
+            headers=headers,
+        )
+        assert response.status_code == 400
+
+    assert (await _login(client)).status_code == 429  # the account is now locked
+
+
+@pytest.mark.asyncio
+async def test_concurrent_wrong_passwords_are_all_counted(client):
+    import asyncio
+
+    await register_and_login(client)
+
+    await asyncio.gather(
+        *[_login(client, password="wrong-password-1") for _ in range(12)]
+    )
+
+    user = await _user("admin@example.com")
+    assert user.locked_until is not None  # 12 attempts cannot slip under a limit of 5
