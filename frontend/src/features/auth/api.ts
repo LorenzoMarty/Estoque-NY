@@ -5,3 +5,10 @@ export async function login(email: string, password: string): Promise<Authentica
   await loginRequest(email, password);
   return apiClient.get<AuthenticatedUser>("/auth/me", { timeoutMs: 7000 });
 }
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiClient.post<void>("/auth/change-password", {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
+}
