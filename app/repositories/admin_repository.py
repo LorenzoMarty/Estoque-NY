@@ -13,8 +13,11 @@ async def list_branches(
     sort: str,
     order: str,
     q: str | None = None,
+    allowed_ids: frozenset[int] | None = None,
 ) -> tuple[list[Branch], int]:
     stmt = select(Branch)
+    if allowed_ids is not None:
+        stmt = stmt.where(Branch.id.in_(allowed_ids))
     if q:
         stmt = stmt.where(Branch.name.ilike(f"%{q}%"))
 
@@ -100,8 +103,11 @@ async def list_locations(
     order: str,
     branch_id: int | None = None,
     q: str | None = None,
+    allowed_ids: frozenset[int] | None = None,
 ) -> tuple[list[Location], int]:
     stmt = select(Location)
+    if allowed_ids is not None:
+        stmt = stmt.where(Location.branch_id.in_(allowed_ids))
     if branch_id is not None:
         stmt = stmt.where(Location.branch_id == branch_id)
     if q:
