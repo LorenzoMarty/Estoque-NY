@@ -112,6 +112,11 @@ function resolveRawRefreshToken(): string | null {
   return null;
 }
 
+/** Keep a token pair the API handed out outside the login flow (e.g. after a password change). */
+export function storeAuthSession(tokens: TokenPair): void {
+  persistAuthSession(tokens);
+}
+
 function persistAuthSession(tokens: TokenPair): void {
   const accessToken = normalizeTokenValue(tokens.access_token);
   const refreshToken = normalizeTokenValue(tokens.refresh_token);

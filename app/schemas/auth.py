@@ -31,7 +31,13 @@ class UserOut(SchemaBase):
     name: str
     email: str
     active: bool
+    must_change_password: bool = False
     created_at: datetime
+
+
+class ChangePasswordIn(SchemaBase):
+    current_password: str
+    new_password: str = Field(max_length=120)
 
 
 class AssignRoleIn(SchemaBase):

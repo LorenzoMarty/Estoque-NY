@@ -1,3 +1,4 @@
+import { MantineProvider } from "@mantine/core";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -6,6 +7,7 @@ import { RequireAuth } from "./RequireAuth";
 
 function renderAt(path: string) {
   return render(
+    <MantineProvider>
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/login" element={<div>Login page</div>} />
@@ -14,6 +16,7 @@ function renderAt(path: string) {
         </Route>
       </Routes>
     </MemoryRouter>
+    </MantineProvider>
   );
 }
 
@@ -41,5 +44,22 @@ describe("RequireAuth", () => {
     });
     renderAt("/dashboard");
     expect(screen.getByText("Dashboard page")).toBeInTheDocument();
+  });
+
+  it("shows the change-password screen instead of the app when a change is required", () => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      user: {
+        id: 1,
+        name: "Ana",
+        email: "ana@x.com",
+        active: true,
+        must_change_password: true,
+        created_at: "2026-01-01T00:00:00Z",
+      },
+    });
+    renderAt("/dashboard");
+    expect(screen.getByText("Defina uma nova senha")).toBeInTheDocument();
+    expect(screen.queryByText("Dashboard page")).not.toBeInTheDocument();
   });
 });

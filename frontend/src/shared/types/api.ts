@@ -15,6 +15,7 @@ export interface AuthenticatedUser {
   name: string;
   email: string;
   active: boolean;
+  must_change_password?: boolean;
   created_at: string;
 }
 
