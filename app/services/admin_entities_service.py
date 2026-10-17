@@ -17,6 +17,7 @@ async def list_branches(
     sort: str,
     order: str,
     q: str | None,
+    allowed_ids: frozenset[int] | None = None,
 ) -> tuple[list[Branch], int]:
     return await admin_repository.list_branches(
         session,
@@ -25,6 +26,7 @@ async def list_branches(
         sort=sort,
         order=order,
         q=q,
+        allowed_ids=allowed_ids,
     )
 
 
@@ -95,6 +97,7 @@ async def list_locations(
     order: str,
     branch_id: int | None,
     q: str | None,
+    allowed_ids: frozenset[int] | None = None,
 ) -> tuple[list[Location], int]:
     return await admin_repository.list_locations(
         session,
@@ -104,6 +107,7 @@ async def list_locations(
         order=order,
         branch_id=branch_id,
         q=q,
+        allowed_ids=allowed_ids,
     )
 
 

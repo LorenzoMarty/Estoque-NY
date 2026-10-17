@@ -66,3 +66,14 @@ class UserListOut(SchemaBase):
 
 class UserActiveIn(SchemaBase):
     active: bool
+
+
+class UserBranchesIn(SchemaBase):
+    branch_ids: list[int]
+
+
+class UserBranchesOut(SchemaBase):
+    user_id: int
+    branch_ids: list[int]
+    # Admins ignore the list: they can use every branch.
+    unrestricted: bool

@@ -12,6 +12,7 @@ from app.api.pagination import (
     pagination_params,
 )
 from app.api.security import get_current_user, require_permission
+from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.domain.errors import DomainError
 from app.domain.transfer_service import (
@@ -75,6 +76,37 @@ async def _to_transfer_out(
     )
 
 
+async def _load_for_scope(
+    session: AsyncSession,
+    scope: BranchScope,
+    transfer_id: int,
+    *,
+    side: str,
+) -> TransferOrder:
+    """Load a transfer and check the user may act on it.
+
+    side="origin" needs the source branch (ship, cancel), "destination" the target
+    branch (receive); "either" is for reads and passes with access to one end.
+    """
+    transfer = await session.scalar(
+        select(TransferOrder).where(TransferOrder.id == transfer_id)
+    )
+    if transfer is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"transfer {transfer_id} not found",
+        )
+    if side == "origin":
+        scope.require(transfer.from_branch_id)
+    elif side == "destination":
+        scope.require(transfer.to_branch_id)
+    elif not (
+        scope.allows(transfer.from_branch_id) or scope.allows(transfer.to_branch_id)
+    ):
+        scope.require(transfer.from_branch_id)
+    return transfer
+
+
 @router.post(
     "",
     response_model=TransferOut,
@@ -86,8 +118,10 @@ async def create_transfer_order(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    scope.require(payload.from_branch_id)
     idempotency = await begin_idempotency(request, payload.model_dump(mode="json"))
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -138,9 +172,17 @@ async def list_transfer_orders(
     location_id: int | None = Query(default=None),
     sku_id: int | None = Query(default=None),
     params: PaginationParams = Depends(pagination_params),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> TransferListOut:
     stmt = select(TransferOrder)
+    if branch_id is not None:
+        scope.require(branch_id)
+    elif scope.ids is not None:
+        stmt = stmt.where(
+            TransferOrder.from_branch_id.in_(scope.ids)
+            | TransferOrder.to_branch_id.in_(scope.ids)
+        )
     if status_filter is not None:
         stmt = stmt.where(TransferOrder.status == status_filter)
     if branch_id is not None:
@@ -186,16 +228,10 @@ async def list_transfer_orders(
 )
 async def get_transfer_order(
     transfer_id: int,
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> TransferOut:
-    transfer = await session.scalar(
-        select(TransferOrder).where(TransferOrder.id == transfer_id)
-    )
-    if transfer is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"transfer {transfer_id} not found",
-        )
+    transfer = await _load_for_scope(session, scope, transfer_id, side="either")
     return await _to_transfer_out(session, transfer)
 
 
@@ -209,8 +245,10 @@ async def ship_transfer_order(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    await _load_for_scope(session, scope, transfer_id, side="origin")
     idempotency = await begin_idempotency(request, {"transfer_id": transfer_id})
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -259,8 +297,10 @@ async def receive_transfer_order(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    await _load_for_scope(session, scope, transfer_id, side="destination")
     idempotency = await begin_idempotency(request, {"transfer_id": transfer_id})
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -309,8 +349,10 @@ async def cancel_transfer_order(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    await _load_for_scope(session, scope, transfer_id, side="origin")
     idempotency = await begin_idempotency(request, {"transfer_id": transfer_id})
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
