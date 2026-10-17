@@ -1,8 +1,8 @@
+import { useActiveBranch } from "../branch/useActiveBranch";
 import { Button, Group, Loader, Modal, Select, Table, Text, Title } from "@mantine/core";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useBranchesQuery } from "../../shared/api/catalog";
 import { strings } from "../../shared/strings";
 import type { StockMove } from "../../shared/types/stock";
 import { useMovesQuery, type MovementsFilters } from "./api";
@@ -30,12 +30,12 @@ const columns = columnHelper.columns([
 const EMPTY_ROWS: StockMove[] = [];
 
 export function MovementsPage() {
-  const [filters, setFilters] = useState<MovementsFilters>({});
+  const { branchId, ready } = useActiveBranch();
+  const [localFilters, setFilters] = useState<MovementsFilters>({});
+  const filters = useMemo(() => ({ ...localFilters, branchId }), [localFilters, branchId]);
   const [modalOpen, setModalOpen] = useState(false);
-  const { data: branches } = useBranchesQuery();
-  const { data: moves, isLoading, isError } = useMovesQuery(filters);
+  const { data: moves, isLoading, isError } = useMovesQuery(filters, ready);
 
-  const branchOptions = useMemo(() => (branches ?? []).map((b) => ({ value: String(b.id), label: b.name })), [branches]);
   const table = useTable({ features: tableFeatureSet, columns, data: moves ?? EMPTY_ROWS });
 
   return (
@@ -53,13 +53,6 @@ export function MovementsPage() {
       </Group>
 
       <Group className="toolbar-card">
-        <Select
-          placeholder="Todas as filiais"
-          data={branchOptions}
-          clearable
-          value={filters.branchId ? String(filters.branchId) : null}
-          onChange={(value) => setFilters((prev) => ({ ...prev, branchId: value ? Number(value) : undefined }))}
-        />
         <Select
           placeholder="Todos os tipos"
           data={Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label }))}
