@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import uuid
 
 import pytest
@@ -94,3 +95,29 @@ def test_recent_migrations_can_be_downgraded_and_reapplied(migration_url, monkey
 
     command.upgrade(config, "head")
     assert _inspect(migration_url)[1] == _head()
+
+
+def test_user_branches_migration_keeps_existing_users_working(tmp_path, monkeypatch):
+    db_file = tmp_path / "backfill.db"
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_file.as_posix()}")
+    config = _alembic_config()
+
+    command.upgrade(config, "e5b7c1d3a9f2")  # the revision before user_branches
+    with sqlite3.connect(db_file) as connection:
+        connection.executemany(
+            "INSERT INTO users (name, email, password_hash, created_at) "
+            "VALUES (?, ?, 'x', CURRENT_TIMESTAMP)",
+            [("Ana", "ana@example.com"), ("Bia", "bia@example.com")],
+        )
+        connection.executemany(
+            "INSERT INTO branches (name, created_at) VALUES (?, CURRENT_TIMESTAMP)",
+            [("A",), ("B",), ("C",)],
+        )
+
+    command.upgrade(config, "head")
+
+    with sqlite3.connect(db_file) as connection:
+        pairs = connection.execute(
+            "SELECT user_id, branch_id FROM user_branches"
+        ).fetchall()
+    assert len(pairs) == 6  # 2 users x 3 branches: nobody is locked out by the upgrade

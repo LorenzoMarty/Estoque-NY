@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +13,7 @@ from app.api.pagination import (
 )
 from app.api.security import get_current_user, require_permission
 from app.core.auth import token_predates_password_change
+from app.core.branch_scope import load_branch_scope
 from app.core.db import get_session
 from app.core.password_policy import describe, password_problems
 from app.core.security import (
@@ -24,7 +25,7 @@ from app.core.security import (
 )
 from app.core.settings import get_settings
 from app.domain.errors import BusinessRuleError
-from app.models.entities import Permission, Role, User, UserRole
+from app.models.entities import Branch, Permission, Role, User, UserBranch, UserRole
 from app.schemas.auth import (
     AssignRoleIn,
     ChangePasswordIn,
@@ -33,6 +34,8 @@ from app.schemas.auth import (
     RoleOut,
     TokenPairOut,
     UserActiveIn,
+    UserBranchesIn,
+    UserBranchesOut,
     UserListOut,
     UserLoginIn,
     UserOut,
@@ -498,3 +501,92 @@ async def force_password_change(
     await session.commit()
     await session.refresh(user)
     return user
+
+
+async def _user_branches_out(session: AsyncSession, user: User) -> UserBranchesOut:
+    ids = (
+        await session.scalars(
+            select(UserBranch.branch_id)
+            .where(UserBranch.user_id == user.id)
+            .order_by(UserBranch.branch_id)
+        )
+    ).all()
+    scope = await load_branch_scope(session, user)
+    return UserBranchesOut(
+        user_id=user.id, branch_ids=list(ids), unrestricted=scope.unrestricted
+    )
+
+
+@router.get(
+    "/users/{user_id}/branches",
+    response_model=UserBranchesOut,
+    dependencies=[Depends(require_permission("auth.user.manage"))],
+)
+async def read_user_branches(
+    user_id: int,
+    session: AsyncSession = Depends(get_session),
+) -> UserBranchesOut:
+    user = await session.scalar(select(User).where(User.id == user_id))
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"user {user_id} not found",
+        )
+    return await _user_branches_out(session, user)
+
+
+@router.put(
+    "/users/{user_id}/branches",
+    response_model=UserBranchesOut,
+    dependencies=[Depends(require_permission("auth.user.manage"))],
+)
+async def replace_user_branches(
+    user_id: int,
+    payload: UserBranchesIn,
+    request: Request,
+    actor: User | None = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> UserBranchesOut:
+    user = await session.scalar(
+        select(User).where(User.id == user_id).with_for_update()
+    )
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"user {user_id} not found",
+        )
+    wanted = set(payload.branch_ids)
+    existing = set(
+        (await session.scalars(select(Branch.id).where(Branch.id.in_(wanted)))).all()
+    )
+    if existing != wanted:
+        raise BusinessRuleError(f"unknown branch ids: {sorted(wanted - existing)}")
+
+    before = (
+        await session.scalars(
+            select(UserBranch.branch_id).where(UserBranch.user_id == user_id)
+        )
+    ).all()
+    await session.execute(delete(UserBranch).where(UserBranch.user_id == user_id))
+    for branch_id in sorted(wanted):
+        session.add(UserBranch(user_id=user_id, branch_id=branch_id))
+    await session.flush()
+    await write_audit_log(
+        session,
+        request=request,
+        user_id=actor.id if actor else None,
+        action="auth.user.branches.replace",
+        resource_type="user",
+        resource_id=user_id,
+        before={"branch_ids": sorted(before)},
+        after={"branch_ids": sorted(wanted)},
+    )
+    try:
+        await session.commit()
+    except IntegrityError as exc:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="branches of this user were changed at the same time; retry",
+        ) from exc
+    return await _user_branches_out(session, user)

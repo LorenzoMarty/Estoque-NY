@@ -693,6 +693,26 @@ class UserRole(Base):
     )
 
 
+class UserBranch(Base):
+    """A branch a non-admin user may see and operate on."""
+
+    __tablename__ = "user_branches"
+    __table_args__ = (
+        UniqueConstraint("user_id", "branch_id", name="uq_user_branches_user_branch"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+
 class RolePermission(Base):
     __tablename__ = "role_permissions"
     __table_args__ = (

@@ -13,6 +13,7 @@ from app.api.pagination import (
     pagination_params,
 )
 from app.api.security import get_current_user, require_permission
+from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.domain.errors import DomainError
 from app.domain.stock_engine import apply_move
@@ -67,8 +68,10 @@ async def create_receipt(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    scope.require(payload.branch_id)
     idempotency = await begin_idempotency(request, payload.model_dump(mode="json"))
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -128,8 +131,10 @@ async def create_issue(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    scope.require(payload.branch_id)
     idempotency = await begin_idempotency(request, payload.model_dump(mode="json"))
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -189,8 +194,10 @@ async def create_adjustment(
     request: Request,
     response: Response,
     current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
+    scope.require(payload.branch_id)
     idempotency = await begin_idempotency(request, payload.model_dump(mode="json"))
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -250,11 +257,11 @@ async def list_balances(
     product_id: int | None = Query(default=None),
     location_id: int | None = Query(default=None),
     params: PaginationParams = Depends(pagination_params),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> StockBalanceListOut:
     stmt = select(StockBalance).join(SKU, SKU.id == StockBalance.sku_id)
-    if branch_id is not None:
-        stmt = stmt.where(StockBalance.branch_id == branch_id)
+    stmt = scope.apply(stmt, StockBalance.branch_id, branch_id)
     if sku_id is not None:
         stmt = stmt.where(StockBalance.sku_id == sku_id)
     if product_id is not None:
@@ -307,11 +314,11 @@ async def list_moves(
     to_date: datetime | None = Query(default=None),
     type: MoveType | None = Query(default=None),
     params: PaginationParams = Depends(pagination_params),
+    scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> StockMoveListOut:
     def _apply_filters(stmt: Any) -> Any:
-        if branch_id is not None:
-            stmt = stmt.where(StockMove.branch_id == branch_id)
+        stmt = scope.apply(stmt, StockMove.branch_id, branch_id)
         if sku_id is not None:
             stmt = stmt.where(StockMove.sku_id == sku_id)
         if product_id is not None:
