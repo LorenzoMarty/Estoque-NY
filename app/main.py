@@ -7,6 +7,7 @@ from app.api.router import api_router
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import request_context_middleware
+from app.core.observability import init_sentry
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.settings import get_settings
 from app.db.session import dispose_engine, get_engine
@@ -22,6 +23,7 @@ async def app_lifespan(_: FastAPI):
 def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging()
+    init_sentry(settings)
     cors_origins = [origin.strip() for origin in settings.cors_origins.split(",")]
     cors_origins = [origin for origin in cors_origins if origin]
     allow_origin_regex = None
