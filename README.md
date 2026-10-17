@@ -79,6 +79,8 @@ With `APP_ENV=production` the API refuses to boot unless these are set (see `.en
 | `DATABASE_URL` | PostgreSQL, not SQLite and not localhost |
 | `CORS_ORIGINS` | comma-separated list of frontend origins; empty or `*` is rejected |
 
+Database backups, the restore procedure and the restore drill: [docs/runbook-database.md](docs/runbook-database.md).
+
 ## Quality checks
 
 ```bash
