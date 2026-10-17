@@ -349,11 +349,11 @@ async def _low_turnover_rows(
     candidates: list[LowTurnoverCandidateRow] = []
     for row in rows:
         average_stock = float(row.average_stock or 0)
-        issued_qty = float(row.issued_qty or 0)
+        issued = float(row.issued_qty or 0)
         if average_stock > 0:
-            turnover = issued_qty / average_stock
+            turnover = issued / average_stock
         else:
-            turnover = issued_qty
+            turnover = issued
         if turnover <= threshold:
             candidates.append(
                 LowTurnoverCandidateRow(
