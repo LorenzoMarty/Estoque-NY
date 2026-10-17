@@ -34,3 +34,7 @@ streamlit_app/.env
 # coverage data
 .coverage
 .coverage.*
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
