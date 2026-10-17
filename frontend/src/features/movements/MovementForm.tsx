@@ -1,3 +1,4 @@
+import { useActiveBranch } from "../branch/useActiveBranch";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, NumberInput, Select, SegmentedControl, Stack, TextInput } from "@mantine/core";
 import { useMemo, useState } from "react";
@@ -19,6 +20,7 @@ const LABELS: Record<MoveKind, string> = { receipt: "Entrada", issue: "Saída", 
 export function MovementForm({ onSuccess }: { onSuccess: () => void }) {
   const [kind, setKind] = useState<MoveKind>("receipt");
   const { data: branches } = useBranchesQuery();
+  const { branchId: activeBranchId } = useActiveBranch();
   const { data: skus } = useSkusQuery();
   const {
     control,
@@ -28,7 +30,10 @@ export function MovementForm({ onSuccess }: { onSuccess: () => void }) {
     reset,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<MovementFormValues>({ resolver: zodResolver(movementFormSchema) });
+  } = useForm<MovementFormValues>({
+    resolver: zodResolver(movementFormSchema),
+    defaultValues: { branch_id: activeBranchId as never },
+  });
   const branchId = watch("branch_id");
   const { data: locations } = useLocationsQuery(branchId ? Number(branchId) : undefined);
   const [apiError, setApiError] = useState<string | null>(null);

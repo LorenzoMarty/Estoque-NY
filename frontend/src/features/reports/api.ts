@@ -27,8 +27,9 @@ export interface AbcRow {
   class_name: "A" | "B" | "C";
 }
 
-export function useValuationReport(branchId?: number) {
+export function useValuationReport(branchId?: number, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["reports", "valuation", branchId ?? "all"],
     queryFn: async () => {
       const params = new URLSearchParams({ page: "1", page_size: "200" });
@@ -40,8 +41,9 @@ export function useValuationReport(branchId?: number) {
   });
 }
 
-export function useTurnoverReport(branchId?: number) {
+export function useTurnoverReport(branchId?: number, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["reports", "turnover", branchId ?? "all"],
     queryFn: async () => {
       const params = new URLSearchParams({ page: "1", page_size: "200" });
@@ -53,8 +55,9 @@ export function useTurnoverReport(branchId?: number) {
   });
 }
 
-export function useAbcReport(branchId?: number) {
+export function useAbcReport(branchId?: number, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["reports", "abc", branchId ?? "all"],
     queryFn: async () => {
       const params = new URLSearchParams({ page: "1", page_size: "200" });

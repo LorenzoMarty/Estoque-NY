@@ -10,8 +10,9 @@ export interface MovementsFilters {
   type?: string;
 }
 
-export function useMovesQuery(filters: MovementsFilters) {
+export function useMovesQuery(filters: MovementsFilters, enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ["moves", filters],
     queryFn: async () => {
       const params = new URLSearchParams({ page: "1", page_size: "200", sort: "occurred_at", order: "desc" });

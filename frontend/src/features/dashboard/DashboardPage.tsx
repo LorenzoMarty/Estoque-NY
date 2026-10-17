@@ -1,6 +1,7 @@
+import { useActiveBranch } from "../branch/useActiveBranch";
 import { Badge, Card, Group, Loader, Pagination, Select, SimpleGrid, Table, Text, Title } from "@mantine/core";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { strings } from "../../shared/strings";
 import { useDashboardQuery } from "./api";
 import { computeDashboardKpis, type DashboardFilters, type Kpi } from "./kpis";
@@ -52,8 +53,14 @@ const EMPTY_MOVE_ROWS: MoveRow[] = [];
 
 export function DashboardPage() {
   const { data, isLoading, isError } = useDashboardQuery();
-  const [filters, setFilters] = useState<DashboardFilters>({ branchId: "all", period: "30" });
+  const { active } = useActiveBranch();
+  const [period, setPeriod] = useState<DashboardFilters["period"]>("30");
+  const filters = useMemo<DashboardFilters>(
+    () => ({ branchId: active === null || active === "all" ? "all" : String(active), period }),
+    [active, period]
+  );
   const [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [active]);
 
   const kpis = useMemo(() => (data ? computeDashboardKpis(data, filters) : []), [data, filters]);
 
@@ -96,23 +103,13 @@ export function DashboardPage() {
         </div>
         <Group className="dashboard-filter-bar">
           <Select
-            data={[{ value: "all", label: "Todas as filiais" }, ...data.branches.map((b) => ({ value: String(b.id), label: b.name }))]}
-            value={filters.branchId}
-            onChange={(value) => {
-              setFilters((prev) => ({ ...prev, branchId: value ?? "all" }));
-              setPage(1);
-            }}
-          />
-          <Select
             data={[
               { value: "7", label: "Últimos 7 dias" },
               { value: "30", label: "Últimos 30 dias" },
               { value: "90", label: "Últimos 90 dias" },
             ]}
             value={filters.period}
-            onChange={(value) =>
-              setFilters((prev) => ({ ...prev, period: (value as DashboardFilters["period"]) ?? "30" }))
-            }
+            onChange={(value) => setPeriod((value as DashboardFilters["period"]) ?? "30")}
           />
         </Group>
       </Group>

@@ -1,7 +1,8 @@
+import { useActiveBranch } from "../branch/useActiveBranch";
 import { BarChart, DonutChart } from "@mantine/charts";
-import { Badge, Group, Loader, Select, Table, Tabs, Text, Title } from "@mantine/core";
-import { useMemo, useState } from "react";
-import { useBranchesQuery, useSkusQuery } from "../../shared/api/catalog";
+import { Badge, Group, Loader, Table, Tabs, Text, Title } from "@mantine/core";
+import { useMemo } from "react";
+import { useSkusQuery } from "../../shared/api/catalog";
 import { strings } from "../../shared/strings";
 import { useAbcReport, useTurnoverReport, useValuationReport } from "./api";
 import { countByAbcClass, topValuationByLabel } from "./chartData";
@@ -11,12 +12,11 @@ function formatMoney(value: number): string {
 }
 
 export function ReportsPage() {
-  const [branchId, setBranchId] = useState<number | undefined>(undefined);
-  const { data: branches } = useBranchesQuery();
+  const { branchId, ready } = useActiveBranch();
   const { data: skus } = useSkusQuery();
-  const { data: valuation, isLoading: loadingValuation } = useValuationReport(branchId);
-  const { data: turnover, isLoading: loadingTurnover } = useTurnoverReport(branchId);
-  const { data: abc, isLoading: loadingAbc } = useAbcReport(branchId);
+  const { data: valuation, isLoading: loadingValuation } = useValuationReport(branchId, ready);
+  const { data: turnover, isLoading: loadingTurnover } = useTurnoverReport(branchId, ready);
+  const { data: abc, isLoading: loadingAbc } = useAbcReport(branchId, ready);
 
   const skuLabel = useMemo(() => {
     const map = new Map((skus ?? []).map((s) => [s.id, s.sku_code]));
@@ -25,7 +25,6 @@ export function ReportsPage() {
 
   const valuationChart = useMemo(() => (valuation ? topValuationByLabel(valuation, skuLabel) : []), [valuation, skuLabel]);
   const abcCounts = useMemo(() => (abc ? countByAbcClass(abc) : []), [abc]);
-  const branchOptions = useMemo(() => (branches ?? []).map((b) => ({ value: String(b.id), label: b.name })), [branches]);
 
   return (
     <div className="workspace-page report-page">
@@ -36,14 +35,6 @@ export function ReportsPage() {
             Relatórios de estoque
           </Text>
         </div>
-        <Select
-          className="report-filter-control"
-          placeholder="Todas as filiais"
-          data={branchOptions}
-          clearable
-          value={branchId ? String(branchId) : null}
-          onChange={(value) => setBranchId(value ? Number(value) : undefined)}
-        />
       </Group>
 
       <Tabs className="report-tabs" defaultValue="valuation">
