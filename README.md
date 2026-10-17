@@ -90,7 +90,7 @@ cd frontend && npm run typecheck && npm run test
 
 - The API domains above are implemented.
 - The frontend is being migrated from a legacy vanilla-JS UI to React + TypeScript, feature by feature; the domain screens are still being built.
-- Next: evolve the current API into a multi-frontend admin API with standardized prefixes (`/stock`, `/catalog`, `/marketing`, `/reports`, `/admin`) — see [docs/admin-api-roadmap.md](docs/admin-api-roadmap.md) — and feed a public product catalog to the storefront.
+- Next: evolve the current API into a multi-frontend admin API with standardized prefixes (`/stock`, `/catalog`, `/marketing`, `/reports`, `/admin`) — see [docs/admin-api-roadmap.md](docs/admin-api-roadmap.md) — and feed a public product catalog to the storefront (contract and ownership: [ADR 0001](docs/adr/0001-catalog-contract.md)).
 
 ## License
 
