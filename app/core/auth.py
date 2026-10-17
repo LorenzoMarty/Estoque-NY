@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import UTC
 from typing import Any
 
 from fastapi import Depends, HTTPException, Request, status
@@ -12,6 +13,16 @@ from app.db.session import get_session
 from app.models.entities import Permission, RolePermission, User, UserRole
 
 bearer_scheme = HTTPBearer(auto_error=False)
+
+
+def token_predates_password_change(payload: dict[str, Any], user: User) -> bool:
+    """True when the token was issued before the user's last password change."""
+    changed = user.password_changed_at
+    if changed is None:
+        return False
+    if changed.tzinfo is None:  # SQLite drops the time zone
+        changed = changed.replace(tzinfo=UTC)
+    return int(payload.get("iat", 0)) < int(changed.timestamp())
 
 
 async def get_current_user(
@@ -54,6 +65,11 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="user not found or inactive",
+        )
+    if token_predates_password_change(payload, user):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="session ended by a password change; sign in again",
         )
 
     return user
@@ -112,6 +128,14 @@ def require_permission(permission_key: str) -> Callable[..., Any]:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="authentication required",
+            )
+
+        if user.must_change_password:
+            # /auth/me and /auth/change-password only need get_current_user, so
+            # they stay reachable; everything guarded by a permission does not.
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="password change required",
             )
 
         allowed = await _has_permission(session, user.id, permission_key)
