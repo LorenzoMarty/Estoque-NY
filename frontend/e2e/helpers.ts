@@ -1,7 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 
 export const API = process.env.E2E_API_URL ?? "http://127.0.0.1:8000";
-export const ADMIN = { name: "E2E Admin", email: "e2e-admin@example.com", password: "E2E-Admin-Pass-1" };
+export const ADMIN = { name: "E2E Admin", email: "e2e-admin@example.com", password: "Sup3r-Secret-Pass" };
 
 async function api<T>(path: string, token: string | null, body?: unknown): Promise<T> {
   const response = await fetch(`${API}${path}`, {
