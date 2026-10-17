@@ -25,6 +25,7 @@ dev = [
     "mypy>=1.19.1",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
     "ruff>=0.15.1",
 ]
 
@@ -46,3 +47,15 @@ pythonpath = ["."]
 python_version = "3.12"
 ignore_missing_imports = true
 warn_unused_ignores = true
+
+[tool.coverage.run]
+source = ["app"]
+# SQLAlchemy's async layer runs queries inside greenlets, which coverage does not
+# trace by default; without this most DB-touching code reads as uncovered.
+concurrency = ["greenlet", "thread"]
+
+[tool.coverage.report]
+# CI gate. Measured at 83% when the gate was added; raise it as coverage grows.
+fail_under = 80
+show_missing = true
+skip_covered = true

@@ -44,7 +44,10 @@ jobs:
       - run: uv run mypy app
         if: matrix.db == 'sqlite'
         continue-on-error: true
-      - run: uv run pytest -q
+      - run: uv run pytest -q --cov
+      - name: Coverage summary
+        if: always()
+        run: uv run coverage report --format=markdown --skip-covered >> "$GITHUB_STEP_SUMMARY"
 
   frontend:
     runs-on: ubuntu-latest
