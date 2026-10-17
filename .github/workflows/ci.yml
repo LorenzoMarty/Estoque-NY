@@ -36,6 +36,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+          # The post-job cache prune fails intermittently (exit 2 after ~5 min) and
+          # turns a green run red; the cache is still restored and saved.
+          prune-cache: false
       - run: uv sync --frozen --python 3.12
       - run: uv run ruff check .
         if: matrix.db == 'sqlite'
@@ -90,6 +93,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+          # The post-job cache prune fails intermittently (exit 2 after ~5 min) and
+          # turns a green run red; the cache is still restored and saved.
+          prune-cache: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
