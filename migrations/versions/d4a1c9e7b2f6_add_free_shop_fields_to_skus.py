@@ -1,7 +1,7 @@
 """add free-shop compliance fields to skus
 
 Revision ID: d4a1c9e7b2f6
-Revises: 3e9f8a87d290
+Revises: a7d9e3f1c5b2
 Create Date: 2026-10-16 15:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision: str = "d4a1c9e7b2f6"
-down_revision: Union[str, Sequence[str], None] = "3e9f8a87d290"
+down_revision: Union[str, Sequence[str], None] = "a7d9e3f1c5b2"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
