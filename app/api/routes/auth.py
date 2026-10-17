@@ -16,6 +16,7 @@ from app.core.auth import token_predates_password_change
 from app.core.branch_scope import load_branch_scope
 from app.core.db import get_session
 from app.core.password_policy import describe, password_problems
+from app.core.role_matrix import BRANCH_ROLES
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -504,16 +505,20 @@ async def force_password_change(
 
 
 async def _user_branches_out(session: AsyncSession, user: User) -> UserBranchesOut:
-    ids = (
-        await session.scalars(
-            select(UserBranch.branch_id)
+    rows = (
+        await session.execute(
+            select(UserBranch.branch_id, Role.name)
+            .join(Role, Role.id == UserBranch.role_id, isouter=True)
             .where(UserBranch.user_id == user.id)
             .order_by(UserBranch.branch_id)
         )
     ).all()
     scope = await load_branch_scope(session, user)
     return UserBranchesOut(
-        user_id=user.id, branch_ids=list(ids), unrestricted=scope.unrestricted
+        user_id=user.id,
+        branch_ids=[branch_id for branch_id, _ in rows],
+        roles={branch_id: name for branch_id, name in rows if name is not None},
+        unrestricted=scope.unrestricted,
     )
 
 
@@ -562,6 +567,26 @@ async def replace_user_branches(
     if existing != wanted:
         raise BusinessRuleError(f"unknown branch ids: {sorted(wanted - existing)}")
 
+    stray = sorted(set(payload.roles) - wanted)
+    if stray:
+        raise BusinessRuleError(f"roles given for branches not assigned: {stray}")
+    bad_roles = sorted(set(payload.roles.values()) - set(BRANCH_ROLES))
+    if bad_roles:
+        raise BusinessRuleError(
+            f"unknown branch roles {bad_roles}; allowed: {list(BRANCH_ROLES)}"
+        )
+    await ensure_rbac_seed(session)
+    role_ids = {
+        name: role_id
+        for name, role_id in (
+            await session.execute(
+                select(Role.name, Role.id).where(
+                    Role.name.in_(set(payload.roles.values()))
+                )
+            )
+        ).all()
+    }
+
     before = (
         await session.scalars(
             select(UserBranch.branch_id).where(UserBranch.user_id == user_id)
@@ -569,7 +594,14 @@ async def replace_user_branches(
     ).all()
     await session.execute(delete(UserBranch).where(UserBranch.user_id == user_id))
     for branch_id in sorted(wanted):
-        session.add(UserBranch(user_id=user_id, branch_id=branch_id))
+        role_name = payload.roles.get(branch_id)
+        session.add(
+            UserBranch(
+                user_id=user_id,
+                branch_id=branch_id,
+                role_id=role_ids[role_name] if role_name else None,
+            )
+        )
     await session.flush()
     await write_audit_log(
         session,
@@ -579,7 +611,7 @@ async def replace_user_branches(
         resource_type="user",
         resource_id=user_id,
         before={"branch_ids": sorted(before)},
-        after={"branch_ids": sorted(wanted)},
+        after={"branch_ids": sorted(wanted), "roles": payload.roles},
     )
     try:
         await session.commit()

@@ -13,7 +13,9 @@ globalThis.ResizeObserver ??= class {
 };
 
 const mutateAsync = vi.fn();
-let current: { user_id: number; branch_ids: number[]; unrestricted: boolean } | undefined;
+let current:
+  | { user_id: number; branch_ids: number[]; roles: Record<string, string>; unrestricted: boolean }
+  | undefined;
 
 vi.mock("./api", () => ({
   useUserBranchesQuery: () => ({ data: current, isLoading: false }),
@@ -42,7 +44,7 @@ function renderModal(onClose = vi.fn()) {
 describe("UserBranchesModal", () => {
   beforeEach(() => {
     mutateAsync.mockReset();
-    current = { user_id: 7, branch_ids: [1], unrestricted: false };
+    current = { user_id: 7, branch_ids: [1], roles: { "1": "auditor" }, unrestricted: false };
   });
 
   it("shows the branches the user already has and saves the new selection", async () => {
@@ -54,7 +56,7 @@ describe("UserBranchesModal", () => {
     await userEvent.click(await screen.findByRole("option", { name: "Filial B", hidden: true }));
     await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
 
-    await vi.waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ userId: 7, branchIds: [1, 2] }));
+    await vi.waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ userId: 7, branchIds: [1, 2], roles: { "1": "auditor" } }));
     await vi.waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
@@ -69,7 +71,7 @@ describe("UserBranchesModal", () => {
   });
 
   it("explains that admins ignore the list", async () => {
-    current = { user_id: 7, branch_ids: [], unrestricted: true };
+    current = { user_id: 7, branch_ids: [], roles: {}, unrestricted: true };
     renderModal();
 
     expect(await screen.findByText(/Administradores acessam todas as filiais/)).toBeInTheDocument();

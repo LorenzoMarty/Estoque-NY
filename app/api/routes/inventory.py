@@ -88,7 +88,9 @@ async def _require_count_access(
     "",
     response_model=InventoryCountOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("stock.inventory.create"))],
+    dependencies=[
+        Depends(require_permission("stock.inventory.create", branch_scoped=True))
+    ],
 )
 async def create_count(
     payload: InventoryCountCreateIn,
@@ -141,7 +143,9 @@ async def create_count(
 @router.patch(
     "/{count_id}/lines",
     response_model=InventoryCountOut,
-    dependencies=[Depends(require_permission("stock.inventory.update"))],
+    dependencies=[
+        Depends(require_permission("stock.inventory.update", branch_scoped=True))
+    ],
 )
 async def patch_count_lines(
     count_id: int,
@@ -195,7 +199,9 @@ async def patch_count_lines(
 @router.post(
     "/{count_id}/close",
     response_model=InventoryCountOut,
-    dependencies=[Depends(require_permission("stock.inventory.close"))],
+    dependencies=[
+        Depends(require_permission("stock.inventory.close", branch_scoped=True))
+    ],
 )
 async def close_count(
     count_id: int,
@@ -243,7 +249,9 @@ async def close_count(
 @router.post(
     "/{count_id}/post",
     response_model=InventoryCountOut,
-    dependencies=[Depends(require_permission("stock.inventory.post"))],
+    dependencies=[
+        Depends(require_permission("stock.inventory.post", branch_scoped=True))
+    ],
 )
 async def post_count(
     count_id: int,
@@ -295,7 +303,9 @@ async def post_count(
 @router.post(
     "/{count_id}/cancel",
     response_model=InventoryCountOut,
-    dependencies=[Depends(require_permission("stock.inventory.cancel"))],
+    dependencies=[
+        Depends(require_permission("stock.inventory.cancel", branch_scoped=True))
+    ],
 )
 async def cancel_count(
     count_id: int,
@@ -343,7 +353,9 @@ async def cancel_count(
 @router.get(
     "",
     response_model=InventoryCountListOut,
-    dependencies=[Depends(require_permission("stock.inventory.read"))],
+    dependencies=[
+        Depends(require_permission("stock.inventory.read", branch_scoped=True))
+    ],
 )
 async def list_counts(
     status_filter: InventoryCountStatus | None = Query(default=None, alias="status"),
@@ -386,7 +398,9 @@ async def list_counts(
 @router.get(
     "/{count_id}",
     response_model=InventoryCountOut,
-    dependencies=[Depends(require_permission("stock.inventory.create"))],
+    dependencies=[
+        Depends(require_permission("stock.inventory.create", branch_scoped=True))
+    ],
 )
 async def get_count(
     count_id: int,

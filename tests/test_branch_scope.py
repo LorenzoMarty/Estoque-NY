@@ -373,6 +373,7 @@ async def test_assign_and_read_user_branches(world):
     assert read.json() == {
         "user_id": user_id,
         "branch_ids": sorted([w.b, w.c]),
+        "roles": {},
         "unrestricted": False,
     }
     # access follows the assignment immediately
