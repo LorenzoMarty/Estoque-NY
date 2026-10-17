@@ -11,6 +11,7 @@ from app.api.pagination import (
 )
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
+from app.domain.errors import BusinessRuleError
 from app.models.entities import SKU, Product, SKUBarcode, User
 from app.schemas.sku import AddBarcodeIn, SKUCreate, SKUListOut, SKUOut, SKUUpdate
 from app.services.audit_service import write_audit_log
@@ -26,6 +27,18 @@ async def _validate_product(session: AsyncSession, product_id: int) -> None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"product {product_id} not found",
+        )
+
+
+def _assert_sku_may_be_active(
+    *, active: bool, ncm: str | None, restricted: bool
+) -> None:
+    """Chapter 71 NCM (precious stones/metals) and restricted SKUs cannot be sold."""
+    if not active:
+        return
+    if restricted or (ncm is not None and ncm.startswith("71")):
+        raise BusinessRuleError(
+            "restricted SKU (restricted flag or NCM chapter 71) cannot be active"
         )
 
 
@@ -69,6 +82,9 @@ async def create_sku(
 ) -> SKU:
     await _validate_product(session, payload.product_id)
     await _assert_barcode_is_global_unique(session, barcode=payload.barcode)
+    _assert_sku_may_be_active(
+        active=payload.active, ncm=payload.ncm, restricted=payload.restricted
+    )
 
     sku = SKU(
         product_id=payload.product_id,
@@ -80,6 +96,9 @@ async def create_sku(
         cost=payload.cost,
         price=payload.price,
         tax_code=payload.tax_code,
+        ncm=payload.ncm,
+        origin=payload.origin,
+        restricted=payload.restricted,
         active=payload.active,
     )
     session.add(sku)
@@ -137,6 +156,11 @@ async def update_sku(
     update_data = payload.model_dump(exclude_unset=True)
     if "unit" in update_data and isinstance(update_data["unit"], str):
         update_data["unit"] = update_data["unit"].upper()
+    _assert_sku_may_be_active(
+        active=update_data.get("active", sku.active),
+        ncm=update_data.get("ncm", sku.ncm),
+        restricted=update_data.get("restricted", sku.restricted),
+    )
     for key, value in update_data.items():
         setattr(sku, key, value)
 

@@ -5,7 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useProductsQuery } from "../products/api";
 import type { Sku } from "../../shared/types/stock";
 import { useCreateSku, useUpdateSku } from "./api";
-import { skuCreateSchema, skuUpdateSchema, type SkuCreateFormValues } from "./schema";
+import { SKU_ORIGINS, skuCreateSchema, skuUpdateSchema, type SkuCreateFormValues } from "./schema";
 
 export function SkuForm({ sku, onSuccess }: { sku?: Sku; onSuccess: () => void }) {
   const { data: products } = useProductsQuery({});
@@ -27,6 +27,9 @@ export function SkuForm({ sku, onSuccess }: { sku?: Sku; onSuccess: () => void }
       unit: sku?.unit ?? "UN",
       cost: sku ? Number(sku.cost) : 0,
       price: sku ? Number(sku.price) : 0,
+      ncm: sku?.ncm ?? null,
+      origin: sku?.origin ?? null,
+      restricted: sku?.restricted ?? false,
       active: sku?.active ?? true,
     },
   });
@@ -81,6 +84,45 @@ export function SkuForm({ sku, onSuccess }: { sku?: Sku; onSuccess: () => void }
           control={control}
           render={({ field }) => (
             <NumberInput label="Preço" decimalScale={2} min={0} value={field.value} onChange={(value) => field.onChange(Number(value) || 0)} />
+          )}
+        />
+        <Controller
+          name="ncm"
+          control={control}
+          render={({ field }) => (
+            <TextInput
+              label="NCM (opcional)"
+              description="8 dígitos, sem pontos."
+              maxLength={8}
+              error={errors.ncm?.message}
+              value={field.value ?? ""}
+              onChange={(event) => field.onChange(event.currentTarget.value.trim() || null)}
+            />
+          )}
+        />
+        <Controller
+          name="origin"
+          control={control}
+          render={({ field }) => (
+            <Select
+              label="Origem (opcional)"
+              data={SKU_ORIGINS.map((o) => ({ value: o.value, label: o.label }))}
+              clearable
+              value={field.value ?? null}
+              onChange={(value) => field.onChange(value ?? null)}
+            />
+          )}
+        />
+        <Controller
+          name="restricted"
+          control={control}
+          render={({ field }) => (
+            <Switch
+              label="Mercadoria proibida ou restrita"
+              description="Não pode ficar ativa. NCM do capítulo 71 também não."
+              checked={field.value}
+              onChange={(event) => field.onChange(event.currentTarget.checked)}
+            />
           )}
         />
         <Controller
