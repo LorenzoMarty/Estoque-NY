@@ -7,6 +7,7 @@ from app.api.router import api_router
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import request_context_middleware
+from app.core.rate_limit import RateLimitMiddleware
 from app.core.settings import get_settings
 from app.db.session import dispose_engine, get_engine
 
@@ -33,6 +34,17 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         lifespan=app_lifespan,
+    )
+    # Added before CORS so it sits inside it: a 429 still carries CORS headers and
+    # the browser reports "too many requests" instead of a CORS failure.
+    app.add_middleware(
+        RateLimitMiddleware,
+        limits={
+            "login": settings.rate_limit_login_per_minute,
+            "refresh": settings.rate_limit_refresh_per_minute,
+            "public": settings.rate_limit_public_per_minute,
+        },
+        trusted_proxy_hops=settings.rate_limit_trusted_proxy_hops,
     )
     app.add_middleware(
         CORSMiddleware,
