@@ -1,20 +1,36 @@
 import { Badge, Button, Group, Loader, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { Pencil, Plus, Search } from "lucide-react";
+import { Download, Pencil, Plus, Search, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import { strings } from "../../shared/strings";
 import type { Product } from "../../shared/types/stock";
 import { useProductsQuery } from "./api";
+import { downloadCatalogCsv } from "./importApi";
+import { ImportCatalogModal } from "./ImportCatalogModal";
 import { ProductForm } from "./ProductForm";
 
 const tableFeatureSet = tableFeatures({});
 const columnHelper = createColumnHelper<typeof tableFeatureSet, Product>();
 const EMPTY_ROWS: Product[] = [];
 
+async function exportCsv() {
+  try {
+    await downloadCatalogCsv();
+  } catch (error) {
+    notifications.show({
+      color: "red",
+      title: "Não foi possível exportar",
+      message: error instanceof Error ? error.message : "Tente novamente.",
+    });
+  }
+}
+
 export function ProductsPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
+  const [importing, setImporting] = useState(false);
   const { data: products, isLoading, isError } = useProductsQuery({ q: search || undefined });
 
   const columns = useMemo(
@@ -54,9 +70,17 @@ export function ProductsPage() {
             Catálogo de produtos
           </Text>
         </div>
-        <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
-          Novo produto
-        </Button>
+        <Group gap="xs">
+          <Button variant="default" leftSection={<Download size={16} />} onClick={() => void exportCsv()}>
+            Exportar CSV
+          </Button>
+          <Button variant="default" leftSection={<Upload size={16} />} onClick={() => setImporting(true)}>
+            Importar CSV
+          </Button>
+          <Button leftSection={<Plus size={16} />} onClick={() => setCreating(true)}>
+            Novo produto
+          </Button>
+        </Group>
       </Group>
 
       <Group className="toolbar-card">
@@ -115,6 +139,8 @@ export function ProductsPage() {
           </Table>
         </Table.ScrollContainer>
       )}
+
+      <ImportCatalogModal opened={importing} onClose={() => setImporting(false)} />
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Novo produto" size="xl">
         <ProductForm onSuccess={() => setCreating(false)} />
