@@ -78,6 +78,7 @@ With `APP_ENV=production` the API refuses to boot unless these are set (see `.en
 | `JWT_SECRET` | set and different from the `change-me` default |
 | `DATABASE_URL` | PostgreSQL, not SQLite and not localhost |
 | `CORS_ORIGINS` | comma-separated list of frontend origins; empty or `*` is rejected |
+
 Database backups, the restore procedure and the restore drill: [docs/runbook-database.md](docs/runbook-database.md).
 
 ## Quality checks
