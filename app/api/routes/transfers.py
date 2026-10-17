@@ -111,7 +111,9 @@ async def _load_for_scope(
     "",
     response_model=TransferOut,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("stock.transfer.create"))],
+    dependencies=[
+        Depends(require_permission("stock.transfer.create", branch_scoped=True))
+    ],
 )
 async def create_transfer_order(
     payload: TransferCreateIn,
@@ -164,7 +166,9 @@ async def create_transfer_order(
 @router.get(
     "",
     response_model=TransferListOut,
-    dependencies=[Depends(require_permission("stock.transfer.read"))],
+    dependencies=[
+        Depends(require_permission("stock.transfer.read", branch_scoped=True))
+    ],
 )
 async def list_transfer_orders(
     status_filter: TransferStatus | None = Query(default=None, alias="status"),
@@ -178,10 +182,10 @@ async def list_transfer_orders(
     stmt = select(TransferOrder)
     if branch_id is not None:
         scope.require(branch_id)
-    elif scope.ids is not None:
+    elif scope.visible_ids is not None:
         stmt = stmt.where(
-            TransferOrder.from_branch_id.in_(scope.ids)
-            | TransferOrder.to_branch_id.in_(scope.ids)
+            TransferOrder.from_branch_id.in_(scope.visible_ids)
+            | TransferOrder.to_branch_id.in_(scope.visible_ids)
         )
     if status_filter is not None:
         stmt = stmt.where(TransferOrder.status == status_filter)
@@ -224,7 +228,9 @@ async def list_transfer_orders(
 @router.get(
     "/{transfer_id}",
     response_model=TransferOut,
-    dependencies=[Depends(require_permission("stock.transfer.read"))],
+    dependencies=[
+        Depends(require_permission("stock.transfer.read", branch_scoped=True))
+    ],
 )
 async def get_transfer_order(
     transfer_id: int,
@@ -238,7 +244,9 @@ async def get_transfer_order(
 @router.post(
     "/{transfer_id}/ship",
     response_model=TransferOut,
-    dependencies=[Depends(require_permission("stock.transfer.ship"))],
+    dependencies=[
+        Depends(require_permission("stock.transfer.ship", branch_scoped=True))
+    ],
 )
 async def ship_transfer_order(
     transfer_id: int,
@@ -290,7 +298,9 @@ async def ship_transfer_order(
 @router.post(
     "/{transfer_id}/receive",
     response_model=TransferOut,
-    dependencies=[Depends(require_permission("stock.transfer.receive"))],
+    dependencies=[
+        Depends(require_permission("stock.transfer.receive", branch_scoped=True))
+    ],
 )
 async def receive_transfer_order(
     transfer_id: int,
@@ -342,7 +352,9 @@ async def receive_transfer_order(
 @router.post(
     "/{transfer_id}/cancel",
     response_model=TransferOut,
-    dependencies=[Depends(require_permission("stock.transfer.cancel"))],
+    dependencies=[
+        Depends(require_permission("stock.transfer.cancel", branch_scoped=True))
+    ],
 )
 async def cancel_transfer_order(
     transfer_id: int,
