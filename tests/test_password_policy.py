@@ -151,13 +151,13 @@ async def test_lock_expires(client):
 async def test_successful_login_resets_the_failure_counter(client):
     await register_and_login(client)
 
-    for _ in range(4):
+    for _ in range(3):
         await _login(client, password="wrong-password-1")
     assert (await _login(client)).status_code == 200
-    for _ in range(4):
+    for _ in range(3):
         await _login(client, password="wrong-password-1")
 
-    assert (await _login(client)).status_code == 200  # never reached 5 in a row
+    assert (await _login(client)).status_code == 200  # never reached 5 in a row (kept under the per-IP login rate limit)
 
 
 @pytest.mark.asyncio
