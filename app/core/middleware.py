@@ -1,9 +1,14 @@
 import logging
+import re
 import time
 from uuid import uuid4
 
 from fastapi import Request
 from starlette.responses import Response
+
+from app.core.observability import tag_request
+
+_VALID_REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
 
 class _RequestAdapter(logging.LoggerAdapter):
@@ -15,8 +20,12 @@ class _RequestAdapter(logging.LoggerAdapter):
 
 
 async def request_context_middleware(request: Request, call_next) -> Response:
-    request_id = request.headers.get("X-Request-ID") or str(uuid4())
+    incoming = request.headers.get("X-Request-ID", "")
+    # Accept a caller's id only if it is short and plain: it ends up in logs, response
+    # headers and Sentry tags, so a forged or huge value must not get through.
+    request_id = incoming if _VALID_REQUEST_ID.fullmatch(incoming) else str(uuid4())
     request.state.request_id = request_id
+    tag_request(request_id)
 
     logger = _RequestAdapter(
         logging.getLogger("app.request"),
