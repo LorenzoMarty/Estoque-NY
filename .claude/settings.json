@@ -1,0 +1,33 @@
+{
+  "extraKnownMarketplaces": {
+    "lorenzo-skills": {
+      "source": {
+        "source": "github",
+        "repo": "LorenzoMarty/skills"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "workflow@lorenzo-skills": true,
+    "dev@lorenzo-skills": true,
+    "design@lorenzo-skills": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git switch -c:*)",
+      "Bash(git checkout -b:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(uv run mypy:*)",
+      "Bash(uv run alembic:*)",
+      "Bash(npm run:*)",
+      "Bash(npm ci:*)"
+    ]
+  }
+}
