@@ -79,6 +79,16 @@ class Settings(BaseSettings):
                     "CORS_ORIGINS must list the allowed frontend origins in production"
                     " (comma-separated, no '*')"
                 )
+            for origin in origins:
+                # A browser's Origin header has no path or trailing slash, so such an
+                # entry would never match and CORS would break silently.
+                if not origin.startswith(("http://", "https://")) or origin.endswith(
+                    "/"
+                ):
+                    raise ValueError(
+                        f"CORS_ORIGINS entry {origin!r} must look like "
+                        "https://app.example.com (scheme, no trailing slash)"
+                    )
         return self
 
 
