@@ -33,3 +33,11 @@ def test_local_env_keeps_wildcard_cors():
 def test_production_rejects_default_or_empty_jwt_secret(secret):
     with pytest.raises(ValidationError, match="JWT_SECRET"):
         Settings(**{**PROD, "jwt_secret": secret}, cors_origins="https://a.example.com")
+
+
+@pytest.mark.parametrize(
+    "origin", ["https://a.example.com/", "a.example.com", "ftp://a.example.com"]
+)
+def test_production_rejects_origins_a_browser_would_never_send(origin):
+    with pytest.raises(ValidationError, match="CORS_ORIGINS entry"):
+        Settings(**PROD, cors_origins=origin)
