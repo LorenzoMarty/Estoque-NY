@@ -345,3 +345,23 @@ async def test_concurrent_wrong_passwords_are_all_counted(client):
 
     user = await _user("admin@example.com")
     assert user.locked_until is not None  # 12 attempts cannot slip under a limit of 5
+
+
+@pytest.mark.asyncio
+async def test_change_password_revokes_every_previous_refresh_token(client):
+    headers = await register_and_login(client)
+    login = await client.post(
+        "/auth/login", json={"email": "admin@example.com", "password": GOOD}
+    )
+    old_refresh = login.json()["refresh_token"]
+
+    changed = await client.post(
+        "/auth/change-password",
+        json={"current_password": GOOD, "new_password": "Brand-New-Pass-9"},
+        headers=headers,
+    )
+    assert changed.status_code == 200
+
+    # Same second as the change, so only server-side revocation can refuse it.
+    refresh = await client.post("/auth/refresh", json={"refresh_token": old_refresh})
+    assert refresh.status_code == 401

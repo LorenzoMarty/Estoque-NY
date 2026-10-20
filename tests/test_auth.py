@@ -129,3 +129,73 @@ async def test_viewer_role_can_read_but_not_write(client):
         "/branches", json={"name": "Nova"}, headers=viewer_headers
     )
     assert create.status_code == 403
+
+
+async def _login_tokens(client):
+    await register_and_login(client)
+    login = await client.post(
+        "/auth/login", json={"email": "admin@example.com", "password": PASSWORD}
+    )
+    return login.json()
+
+
+@pytest.mark.asyncio
+async def test_reusing_a_rotated_refresh_token_returns_401_and_revokes_family(client):
+    first = await _login_tokens(client)
+
+    rotated = await client.post(
+        "/auth/refresh", json={"refresh_token": first["refresh_token"]}
+    )
+    assert rotated.status_code == 200
+    second = rotated.json()
+    assert second["refresh_token"] != first["refresh_token"]
+
+    reuse = await client.post(
+        "/auth/refresh", json={"refresh_token": first["refresh_token"]}
+    )
+    assert reuse.status_code == 401
+
+    # The reuse burned the family: the legitimate newest token is dead too.
+    burned = await client.post(
+        "/auth/refresh", json={"refresh_token": second["refresh_token"]}
+    )
+    assert burned.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_logout_revokes_refresh_token(client):
+    tokens = await _login_tokens(client)
+
+    out = await client.post(
+        "/auth/logout", json={"refresh_token": tokens["refresh_token"]}
+    )
+    assert out.status_code == 204
+    again = await client.post(
+        "/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
+    )
+    assert again.status_code == 401
+    # Idempotent, and garbage is not an error.
+    assert (
+        await client.post("/auth/logout", json={"refresh_token": "junk"})
+    ).status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_refresh_token_without_jti_is_accepted_once_then_rotated(client):
+    from app.core.security import create_refresh_token
+
+    tokens = await _login_tokens(client)
+    user_id = (
+        await client.get(
+            "/auth/me", headers={"Authorization": f"Bearer {tokens['access_token']}"}
+        )
+    ).json()["id"]
+    legacy = create_refresh_token(user_id)  # no jti, as issued before rotation
+
+    ok = await client.post("/auth/refresh", json={"refresh_token": legacy})
+    assert ok.status_code == 200
+    assert (
+        await client.post(
+            "/auth/refresh", json={"refresh_token": ok.json()["refresh_token"]}
+        )
+    ).status_code == 200

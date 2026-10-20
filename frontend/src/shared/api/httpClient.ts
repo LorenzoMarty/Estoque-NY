@@ -140,6 +140,24 @@ export function hasAuthToken(): boolean {
   return Boolean(normalizeValidToken(resolveRawToken()) || resolveRawRefreshToken());
 }
 
+/** Best effort: tell the API to revoke the refresh token; local logout never waits on it. */
+export async function revokeRefreshToken(): Promise<void> {
+  const refreshToken = resolveRawRefreshToken();
+  if (!refreshToken) return;
+  try {
+    await requestJson<null>("/auth/logout", {
+      method: "POST",
+      body: { refresh_token: refreshToken },
+      auth: "none",
+      timeoutMs: 5000,
+      allowRefresh: false,
+      retryOnUnauthorized: false,
+    });
+  } catch {
+    // Offline or already invalid: the local session is cleared either way.
+  }
+}
+
 export function clearAuthSession(): void {
   [...AUTH_STORAGE_KEYS, ...AUTH_REFRESH_STORAGE_KEYS, ...AUTH_STORAGE_RECORD_KEYS].forEach((key) =>
     window.localStorage.removeItem(key)
@@ -158,6 +176,7 @@ function isPublicPath(path: string): boolean {
     normalized.startsWith("/auth/login") ||
     normalized.startsWith("/auth/register") ||
     normalized.startsWith("/auth/refresh") ||
+    normalized.startsWith("/auth/logout") ||
     normalized.startsWith("/health") ||
     normalized.startsWith("/db")
   );

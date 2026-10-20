@@ -19,7 +19,6 @@ from app.core.password_policy import describe, password_problems
 from app.core.role_matrix import BRANCH_ROLES
 from app.core.security import (
     create_access_token,
-    create_refresh_token,
     decode_token,
     hash_password,
     verify_password,
@@ -50,6 +49,13 @@ from app.services.auth_service import (
     assign_role_to_user,
     ensure_rbac_seed,
     is_first_user,
+)
+from app.services.refresh_tokens import (
+    consume_token,
+    find_token,
+    issue_refresh_token,
+    revoke_family,
+    revoke_user_tokens,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -188,9 +194,11 @@ async def login_user(
         )
 
     assert user is not None
+    refresh_token = issue_refresh_token(session, user.id)
+    await session.commit()
     return TokenPairOut(
         access_token=create_access_token(user.id),
-        refresh_token=create_refresh_token(user.id),
+        refresh_token=refresh_token,
     )
 
 
@@ -239,10 +247,12 @@ async def change_password(
         before=None,
         after=None,
     )
+    await revoke_user_tokens(session, current_user.id)
+    refresh_token = issue_refresh_token(session, current_user.id)
     await session.commit()
     return TokenPairOut(
         access_token=create_access_token(current_user.id),
-        refresh_token=create_refresh_token(current_user.id),
+        refresh_token=refresh_token,
     )
 
 
@@ -282,10 +292,46 @@ async def refresh_access_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="session no longer valid; sign in again",
         )
+    jti = token_payload.get("jti")
+    family_id = None
+    if jti is not None:  # tokens issued before rotation existed carry no jti
+        row = await find_token(session, str(jti))
+        if row is None or row.user_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="session no longer valid; sign in again",
+            )
+        if row.revoked_at is not None or not await consume_token(session, row.jti):
+            # A rotated/revoked token came back: assume theft, end the whole family.
+            await revoke_family(session, row.family_id)
+            await session.commit()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="refresh token already used; sign in again",
+            )
+        family_id = row.family_id
+    refresh_token = issue_refresh_token(session, user_id, family_id)
+    await session.commit()
     return TokenPairOut(
         access_token=create_access_token(user_id),
-        refresh_token=create_refresh_token(user_id),
+        refresh_token=refresh_token,
     )
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(
+    payload: RefreshTokenIn,
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    """Revoke the refresh token's whole family. Idempotent: bad tokens are a no-op."""
+    try:
+        jti = decode_token(payload.refresh_token).get("jti")
+    except ValueError:
+        return
+    row = await find_token(session, str(jti)) if jti is not None else None
+    if row is not None:
+        await revoke_family(session, row.family_id)
+        await session.commit()
 
 
 @router.get("/me", response_model=UserOut)
