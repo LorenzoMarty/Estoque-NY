@@ -36,6 +36,9 @@ export interface Product {
   brand_id: number | null;
   brand: string | null;
   active: boolean;
+  featured: boolean;
+  published: boolean;
+  image_url: string | null;
   created_at: string;
 }
 

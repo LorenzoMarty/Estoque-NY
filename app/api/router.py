@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.routes import (
     data_io,
     health,
+    public,
 )
 from app.modules import (
     audit,
@@ -21,6 +22,7 @@ from app.modules import (
 
 api_router = APIRouter()
 api_router.include_router(health.router)
+api_router.include_router(public.router)
 api_router.include_router(auth.router)
 api_router.include_router(branches.router)
 api_router.include_router(locations.router)
