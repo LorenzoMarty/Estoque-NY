@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     idempotency_required_in_production: bool = True
 
     cors_origins: str = "*"
+    # Host header allow-list, comma-separated (e.g. "api.example.com,*.onrender.com").
+    # "*" accepts any host: the safe default for dev/tests, set it in production.
+    allowed_hosts: str = "*"
 
     # Requests per minute per client IP; 0 disables a bucket.
     rate_limit_login_per_minute: int = 10
@@ -66,6 +69,10 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.strip().lower() in _PRODUCTION_ENVS
 
     @model_validator(mode="after")
     def normalize_database_url(self) -> "Settings":

@@ -2,11 +2,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.router import api_router
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
-from app.core.middleware import request_context_middleware
+from app.core.middleware import SecurityHeadersMiddleware, request_context_middleware
 from app.core.observability import init_sentry
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.settings import get_settings
@@ -57,6 +58,10 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     app.middleware("http")(request_context_middleware)
+    allowed_hosts = [h.strip() for h in settings.allowed_hosts.split(",") if h.strip()]
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts or ["*"])
+    # Outermost, so even a rejected host or a 429 carries the headers.
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.is_production)
     register_exception_handlers(app)
     app.include_router(api_router)
     # Vercel may forward requests with or without the `/api` prefix depending on

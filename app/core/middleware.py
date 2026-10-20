@@ -48,3 +48,30 @@ async def request_context_middleware(request: Request, call_next) -> Response:
 
     response.headers["X-Request-ID"] = request_id
     return response
+
+
+class SecurityHeadersMiddleware:
+    """Pure ASGI (not BaseHTTPMiddleware) so exceptions still reach Sentry unwrapped."""
+
+    def __init__(self, app, hsts: bool = False):
+        self.app = app
+        self.headers = [
+            (b"x-content-type-options", b"nosniff"),
+            (b"x-frame-options", b"DENY"),
+            (b"referrer-policy", b"strict-origin-when-cross-origin"),
+        ]
+        if hsts:
+            self.headers.append(
+                (b"strict-transport-security", b"max-age=31536000; includeSubDomains")
+            )
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        async def send_with_headers(message):
+            if message["type"] == "http.response.start":
+                message["headers"] = [*message.get("headers", []), *self.headers]
+            await send(message)
+
+        await self.app(scope, receive, send_with_headers)
