@@ -7,7 +7,10 @@ import { useAuthStore } from "../features/auth/store";
 import { router } from "./router";
 import { theme } from "./theme";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  // httpClient already retries transient GET failures; avoid multiplying attempts.
+  defaultOptions: { queries: { retry: false } },
+});
 
 export function App() {
   useEffect(() => {

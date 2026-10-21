@@ -1,4 +1,5 @@
-import { Alert, Button, Group, Loader, Modal, MultiSelect, Select, Stack, Text } from "@mantine/core";
+import { Alert, Button, Group, Modal, MultiSelect, Select, Stack, Text } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { useEffect, useState } from "react";
 import { useBranchesQuery } from "../../shared/api/catalog";
 import { useSetUserBranches, useUserBranchesQuery, type UserWithRoles } from "./api";
@@ -13,7 +14,7 @@ const BRANCH_ROLES = [
 
 export function UserBranchesModal({ user, onClose }: { user: UserWithRoles | null; onClose: () => void }) {
   const { data: branches } = useBranchesQuery();
-  const { data: current, isLoading } = useUserBranchesQuery(user?.id ?? null);
+  const { data: current, isLoading, isError, refetch } = useUserBranchesQuery(user?.id ?? null);
   const setBranches = useSetUserBranches();
   const [selected, setSelected] = useState<string[]>([]);
   const [roles, setRoles] = useState<Record<string, string>>({});
@@ -42,7 +43,11 @@ export function UserBranchesModal({ user, onClose }: { user: UserWithRoles | nul
 
   return (
     <Modal opened={user !== null} onClose={onClose} title={user ? `Filiais de ${user.name}` : ""} centered>
-      {isLoading && <Loader size="sm" />}
+      {(isLoading || isError) && (
+        <QueryState isLoading={isLoading} isError={isError} errorMessage="Não foi possível carregar as filiais do usuário." onRetry={() => void refetch()}>
+          {null}
+        </QueryState>
+      )}
       {current && (
         <Stack>
           {current.unrestricted && (

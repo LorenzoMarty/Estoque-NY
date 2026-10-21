@@ -1,4 +1,5 @@
-import { Badge, Button, Group, Loader, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { Badge, Button, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -62,7 +63,7 @@ function DiffModal({ log, onClose }: { log: AuditLog | null; onClose: () => void
 export function AuditPage() {
   const [search, setSearch] = useState("");
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-  const { data: logs, isLoading, isError } = useAuditLogsQuery({ q: search || undefined });
+  const { data: logs, isLoading, isError, refetch } = useAuditLogsQuery({ q: search || undefined });
 
   const columns = useMemo(
     () =>
@@ -105,18 +106,7 @@ export function AuditPage() {
         maw={360}
       />
 
-      {isLoading && (
-        <Group justify="center" mt="xl">
-          <Loader />
-        </Group>
-      )}
-      {isError && (
-        <Text c="red" mt="xl">
-          Não foi possível carregar a auditoria.
-        </Text>
-      )}
-
-      {!isLoading && !isError && (
+      <QueryState isLoading={isLoading} isError={isError} isEmpty={(logs ?? []).length === 0} errorMessage="Não foi possível carregar a auditoria." emptyMessage="Nenhum registro de auditoria encontrado." onRetry={() => void refetch()}>
         <Table.ScrollContainer minWidth={700}>
           <Table striped highlightOnHover>
             <Table.Thead>
@@ -138,19 +128,10 @@ export function AuditPage() {
                   ))}
                 </Table.Tr>
               ))}
-              {(logs ?? []).length === 0 && (
-                <Table.Tr>
-                  <Table.Td colSpan={columns.length}>
-                    <Text c="dimmed" ta="center" py="md">
-                      Nenhum registro de auditoria encontrado.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              )}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      )}
+      </QueryState>
 
       <DiffModal log={selectedLog} onClose={() => setSelectedLog(null)} />
     </div>

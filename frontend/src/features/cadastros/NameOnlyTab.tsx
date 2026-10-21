@@ -1,4 +1,5 @@
-import { Alert, Button, Group, Loader, Modal, Stack, Table, Text, TextInput } from "@mantine/core";
+import { Alert, Button, Group, Modal, Stack, Table, TextInput } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
@@ -82,14 +83,13 @@ export function NameOnlyTab<T extends NamedEntity>({ label, newLabel, query, use
         </Button>
       </Group>
 
-      {query.isLoading && (
-        <Group justify="center">
-          <Loader />
-        </Group>
-      )}
-      {query.isError && <Text c="red">Não foi possível carregar {label.toLowerCase()}s.</Text>}
-
-      {!query.isLoading && !query.isError && (
+      <QueryState
+        isLoading={query.isLoading}
+        isError={query.isError}
+        isEmpty={(query.data ?? []).length === 0}
+        errorMessage={`Não foi possível carregar ${label.toLowerCase()}s.`}
+        onRetry={() => void query.refetch?.()}
+      >
         <Table striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
@@ -113,18 +113,9 @@ export function NameOnlyTab<T extends NamedEntity>({ label, newLabel, query, use
                 </Table.Td>
               </Table.Tr>
             ))}
-            {(query.data ?? []).length === 0 && (
-              <Table.Tr>
-                <Table.Td colSpan={2}>
-                  <Text c="dimmed" ta="center" py="md">
-                    Nenhum registro encontrado.
-                  </Text>
-                </Table.Td>
-              </Table.Tr>
-            )}
           </Table.Tbody>
         </Table>
-      )}
+      </QueryState>
 
       <Modal opened={creating || Boolean(editing)} onClose={() => { setCreating(false); setEditing(null); }} title={editing ? `Editar ${label.toLowerCase()}` : newLabel}>
         <form onSubmit={handleSave}>

@@ -245,6 +245,8 @@ export interface RequestOptions {
   auth?: "optional" | "required" | "none";
   allowRefresh?: boolean;
   retryOnUnauthorized?: boolean;
+  /** Extra attempts after a transient failure. Only honoured for GET (idempotent); default 2. */
+  retries?: number;
 }
 
 let refreshTokenPromise: Promise<string | null> | null = null;
@@ -284,7 +286,26 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshTokenPromise;
 }
 
+const RETRY_BASE_DELAY_MS = 300;
+
+/** Network failure, timeout or gateway/availability error: worth another try for an idempotent GET. */
+function isTransientError(error: unknown): boolean {
+  return error instanceof ApiError && [0, 502, 503, 504].includes(error.status);
+}
+
 export async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const retries = (options.method ?? "GET") === "GET" ? options.retries ?? 2 : 0;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await requestJsonOnce<T>(path, options);
+    } catch (error) {
+      if (attempt >= retries || !isTransientError(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, RETRY_BASE_DELAY_MS * 2 ** attempt));
+    }
+  }
+}
+
+async function requestJsonOnce<T>(path: string, options: RequestOptions): Promise<T> {
   const {
     method = "GET",
     body = null,
@@ -334,7 +355,7 @@ export async function requestJson<T>(path: string, options: RequestOptions = {})
       if (response.status === 401 && retryOnUnauthorized && effectiveAuth !== "none" && allowRefresh && !isPublicPath(path)) {
         const refreshedToken = await refreshAccessToken();
         if (refreshedToken) {
-          return requestJson<T>(path, { ...options, allowRefresh: false, retryOnUnauthorized: false });
+          return requestJsonOnce<T>(path, { ...options, allowRefresh: false, retryOnUnauthorized: false });
         }
       }
 

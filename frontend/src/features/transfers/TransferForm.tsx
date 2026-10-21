@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ActionIcon, Alert, Button, Group, NumberInput, Select, Stack, Text, TextInput } from "@mantine/core";
 import { Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { mapApiError } from "../../shared/api/formErrors";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { useBranchesQuery, useLocationsQuery, useSkusQuery } from "../../shared/api/catalog";
 import { useCreateTransfer } from "./api";
@@ -19,6 +20,8 @@ export function TransferForm({ onSuccess }: { onSuccess: () => void }) {
     register,
     handleSubmit,
     watch,
+    setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<TransferCreateFormValues>({
     resolver: zodResolver(transferCreateSchema),
@@ -53,7 +56,7 @@ export function TransferForm({ onSuccess }: { onSuccess: () => void }) {
       await createTransfer.mutateAsync(values);
       onSuccess();
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : "Não foi possível criar a transferência.");
+      setApiError(mapApiError(error, { setError, getValues }, "Não foi possível criar a transferência."));
     }
   }
 

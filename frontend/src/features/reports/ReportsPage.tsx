@@ -1,6 +1,7 @@
 import { useActiveBranch } from "../branch/useActiveBranch";
 import { BarChart, DonutChart } from "@mantine/charts";
-import { Badge, Group, Loader, Table, Tabs, Text, Title } from "@mantine/core";
+import { Badge, Group, Table, Tabs, Text, Title } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { useMemo } from "react";
 import { useSkusQuery } from "../../shared/api/catalog";
 import { strings } from "../../shared/strings";
@@ -14,9 +15,9 @@ function formatMoney(value: number): string {
 export function ReportsPage() {
   const { branchId, ready } = useActiveBranch();
   const { data: skus } = useSkusQuery();
-  const { data: valuation, isLoading: loadingValuation } = useValuationReport(branchId, ready);
-  const { data: turnover, isLoading: loadingTurnover } = useTurnoverReport(branchId, ready);
-  const { data: abc, isLoading: loadingAbc } = useAbcReport(branchId, ready);
+  const { data: valuation, isLoading: loadingValuation, isError: errorValuation, refetch: refetchValuation } = useValuationReport(branchId, ready);
+  const { data: turnover, isLoading: loadingTurnover, isError: errorTurnover, refetch: refetchTurnover } = useTurnoverReport(branchId, ready);
+  const { data: abc, isLoading: loadingAbc, isError: errorAbc, refetch: refetchAbc } = useAbcReport(branchId, ready);
 
   const skuLabel = useMemo(() => {
     const map = new Map((skus ?? []).map((s) => [s.id, s.sku_code]));
@@ -45,9 +46,7 @@ export function ReportsPage() {
         </Tabs.List>
 
         <Tabs.Panel value="valuation" pt="md">
-          {loadingValuation ? (
-            <Loader />
-          ) : (
+          <QueryState isLoading={loadingValuation || !ready} isError={errorValuation} isEmpty={(valuation ?? []).length === 0} errorMessage="Não foi possível carregar o relatório de valorização." emptyMessage="Sem dados para este relatório." onRetry={() => void refetchValuation()}>
             <>
               {valuationChart.length > 0 && (
                 <BarChart
@@ -83,13 +82,11 @@ export function ReportsPage() {
                 </Table>
               </Table.ScrollContainer>
             </>
-          )}
+          </QueryState>
         </Tabs.Panel>
 
         <Tabs.Panel value="turnover" pt="md">
-          {loadingTurnover ? (
-            <Loader />
-          ) : (
+          <QueryState isLoading={loadingTurnover || !ready} isError={errorTurnover} isEmpty={(turnover ?? []).length === 0} errorMessage="Não foi possível carregar o relatório de giro." emptyMessage="Sem dados para este relatório." onRetry={() => void refetchTurnover()}>
             <Table.ScrollContainer className="data-table-card" minWidth={760}>
               <Table striped>
                 <Table.Thead>
@@ -112,13 +109,11 @@ export function ReportsPage() {
                 </Table.Tbody>
               </Table>
             </Table.ScrollContainer>
-          )}
+          </QueryState>
         </Tabs.Panel>
 
         <Tabs.Panel value="abc" pt="md">
-          {loadingAbc ? (
-            <Loader />
-          ) : (
+          <QueryState isLoading={loadingAbc || !ready} isError={errorAbc} isEmpty={(abc ?? []).length === 0} errorMessage="Não foi possível carregar o relatório de curva ABC." emptyMessage="Sem dados para este relatório." onRetry={() => void refetchAbc()}>
             <Group className="report-split-panel" align="flex-start">
               {abcCounts.some((c) => c.count > 0) && (
                 <DonutChart
@@ -154,7 +149,7 @@ export function ReportsPage() {
                 </Table>
               </Table.ScrollContainer>
             </Group>
-          )}
+          </QueryState>
         </Tabs.Panel>
       </Tabs>
     </div>

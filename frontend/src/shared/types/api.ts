@@ -1,7 +1,7 @@
 export interface ApiErrorPayload {
   detail?: string;
   message?: string;
-  error?: { message?: string; code?: string };
+  error?: { message?: string; code?: string; details?: unknown };
 }
 
 export interface TokenPair {

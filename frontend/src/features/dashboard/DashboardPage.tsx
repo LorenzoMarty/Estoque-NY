@@ -1,5 +1,6 @@
 import { useActiveBranch } from "../branch/useActiveBranch";
-import { Badge, Card, Group, Loader, Pagination, Select, SimpleGrid, Table, Text, Title } from "@mantine/core";
+import { Badge, Card, Group, Pagination, Select, SimpleGrid, Table, Text, Title } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { useEffect, useMemo, useState } from "react";
 import { strings } from "../../shared/strings";
@@ -52,7 +53,7 @@ const moveColumns = columnHelper.columns([
 const EMPTY_MOVE_ROWS: MoveRow[] = [];
 
 export function DashboardPage() {
-  const { data, isLoading, isError } = useDashboardQuery();
+  const { data, isLoading, isError, refetch } = useDashboardQuery();
   const { active } = useActiveBranch();
   const [period, setPeriod] = useState<DashboardFilters["period"]>("30");
   const filters = useMemo<DashboardFilters>(
@@ -76,19 +77,16 @@ export function DashboardPage() {
 
   const table = useTable({ features: tableFeatureSet, columns: moveColumns, data: pagedRows });
 
-  if (isLoading) {
+  if (isLoading || isError || !data) {
     return (
-      <Group justify="center" mt="xl">
-        <Loader />
-      </Group>
-    );
-  }
-
-  if (isError || !data) {
-    return (
-      <Text c="red" mt="xl">
-        Não foi possível carregar os dados do dashboard.
-      </Text>
+      <QueryState
+        isLoading={isLoading}
+        isError
+        errorMessage="Não foi possível carregar os dados do dashboard."
+        onRetry={() => void refetch()}
+      >
+        {null}
+      </QueryState>
     );
   }
 
