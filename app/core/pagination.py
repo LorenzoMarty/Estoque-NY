@@ -5,6 +5,9 @@ from typing import Any
 from fastapi import Query
 from sqlalchemy import Select
 
+MAX_PAGE_SIZE = 200
+DEFAULT_PAGE_SIZE = 50
+
 
 @dataclass
 class PaginationParams:
@@ -17,7 +20,7 @@ class PaginationParams:
 
 def pagination_params(
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     sort: str = Query("created_at"),
     order: str = Query("desc", pattern="^(asc|desc)$"),
     q: str | None = Query(default=None),
