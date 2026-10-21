@@ -1,4 +1,5 @@
-import { Badge, Button, Group, Loader, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { Badge, Button, Group, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { notifications } from "@mantine/notifications";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Download, Pencil, Plus, Search, Upload } from "lucide-react";
@@ -31,7 +32,7 @@ export function ProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
-  const { data: products, isLoading, isError } = useProductsQuery({ q: search || undefined });
+  const { data: products, isLoading, isError, refetch } = useProductsQuery({ q: search || undefined });
 
   const columns = useMemo(
     () =>
@@ -93,18 +94,7 @@ export function ProductsPage() {
         />
       </Group>
 
-      {isLoading && (
-        <Group justify="center" mt="xl">
-          <Loader />
-        </Group>
-      )}
-      {isError && (
-        <Text c="red" mt="xl">
-          Não foi possível carregar os produtos.
-        </Text>
-      )}
-
-      {!isLoading && !isError && (
+      <QueryState isLoading={isLoading} isError={isError} isEmpty={(products ?? []).length === 0} errorMessage="Não foi possível carregar os produtos." emptyMessage="Nenhum produto encontrado." onRetry={() => void refetch()}>
         <Table.ScrollContainer className="data-table-card" minWidth={760}>
           <Table striped highlightOnHover>
             <Table.Thead>
@@ -126,19 +116,10 @@ export function ProductsPage() {
                   ))}
                 </Table.Tr>
               ))}
-              {(products ?? []).length === 0 && (
-                <Table.Tr>
-                  <Table.Td colSpan={columns.length}>
-                    <Text c="dimmed" ta="center" py="md">
-                      Nenhum produto encontrado.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              )}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      )}
+      </QueryState>
 
       <ImportCatalogModal opened={importing} onClose={() => setImporting(false)} />
 

@@ -1,4 +1,5 @@
-import { Alert, Button, Group, Loader, Select, Switch, Table, Text, TextInput, Title } from "@mantine/core";
+import { Alert, Button, Group, Select, Switch, Table, Text, TextInput, Title } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -17,7 +18,7 @@ export function UsersPage() {
   const [branchesUser, setBranchesUser] = useState<UserWithRoles | null>(null);
   const currentUser = useAuthStore((state) => state.user);
 
-  const { data: users, isLoading, isError } = useUsersQuery({ q: search || undefined });
+  const { data: users, isLoading, isError, refetch } = useUsersQuery({ q: search || undefined });
   const { data: roles } = useRolesQuery();
   const setActiveMutation = useSetUserActive();
   const assignRoleMutation = useAssignRole();
@@ -120,18 +121,7 @@ export function UsersPage() {
         </Alert>
       )}
 
-      {isLoading && (
-        <Group justify="center" mt="xl">
-          <Loader />
-        </Group>
-      )}
-      {isError && (
-        <Text c="red" mt="xl">
-          Não foi possível carregar os usuários.
-        </Text>
-      )}
-
-      {!isLoading && !isError && (
+      <QueryState isLoading={isLoading} isError={isError} isEmpty={(users ?? []).length === 0} errorMessage="Não foi possível carregar os usuários." emptyMessage="Nenhum usuário encontrado." onRetry={() => void refetch()}>
         <Table.ScrollContainer className="data-table-card" minWidth={760}>
           <Table striped highlightOnHover>
             <Table.Thead>
@@ -153,19 +143,10 @@ export function UsersPage() {
                   ))}
                 </Table.Tr>
               ))}
-              {(users ?? []).length === 0 && (
-                <Table.Tr>
-                  <Table.Td colSpan={columns.length}>
-                    <Text c="dimmed" ta="center" py="md">
-                      Nenhum usuário encontrado.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              )}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      )}
+      </QueryState>
     </div>
   );
 }

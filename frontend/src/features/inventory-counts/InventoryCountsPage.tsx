@@ -1,4 +1,5 @@
-import { Badge, Button, Group, Loader, Modal, Table, Text, Title } from "@mantine/core";
+import { Badge, Button, Group, Modal, Table, Text, Title } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -18,7 +19,7 @@ const EMPTY_ROWS: InventoryCount[] = [];
 export function InventoryCountsPage() {
   const [creating, setCreating] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const { data: counts, isLoading, isError } = useInventoryCountsQuery();
+  const { data: counts, isLoading, isError, refetch } = useInventoryCountsQuery();
 
   const columns = useMemo(
     () =>
@@ -63,18 +64,7 @@ export function InventoryCountsPage() {
         </Button>
       </Group>
 
-      {isLoading && (
-        <Group justify="center" mt="xl">
-          <Loader />
-        </Group>
-      )}
-      {isError && (
-        <Text c="red" mt="xl">
-          Não foi possível carregar as contagens.
-        </Text>
-      )}
-
-      {!isLoading && !isError && (
+      <QueryState isLoading={isLoading} isError={isError} isEmpty={(counts ?? []).length === 0} errorMessage="Não foi possível carregar as contagens." emptyMessage="Nenhuma contagem encontrada." onRetry={() => void refetch()}>
         <Table.ScrollContainer className="data-table-card" minWidth={780}>
           <Table striped highlightOnHover>
             <Table.Thead>
@@ -96,19 +86,10 @@ export function InventoryCountsPage() {
                   ))}
                 </Table.Tr>
               ))}
-              {(counts ?? []).length === 0 && (
-                <Table.Tr>
-                  <Table.Td colSpan={columns.length}>
-                    <Text c="dimmed" ta="center" py="md">
-                      Nenhuma contagem encontrada.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              )}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      )}
+      </QueryState>
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Nova contagem" size="xl">
         <CreateCountForm onSuccess={() => setCreating(false)} />

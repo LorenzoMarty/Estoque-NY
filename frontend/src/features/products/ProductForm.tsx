@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, Select, Stack, Switch, Textarea, TextInput } from "@mantine/core";
 import { useMemo, useState } from "react";
+import { mapApiError } from "../../shared/api/formErrors";
 import { Controller, useForm } from "react-hook-form";
 import { useBrandsQuery, useCategoriesQuery } from "../../shared/api/catalog";
 import type { Product } from "../../shared/types/stock";
@@ -16,6 +17,8 @@ export function ProductForm({ product, onSuccess }: { product?: Product; onSucce
     control,
     register,
     handleSubmit,
+    setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -44,7 +47,7 @@ export function ProductForm({ product, onSuccess }: { product?: Product; onSucce
       else await createProduct.mutateAsync(values);
       onSuccess();
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : "Não foi possível salvar o produto.");
+      setApiError(mapApiError(error, { setError, getValues }, "Não foi possível salvar o produto."));
     }
   }
 

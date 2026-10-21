@@ -2,6 +2,7 @@ import { useActiveBranch } from "../branch/useActiveBranch";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, NumberInput, Select, SegmentedControl, Stack, TextInput } from "@mantine/core";
 import { useMemo, useState } from "react";
+import { mapApiError } from "../../shared/api/formErrors";
 import { Controller, useForm } from "react-hook-form";
 import { useBranchesQuery, useLocationsQuery, useSkusQuery } from "../../shared/api/catalog";
 import { useCreateAdjustment, useCreateIssue, useCreateReceipt } from "./api";
@@ -29,6 +30,7 @@ export function MovementForm({ onSuccess }: { onSuccess: () => void }) {
     watch,
     reset,
     setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<MovementFormValues>({
     resolver: zodResolver(movementFormSchema),
@@ -69,7 +71,7 @@ export function MovementForm({ onSuccess }: { onSuccess: () => void }) {
       reset();
       onSuccess();
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : "Não foi possível registrar a movimentação.");
+      setApiError(mapApiError(error, { setError, getValues }, "Não foi possível registrar a movimentação."));
     }
   }
 

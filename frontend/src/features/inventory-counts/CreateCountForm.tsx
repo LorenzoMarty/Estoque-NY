@@ -2,6 +2,7 @@ import { useActiveBranch } from "../branch/useActiveBranch";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, Select, Stack } from "@mantine/core";
 import { useMemo, useState } from "react";
+import { mapApiError } from "../../shared/api/formErrors";
 import { Controller, useForm } from "react-hook-form";
 import { useBranchesQuery, useLocationsQuery } from "../../shared/api/catalog";
 import { useCreateInventoryCount } from "./api";
@@ -15,6 +16,8 @@ export function CreateCountForm({ onSuccess }: { onSuccess: () => void }) {
     control,
     handleSubmit,
     watch,
+    setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<InventoryCountCreateFormValues>({
     resolver: zodResolver(inventoryCountCreateSchema),
@@ -33,7 +36,7 @@ export function CreateCountForm({ onSuccess }: { onSuccess: () => void }) {
       await createCount.mutateAsync(values);
       onSuccess();
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : "Não foi possível abrir a contagem.");
+      setApiError(mapApiError(error, { setError, getValues }, "Não foi possível abrir a contagem."));
     }
   }
 

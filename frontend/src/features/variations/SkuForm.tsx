@@ -1,6 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Alert, Button, NumberInput, Select, Stack, Switch, TextInput } from "@mantine/core";
 import { useMemo, useState } from "react";
+import { mapApiError } from "../../shared/api/formErrors";
 import { Controller, useForm } from "react-hook-form";
 import { useProductsQuery } from "../products/api";
 import type { Sku } from "../../shared/types/stock";
@@ -16,6 +17,8 @@ export function SkuForm({ sku, onSuccess }: { sku?: Sku; onSuccess: () => void }
     control,
     register,
     handleSubmit,
+    setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<SkuCreateFormValues>({
     resolver: zodResolver(skuCreateSchema),
@@ -46,7 +49,7 @@ export function SkuForm({ sku, onSuccess }: { sku?: Sku; onSuccess: () => void }
       else await createSku.mutateAsync(values);
       onSuccess();
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : "Não foi possível salvar a variação.");
+      setApiError(mapApiError(error, { setError, getValues }, "Não foi possível salvar a variação."));
     }
   }
 

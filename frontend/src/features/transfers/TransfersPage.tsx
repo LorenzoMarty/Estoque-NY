@@ -1,4 +1,5 @@
-import { Badge, Button, Group, Loader, Modal, Table, Text, Title } from "@mantine/core";
+import { Badge, Button, Group, Modal, Table, Text, Title } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -27,7 +28,7 @@ const EMPTY_ROWS: Transfer[] = [];
 
 export function TransfersPage() {
   const [creating, setCreating] = useState(false);
-  const { data: transfers, isLoading, isError } = useTransfersQuery();
+  const { data: transfers, isLoading, isError, refetch } = useTransfersQuery();
   const shipTransfer = useShipTransfer();
   const receiveTransfer = useReceiveTransfer();
   const cancelTransfer = useCancelTransfer();
@@ -94,18 +95,7 @@ export function TransfersPage() {
         </Button>
       </Group>
 
-      {isLoading && (
-        <Group justify="center" mt="xl">
-          <Loader />
-        </Group>
-      )}
-      {isError && (
-        <Text c="red" mt="xl">
-          Não foi possível carregar as transferências.
-        </Text>
-      )}
-
-      {!isLoading && !isError && (
+      <QueryState isLoading={isLoading} isError={isError} isEmpty={(transfers ?? []).length === 0} errorMessage="Não foi possível carregar as transferências." emptyMessage="Nenhuma transferência encontrada." onRetry={() => void refetch()}>
         <Table.ScrollContainer className="data-table-card" minWidth={920}>
           <Table striped highlightOnHover>
             <Table.Thead>
@@ -127,19 +117,10 @@ export function TransfersPage() {
                   ))}
                 </Table.Tr>
               ))}
-              {(transfers ?? []).length === 0 && (
-                <Table.Tr>
-                  <Table.Td colSpan={columns.length}>
-                    <Text c="dimmed" ta="center" py="md">
-                      Nenhuma transferência encontrada.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              )}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      )}
+      </QueryState>
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Nova transferência" size="xl">
         <TransferForm onSuccess={() => setCreating(false)} />

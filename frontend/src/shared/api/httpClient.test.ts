@@ -117,3 +117,36 @@ describe("httpClient", () => {
     window.removeEventListener(AUTH_REQUIRED_EVENT_NAME, listener);
   });
 });
+
+describe("httpClient retry", () => {
+  const ok = () => new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } });
+
+  it("retries an idempotent GET after a transient failure", async () => {
+    const { requestJson } = await import("./httpClient");
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError("offline")).mockResolvedValueOnce(ok());
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(requestJson("/health")).resolves.toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry a POST, nor a GET that failed with a 4xx", async () => {
+    const { requestJson } = await import("./httpClient");
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("offline"));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(requestJson("/health", { method: "POST" })).rejects.toMatchObject({ status: 0 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    const notFound = vi.fn().mockResolvedValue(new Response("{}", { status: 422 }));
+    vi.stubGlobal("fetch", notFound);
+    await expect(requestJson("/health")).rejects.toMatchObject({ status: 422 });
+    expect(notFound).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives up after the retry budget", async () => {
+    const { requestJson } = await import("./httpClient");
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("offline"));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(requestJson("/health", { retries: 1 })).rejects.toMatchObject({ status: 0 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});

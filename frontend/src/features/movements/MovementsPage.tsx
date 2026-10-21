@@ -1,5 +1,6 @@
 import { useActiveBranch } from "../branch/useActiveBranch";
-import { Button, Group, Loader, Modal, Select, Table, Text, Title } from "@mantine/core";
+import { Button, Group, Modal, Select, Table, Text, Title } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -34,7 +35,7 @@ export function MovementsPage() {
   const [localFilters, setFilters] = useState<MovementsFilters>({});
   const filters = useMemo(() => ({ ...localFilters, branchId }), [localFilters, branchId]);
   const [modalOpen, setModalOpen] = useState(false);
-  const { data: moves, isLoading, isError } = useMovesQuery(filters, ready);
+  const { data: moves, isLoading, isError, refetch } = useMovesQuery(filters, ready);
 
   const table = useTable({ features: tableFeatureSet, columns, data: moves ?? EMPTY_ROWS });
 
@@ -62,19 +63,7 @@ export function MovementsPage() {
         />
       </Group>
 
-      {isLoading && (
-        <Group justify="center" mt="xl">
-          <Loader />
-        </Group>
-      )}
-
-      {isError && (
-        <Text c="red" mt="xl">
-          Não foi possível carregar as movimentações.
-        </Text>
-      )}
-
-      {!isLoading && !isError && (
+      <QueryState isLoading={isLoading || !ready} isError={isError} isEmpty={(moves ?? []).length === 0} errorMessage="Não foi possível carregar as movimentações." emptyMessage="Nenhuma movimentação encontrada." onRetry={() => void refetch()}>
         <Table.ScrollContainer className="data-table-card" minWidth={980}>
           <Table striped highlightOnHover>
             <Table.Thead>
@@ -96,19 +85,10 @@ export function MovementsPage() {
                   ))}
                 </Table.Tr>
               ))}
-              {(moves ?? []).length === 0 && (
-                <Table.Tr>
-                  <Table.Td colSpan={columns.length}>
-                    <Text c="dimmed" ta="center" py="md">
-                      Nenhuma movimentação encontrada.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              )}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      )}
+      </QueryState>
 
       <Modal opened={modalOpen} onClose={() => setModalOpen(false)} title="Nova movimentação" size="xl">
         <MovementForm onSuccess={() => setModalOpen(false)} />

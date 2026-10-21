@@ -1,4 +1,5 @@
-import { Alert, Button, Group, Loader, Modal, Select, Stack, Table, Text, TextInput } from "@mantine/core";
+import { Alert, Button, Group, Modal, Select, Stack, Table, TextInput } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { useBranchesQuery, useCreateLocation, useDeleteLocation, useLocationsQuery, useUpdateLocation } from "../../shared/api/catalog";
@@ -83,14 +84,13 @@ export function LocationsTab() {
         </Button>
       </Group>
 
-      {locationsQuery.isLoading && (
-        <Group justify="center">
-          <Loader />
-        </Group>
-      )}
-      {locationsQuery.isError && <Text c="red">Não foi possível carregar os locais.</Text>}
-
-      {!locationsQuery.isLoading && !locationsQuery.isError && (
+      <QueryState
+        isLoading={locationsQuery.isLoading}
+        isError={locationsQuery.isError}
+        isEmpty={(locationsQuery.data ?? []).length === 0}
+        errorMessage={`Não foi possível carregar os locais.`}
+        onRetry={() => void locationsQuery.refetch?.()}
+      >
         <Table striped highlightOnHover>
           <Table.Thead>
             <Table.Tr>
@@ -118,18 +118,9 @@ export function LocationsTab() {
                 </Table.Td>
               </Table.Tr>
             ))}
-            {(locationsQuery.data ?? []).length === 0 && (
-              <Table.Tr>
-                <Table.Td colSpan={4}>
-                  <Text c="dimmed" ta="center" py="md">
-                    Nenhum registro encontrado.
-                  </Text>
-                </Table.Td>
-              </Table.Tr>
-            )}
           </Table.Tbody>
         </Table>
-      )}
+      </QueryState>
 
       <Modal
         opened={creating || Boolean(editing)}

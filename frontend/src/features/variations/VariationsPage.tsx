@@ -1,4 +1,5 @@
-import { Badge, Button, Group, Loader, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { Badge, Button, Group, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Pencil, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -19,7 +20,7 @@ export function VariationsPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Sku | null>(null);
   const [creating, setCreating] = useState(false);
-  const { data: skus, isLoading, isError } = useSkusListQuery();
+  const { data: skus, isLoading, isError, refetch } = useSkusListQuery();
 
   const filtered = useMemo(() => {
     if (!skus) return EMPTY_ROWS;
@@ -87,18 +88,7 @@ export function VariationsPage() {
         />
       </Group>
 
-      {isLoading && (
-        <Group justify="center" mt="xl">
-          <Loader />
-        </Group>
-      )}
-      {isError && (
-        <Text c="red" mt="xl">
-          Não foi possível carregar as variações.
-        </Text>
-      )}
-
-      {!isLoading && !isError && (
+      <QueryState isLoading={isLoading} isError={isError} isEmpty={filtered.length === 0} errorMessage="Não foi possível carregar as variações." emptyMessage="Nenhuma variação encontrada." onRetry={() => void refetch()}>
         <Table.ScrollContainer className="data-table-card" minWidth={900}>
           <Table striped highlightOnHover>
             <Table.Thead>
@@ -120,19 +110,10 @@ export function VariationsPage() {
                   ))}
                 </Table.Tr>
               ))}
-              {filtered.length === 0 && (
-                <Table.Tr>
-                  <Table.Td colSpan={columns.length}>
-                    <Text c="dimmed" ta="center" py="md">
-                      Nenhuma variação encontrada.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              )}
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
-      )}
+      </QueryState>
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Nova variação" size="xl">
         <SkuForm onSuccess={() => setCreating(false)} />

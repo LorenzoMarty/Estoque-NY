@@ -1,4 +1,5 @@
-import { Alert, Badge, Button, Group, Loader, Modal, NumberInput, Table, Text } from "@mantine/core";
+import { Alert, Badge, Button, Group, Modal, NumberInput, Table, Text } from "@mantine/core";
+import { QueryState } from "../../shared/ui/QueryState";
 import { useEffect, useMemo, useState } from "react";
 import { useSkusQuery } from "../../shared/api/catalog";
 import { useCloseCount, useInventoryCountQuery, usePatchCountLines, usePostCount, useCancelCount } from "./api";
@@ -6,7 +7,7 @@ import { useCloseCount, useInventoryCountQuery, usePatchCountLines, usePostCount
 const STATUS_LABELS: Record<string, string> = { OPEN: "Aberta", CLOSED: "Fechada", POSTED: "Lançada", CANCELLED: "Cancelada" };
 
 export function CountDetailModal({ countId, onClose }: { countId: number | null; onClose: () => void }) {
-  const { data: count, isLoading } = useInventoryCountQuery(countId);
+  const { data: count, isLoading, isError, refetch } = useInventoryCountQuery(countId);
   const { data: skus } = useSkusQuery();
   const [countedById, setCountedById] = useState<Record<number, number>>({});
   const [apiError, setApiError] = useState<string | null>(null);
@@ -51,10 +52,10 @@ export function CountDetailModal({ countId, onClose }: { countId: number | null;
 
   return (
     <Modal opened={countId != null} onClose={onClose} title={count ? `Contagem #${count.id}` : "Contagem"} size="lg">
-      {isLoading && (
-        <Group justify="center" py="lg">
-          <Loader />
-        </Group>
+      {(isLoading || isError) && (
+        <QueryState isLoading={isLoading} isError={isError} errorMessage="Não foi possível carregar a contagem." onRetry={() => void refetch()}>
+          {null}
+        </QueryState>
       )}
       {count && (
         <>
