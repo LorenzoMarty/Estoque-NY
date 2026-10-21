@@ -59,7 +59,7 @@ export function ReportsPage() {
                   valueFormatter={(value) => formatMoney(value)}
                 />
               )}
-              <Table.ScrollContainer className="data-table-card" minWidth={760}>
+              <Table.ScrollContainer className="data-table-card" minWidth={760} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
                 <Table striped>
                   <Table.Thead>
                     <Table.Tr>
@@ -87,7 +87,7 @@ export function ReportsPage() {
 
         <Tabs.Panel value="turnover" pt="md">
           <QueryState isLoading={loadingTurnover || !ready} isError={errorTurnover} isEmpty={(turnover ?? []).length === 0} errorMessage="Não foi possível carregar o relatório de giro." emptyMessage="Sem dados para este relatório." onRetry={() => void refetchTurnover()}>
-            <Table.ScrollContainer className="data-table-card" minWidth={760}>
+            <Table.ScrollContainer className="data-table-card" minWidth={760} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
               <Table striped>
                 <Table.Thead>
                   <Table.Tr>
@@ -122,7 +122,7 @@ export function ReportsPage() {
                   withLabels
                 />
               )}
-              <Table.ScrollContainer className="data-table-card" minWidth={680} style={{ flex: 1 }}>
+              <Table.ScrollContainer className="data-table-card" minWidth={680} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }} style={{ flex: 1 }}>
                 <Table striped>
                   <Table.Thead>
                     <Table.Tr>

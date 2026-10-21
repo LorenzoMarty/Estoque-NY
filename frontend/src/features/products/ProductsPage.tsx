@@ -96,7 +96,7 @@ export function ProductsPage() {
       </Group>
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(products ?? []).length === 0} errorMessage="Não foi possível carregar os produtos." emptyMessage="Nenhum produto encontrado." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={760}>
+        <Table.ScrollContainer className="data-table-card" minWidth={760} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (

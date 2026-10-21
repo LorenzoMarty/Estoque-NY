@@ -65,7 +65,7 @@ export function MovementsPage() {
       </Group>
 
       <QueryState isLoading={isLoading || !ready} isError={isError} isEmpty={(moves ?? []).length === 0} errorMessage="Não foi possível carregar as movimentações." emptyMessage="Nenhuma movimentação encontrada." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={980}>
+        <Table.ScrollContainer className="data-table-card" minWidth={980} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (

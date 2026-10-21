@@ -108,7 +108,7 @@ export function AuditPage() {
       />
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(logs ?? []).length === 0} errorMessage="Não foi possível carregar a auditoria." emptyMessage="Nenhum registro de auditoria encontrado." onRetry={() => void refetch()}>
-        <Table.ScrollContainer minWidth={700}>
+        <Table.ScrollContainer minWidth={700} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (

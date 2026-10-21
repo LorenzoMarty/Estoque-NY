@@ -125,7 +125,7 @@ export function UsersPage() {
       )}
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(users ?? []).length === 0} errorMessage="Não foi possível carregar os usuários." emptyMessage="Nenhum usuário encontrado." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={760}>
+        <Table.ScrollContainer className="data-table-card" minWidth={760} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
