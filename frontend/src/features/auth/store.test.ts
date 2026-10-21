@@ -37,6 +37,21 @@ describe("useAuthStore", () => {
     expect(useAuthStore.getState().user).toBeNull();
   });
 
+  it("logout calls POST /auth/logout with the stored refresh token", () => {
+    window.localStorage.setItem("ESTOQUE_API_REFRESH_TOKEN", "a.b.c");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    useAuthStore.getState().logout();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toMatch(/\/auth\/logout$/);
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ refresh_token: "a.b.c" });
+    expect(window.localStorage.getItem("ESTOQUE_API_REFRESH_TOKEN")).toBeNull();
+  });
+
   it("reacts to AUTH_REQUIRED_EVENT_NAME by logging out", () => {
     useAuthStore.getState().setUser({ id: 1, name: "Ana", email: "ana@x.com", active: true, created_at: "2026-01-01T00:00:00Z" });
     window.dispatchEvent(new CustomEvent(AUTH_REQUIRED_EVENT_NAME));

@@ -17,7 +17,9 @@ def verify_password(password: str, password_hash: str) -> bool:
     return pwd_context.verify(password, password_hash)
 
 
-def _create_token(*, user_id: int, token_type: str, expires_minutes: int) -> str:
+def _create_token(
+    *, user_id: int, token_type: str, expires_minutes: int, jti: str | None = None
+) -> str:
     settings = get_settings()
     now = datetime.now(UTC)
     payload: dict[str, Any] = {
@@ -26,6 +28,8 @@ def _create_token(*, user_id: int, token_type: str, expires_minutes: int) -> str
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=expires_minutes)).timestamp()),
     }
+    if jti is not None:
+        payload["jti"] = jti
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
@@ -38,12 +42,13 @@ def create_access_token(user_id: int) -> str:
     )
 
 
-def create_refresh_token(user_id: int) -> str:
+def create_refresh_token(user_id: int, jti: str | None = None) -> str:
     settings = get_settings()
     return _create_token(
         user_id=user_id,
         token_type="refresh",
         expires_minutes=settings.jwt_refresh_expiration_minutes,
+        jti=jti,
     )
 
 

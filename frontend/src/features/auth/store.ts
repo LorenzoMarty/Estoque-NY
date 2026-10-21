@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { apiClient, AUTH_REQUIRED_EVENT_NAME, clearAuthSession, hasAuthToken } from "../../shared/api/httpClient";
+import { apiClient, AUTH_REQUIRED_EVENT_NAME, clearAuthSession, hasAuthToken, revokeRefreshToken } from "../../shared/api/httpClient";
 import type { AuthenticatedUser } from "../../shared/types/api";
 
 interface AuthState {
@@ -17,6 +17,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   setUser: (user) => set({ user, isAuthenticated: Boolean(user), isInitializing: false }),
   logout: () => {
+    // Fire the revocation first: it reads the refresh token that clearAuthSession removes.
+    void revokeRefreshToken();
     clearAuthSession();
     set({ user: null, isAuthenticated: false, isInitializing: false });
   },
