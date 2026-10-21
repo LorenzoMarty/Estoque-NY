@@ -8,10 +8,10 @@ from sqlalchemy import case, desc, func, literal_column, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
-from app.api.pagination import page_meta
 from app.api.security import require_permission
 from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
+from app.core.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, page_meta
 from app.models.entities import (
     SKU,
     Campaign,
@@ -50,7 +50,7 @@ async def stock_valuation(
     location_id: int | None = Query(default=None),
     sku_id: int | None = Query(default=None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
@@ -101,7 +101,7 @@ async def stock_turnover(
     from_date: datetime | None = Query(default=None),
     to_date: datetime | None = Query(default=None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
@@ -176,7 +176,7 @@ async def stock_movements_report(
     from_date: datetime | None = Query(default=None),
     to_date: datetime | None = Query(default=None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     export: str | None = Query(default=None),
     scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
@@ -248,7 +248,7 @@ async def stock_abc_report(
     from_date: datetime | None = Query(default=None),
     to_date: datetime | None = Query(default=None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
@@ -406,7 +406,7 @@ async def campaign_products_report(
     campaign_id: int | None = Query(default=None),
     branch_id: int | None = Query(default=None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
@@ -464,7 +464,7 @@ async def promotion_skus_report(
     promotion_id: int | None = Query(default=None),
     status: PromotionStatus | None = Query(default=None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     stmt = (
@@ -512,7 +512,7 @@ async def campaigns_report(
     from_date: datetime | None = Query(default=None),
     to_date: datetime | None = Query(default=None),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
     stmt = select(Campaign)
@@ -567,7 +567,7 @@ async def low_turnover_candidates_report(
     to_date: datetime | None = Query(default=None),
     threshold: float = Query(default=DEFAULT_LOW_TURNOVER_THRESHOLD, ge=0),
     page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=200),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
     scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
