@@ -86,6 +86,7 @@ export function ProductsPage() {
 
       <Group className="toolbar-card">
         <TextInput
+          aria-label="Buscar por nome"
           placeholder="Buscar por nome"
           leftSection={<Search size={16} />}
           value={search}

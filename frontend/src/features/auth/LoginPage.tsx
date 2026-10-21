@@ -37,9 +37,9 @@ export function LoginPage() {
   }
 
   return (
-    <section className="placeholder-page">
+    <main className="placeholder-page">
       <article className="placeholder-card border-gradient reveal" style={{ maxWidth: 380 }}>
-        <h2>{strings.login.title}</h2>
+        <h1>{strings.login.title}</h1>
         <p>{strings.login.subtitle}</p>
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <TextInput
@@ -65,6 +65,6 @@ export function LoginPage() {
           </Button>
         </form>
       </article>
-    </section>
+    </main>
   );
 }

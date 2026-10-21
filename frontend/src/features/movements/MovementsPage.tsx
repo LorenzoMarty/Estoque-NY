@@ -55,6 +55,7 @@ export function MovementsPage() {
 
       <Group className="toolbar-card">
         <Select
+          aria-label="Tipo de movimentação"
           placeholder="Todos os tipos"
           data={Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label }))}
           clearable

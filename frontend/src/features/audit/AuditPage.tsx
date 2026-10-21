@@ -75,7 +75,7 @@ export function AuditPage() {
         columnHelper.accessor("user_id", { header: "Usuário", cell: (info) => (info.getValue() ? `#${info.getValue()}` : "Sistema") }),
         columnHelper.display({
           id: "actions",
-          header: "",
+          header: "Ações",
           cell: (info) => (
             <Button size="xs" variant="subtle" onClick={() => setSelectedLog(info.row.original)}>
               Ver diferenças
@@ -98,6 +98,7 @@ export function AuditPage() {
       </Text>
 
       <TextInput
+        aria-label="Buscar por ação ou recurso"
         placeholder="Buscar por ação ou recurso"
         leftSection={<Search size={16} />}
         mb="md"

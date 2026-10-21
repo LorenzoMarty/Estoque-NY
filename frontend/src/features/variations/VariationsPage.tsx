@@ -80,6 +80,7 @@ export function VariationsPage() {
 
       <Group className="toolbar-card">
         <TextInput
+          aria-label="Buscar por código, nome ou código de barras"
           placeholder="Buscar por código, nome ou código de barras"
           leftSection={<Search size={16} />}
           value={search}

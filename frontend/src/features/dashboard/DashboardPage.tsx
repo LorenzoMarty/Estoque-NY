@@ -52,6 +52,8 @@ const moveColumns = columnHelper.columns([
 ]);
 const EMPTY_MOVE_ROWS: MoveRow[] = [];
 
+const PAGINATION_LABELS = { first: "Primeira página", previous: "Página anterior", next: "Próxima página", last: "Última página" } as const;
+
 export function DashboardPage() {
   const { data, isLoading, isError, refetch } = useDashboardQuery();
   const { active } = useActiveBranch();
@@ -101,6 +103,7 @@ export function DashboardPage() {
         </div>
         <Group className="dashboard-filter-bar">
           <Select
+            aria-label="Período"
             data={[
               { value: "7", label: "Últimos 7 dias" },
               { value: "30", label: "Últimos 30 dias" },
@@ -131,10 +134,10 @@ export function DashboardPage() {
       </SimpleGrid>
 
       <Card className="workspace-card" withBorder radius="md" padding="md">
-        <Title order={4} mb="sm">
+        <Title order={3} mb="sm">
           Movimentações recentes
         </Title>
-        <Table.ScrollContainer className="data-table-card" minWidth={860}>
+        <Table.ScrollContainer className="data-table-card" minWidth={860} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Movimentações recentes" } }}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -168,7 +171,13 @@ export function DashboardPage() {
           </Table>
         </Table.ScrollContainer>
         <Group justify="flex-end" mt="sm">
-          <Pagination total={totalPages} value={page} onChange={setPage} size="sm" />
+          <Pagination
+            total={totalPages}
+            value={page}
+            onChange={setPage}
+            size="sm"
+            getControlProps={(control) => ({ "aria-label": PAGINATION_LABELS[control] })}
+          />
         </Group>
       </Card>
     </div>

@@ -1187,6 +1187,7 @@ tbody tr:hover {
   color: var(--orange-400);
 }
 
+.placeholder-card h1,
 .placeholder-card h2 {
   margin: 10px 0 6px;
   font-size: 1.5rem;

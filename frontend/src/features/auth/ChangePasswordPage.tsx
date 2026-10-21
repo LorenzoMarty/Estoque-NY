@@ -46,9 +46,9 @@ export function ChangePasswordPage() {
   }
 
   return (
-    <section className="placeholder-page">
+    <main className="placeholder-page">
       <article className="placeholder-card border-gradient reveal" style={{ maxWidth: 380 }}>
-        <h2>{copy.title}</h2>
+        <h1>{copy.title}</h1>
         <p>{copy.subtitle}</p>
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <PasswordInput
@@ -85,6 +85,6 @@ export function ChangePasswordPage() {
           </Button>
         </form>
       </article>
-    </section>
+    </main>
   );
 }
