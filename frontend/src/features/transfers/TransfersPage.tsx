@@ -96,7 +96,7 @@ export function TransfersPage() {
       </Group>
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(transfers ?? []).length === 0} errorMessage="Não foi possível carregar as transferências." emptyMessage="Nenhuma transferência encontrada." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={920}>
+        <Table.ScrollContainer className="data-table-card" minWidth={920} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (

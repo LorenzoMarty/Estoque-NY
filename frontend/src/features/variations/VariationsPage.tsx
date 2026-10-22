@@ -80,6 +80,7 @@ export function VariationsPage() {
 
       <Group className="toolbar-card">
         <TextInput
+          aria-label="Buscar por código, nome ou código de barras"
           placeholder="Buscar por código, nome ou código de barras"
           leftSection={<Search size={16} />}
           value={search}
@@ -89,7 +90,7 @@ export function VariationsPage() {
       </Group>
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={filtered.length === 0} errorMessage="Não foi possível carregar as variações." emptyMessage="Nenhuma variação encontrada." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={900}>
+        <Table.ScrollContainer className="data-table-card" minWidth={900} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (

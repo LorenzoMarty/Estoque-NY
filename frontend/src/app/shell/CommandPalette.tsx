@@ -81,6 +81,7 @@ export function CommandPalette({ opened, onClose, onOpen }: CommandPaletteProps)
         <TextInput
           autoFocus
           leftSection={<Search size={16} />}
+          aria-label="Buscar tela, cadastro ou relatorio"
           placeholder="Buscar tela, cadastro ou relatorio"
           value={query}
           onChange={(event) => setQuery(event.currentTarget.value)}

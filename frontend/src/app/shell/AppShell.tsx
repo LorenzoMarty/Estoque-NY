@@ -1,3 +1,4 @@
+import { VisuallyHidden } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Package, PanelLeftClose } from "lucide-react";
 import { Outlet } from "react-router";
@@ -24,7 +25,7 @@ export function AppShell() {
     >
       <aside className="sidebar border-gradient" id="sidebar" aria-label="Menu lateral">
         <div className="sidebar-header">
-          <a className="brand" href="/dashboard" aria-label="Ir para Visao geral">
+          <a className="brand" href="/dashboard" aria-label={`${strings.app_name} - ${strings.nav.dashboard}`}>
             <span className="brand-mark">
               <Package size={18} />
             </span>
@@ -53,6 +54,7 @@ export function AppShell() {
       <div className="layout-main">
         <Topbar onOpenCommandPalette={openCommandPalette} />
         <main className="page-content" id="pageContent" tabIndex={-1}>
+          <VisuallyHidden component="h1">{strings.app_name}</VisuallyHidden>
           <Outlet />
         </main>
       </div>

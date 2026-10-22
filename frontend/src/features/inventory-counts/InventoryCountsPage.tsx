@@ -65,7 +65,7 @@ export function InventoryCountsPage() {
       </Group>
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(counts ?? []).length === 0} errorMessage="Não foi possível carregar as contagens." emptyMessage="Nenhuma contagem encontrada." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={780}>
+        <Table.ScrollContainer className="data-table-card" minWidth={780} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (

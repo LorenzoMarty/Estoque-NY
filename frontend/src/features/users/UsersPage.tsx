@@ -54,6 +54,7 @@ export function UsersPage() {
           cell: (info) => (
             <Select
               size="xs"
+              aria-label={`Papel de ${info.row.original.name}`}
               placeholder="Sem papel"
               data={roleOptions}
               value={info.row.original.roles[0] ?? null}
@@ -76,6 +77,7 @@ export function UsersPage() {
           header: "Ativo",
           cell: (info) => (
             <Switch
+              aria-label={`Usuário ativo: ${info.row.original.name}`}
               checked={info.row.original.active}
               disabled={currentUser?.id === info.row.original.id}
               onChange={(event) => handleToggleActive(info.row.original, event.currentTarget.checked)}
@@ -107,6 +109,7 @@ export function UsersPage() {
 
       <Group className="toolbar-card">
         <TextInput
+          aria-label="Buscar por nome ou e-mail"
           placeholder="Buscar por nome ou e-mail"
           leftSection={<Search size={16} />}
           value={search}
@@ -122,7 +125,7 @@ export function UsersPage() {
       )}
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(users ?? []).length === 0} errorMessage="Não foi possível carregar os usuários." emptyMessage="Nenhum usuário encontrado." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={760}>
+        <Table.ScrollContainer className="data-table-card" minWidth={760} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
           <Table striped highlightOnHover>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
