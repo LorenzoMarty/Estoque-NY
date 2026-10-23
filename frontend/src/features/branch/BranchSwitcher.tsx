@@ -21,9 +21,10 @@ export function BranchSwitcher() {
   return (
     <Select
       aria-label="Filial ativa"
-      size="xs"
-      w={190}
-      leftSection={<Store size={14} />}
+      className="branch-select"
+      size="sm"
+     
+      leftSection={<Store size={15} />}
       data={data}
       value={active === null ? null : String(active)}
       allowDeselect={false}

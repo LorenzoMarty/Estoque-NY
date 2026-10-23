@@ -1,14 +1,12 @@
 import { VisuallyHidden } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import { Menu, PanelLeftClose } from "lucide-react";
+import { Package, PanelLeftClose } from "lucide-react";
 import { Outlet } from "react-router";
-import { BranchSwitcher } from "../../features/branch/BranchSwitcher";
-import logoMark from "../../assets/brand/logo-ny-mark.svg";
 import { strings } from "../../shared/strings";
 import { useUiStore } from "../../shared/ui/uiStore";
 import { CommandPalette } from "./CommandPalette";
 import { Sidebar } from "./Sidebar";
-import { SidebarFooter } from "./SidebarFooter";
+import { Topbar } from "./Topbar";
 
 export function AppShell() {
   const sidebarCollapsed = useUiStore((state) => state.sidebarCollapsed);
@@ -25,10 +23,12 @@ export function AppShell() {
       }`}
       id="appShell"
     >
-      <aside className="sidebar border-gradient" id="sidebar" aria-label="Menu lateral">
+      <aside className="sidebar" id="sidebar" aria-label="Menu lateral">
         <div className="sidebar-header">
           <a className="brand" href="/dashboard" aria-label={`${strings.app_name} - ${strings.nav.dashboard}`}>
-            <img alt="" className="brand-logo" height="38" src={logoMark} width="26" />
+            <span className="brand-mark" aria-hidden>
+              <Package size={17} />
+            </span>
             <span className="brand-text">{strings.app_name}</span>
           </a>
           <button
@@ -36,16 +36,16 @@ export function AppShell() {
             aria-label="Recolher menu lateral"
             onClick={toggleSidebarCollapsed}
           >
-            <PanelLeftClose size={18} />
+            <PanelLeftClose size={17} />
           </button>
         </div>
 
-        <div className="sidebar-branch">
-          <BranchSwitcher />
-        </div>
-
         <Sidebar />
-        <SidebarFooter />
+
+        <div className="ny-footer" aria-hidden="true">
+          <div className="ny-liberty" />
+          <div className="ny-skyline" />
+        </div>
       </aside>
 
       <button
@@ -56,13 +56,7 @@ export function AppShell() {
       />
 
       <div className="layout-main">
-        <button
-          className="icon-btn mobile-only mobile-menu-btn"
-          aria-label="Abrir menu lateral"
-          onClick={() => setMobileSidebarOpen(true)}
-        >
-          <Menu size={18} />
-        </button>
+        <Topbar onOpenMenu={() => setMobileSidebarOpen(true)} onOpenCommands={openCommandPalette} />
         <main className="page-content" id="pageContent" tabIndex={-1}>
           <VisuallyHidden component="h1">{strings.app_name}</VisuallyHidden>
           <Outlet />

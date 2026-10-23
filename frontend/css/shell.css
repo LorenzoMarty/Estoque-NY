@@ -1,0 +1,481 @@
+/* App shell (design "1a"): full-height transparent sidebar + floating main panel with its own topbar. */
+
+.app-shell {
+  display: flex;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--c-shell);
+  color: var(--c-ink);
+  font-family: var(--font-ui);
+}
+
+.mobile-only {
+  display: none !important;
+}
+
+/* ---------- Sidebar ---------- */
+.sidebar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  flex: 0 0 240px;
+  flex-direction: column;
+  gap: 18px;
+  width: 240px;
+  height: 100vh;
+  height: 100dvh;
+  padding: 20px 12px 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.sidebar-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--c-ink-strong);
+}
+
+.brand-mark {
+  display: grid;
+  flex: 0 0 32px;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--c-primary);
+  color: #ffffff;
+}
+
+.brand-text {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-nav {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex: 1;
+  gap: 14px;
+  align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.nav-section {
+  display: grid;
+  gap: 2px;
+}
+
+.nav-section-label {
+  margin: 0;
+  padding: 4px 10px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-ink-label);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--r-control);
+  font-size: 14px;
+  color: var(--c-ink-nav);
+}
+
+.nav-link svg {
+  flex: none;
+  color: var(--c-icon);
+}
+
+.nav-link:hover {
+  background: var(--c-hover);
+}
+
+.nav-link.is-active {
+  background: var(--c-surface);
+  color: var(--c-primary-strong);
+  font-weight: 600;
+  box-shadow: var(--sh-active);
+}
+
+.nav-link.is-active svg {
+  color: var(--c-primary);
+}
+
+.sidebar-header .icon-btn {
+  flex: none;
+  width: 28px;
+  height: 28px;
+}
+
+.nav-link:focus-visible,
+.brand:focus-visible,
+.icon-btn:focus-visible,
+.command-chip:focus-visible,
+.profile-chip:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+/* Decorative NY footer: both layers use the image as a CSS mask over a flat color. */
+.ny-footer {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 0;
+  height: 300px;
+  pointer-events: none;
+}
+
+.ny-liberty {
+  position: absolute;
+  /* ~50% of the original 118x203. Measured on skyline.png: under x=140..200 the roofline peaks 34.6px above the layer bottom, so the base rests at 35px. */
+  bottom: 35px;
+  left: 140px;
+  width: 60px;
+  height: 103px;
+  background: var(--c-primary);
+  opacity: 0.14;
+  -webkit-mask: url("/assets/liberty.svg") center bottom / contain no-repeat;
+  mask: url("/assets/liberty.svg") center bottom / contain no-repeat;
+}
+
+.ny-skyline {
+  position: absolute;
+  inset: auto 0 0;
+  height: 101px;
+  background: linear-gradient(180deg, #3b6fe0, #1d4ed8);
+  opacity: 0.2;
+  -webkit-mask: url("/assets/skyline.png") center bottom / 100% 100% no-repeat;
+  mask: url("/assets/skyline.png") center bottom / 100% 100% no-repeat;
+}
+
+/* Collapsed (desktop only): icon rail. */
+@media (min-width: 1201px) {
+  .app-shell.sidebar-collapsed .sidebar {
+    flex-basis: 78px;
+    width: 78px;
+  }
+
+  .app-shell.sidebar-collapsed .sidebar-header {
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    padding: 0;
+  }
+
+  .app-shell.sidebar-collapsed .brand-text,
+  .app-shell.sidebar-collapsed .nav-label,
+  .app-shell.sidebar-collapsed .nav-section-label,
+  .app-shell.sidebar-collapsed .ny-footer {
+    display: none;
+  }
+
+  .app-shell.sidebar-collapsed .nav-link {
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+/* ---------- Main panel ---------- */
+.layout-main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  margin: 10px 10px 10px 0;
+  overflow: hidden;
+  background: var(--c-panel);
+  border: 1px solid var(--c-line-panel);
+  border-radius: var(--r-panel);
+  box-shadow: var(--sh-panel);
+}
+
+.page-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 28px;
+  min-height: 0;
+  min-width: 0;
+  padding: 36px 40px 44px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  outline: none;
+}
+
+.page-content > * {
+  width: 100%;
+  max-width: 1720px;
+  margin-inline: auto;
+}
+
+/* `.page-content > *` forces width:100% on the visually hidden h1; it is absolutely positioned, so it widened the page. */
+.page-content > .mantine-VisuallyHidden-root {
+  width: 1px;
+  max-width: 1px;
+  margin: -1px;
+}
+
+/* ---------- Topbar ---------- */
+.topbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  height: 60px;
+  padding: 0 40px;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-line);
+}
+
+.branch-select {
+  width: 190px;
+  max-width: 100%;
+}
+
+.branch-select .mantine-Select-input {
+  height: 34px;
+  min-height: 34px;
+  border-color: var(--c-line-control);
+  border-radius: var(--r-control);
+  font-size: 14px;
+  color: var(--c-ink-strong);
+}
+
+.branch-select .mantine-Select-input:focus {
+  border-color: var(--c-primary);
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+.branch-select .mantine-Select-section svg {
+  color: var(--c-ink-soft);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.icon-btn,
+.command-chip,
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line-control);
+  border-radius: var(--r-control);
+  color: var(--c-ink-strong);
+  cursor: pointer;
+}
+
+.icon-btn:hover,
+.command-chip:hover,
+.profile-chip:hover {
+  background: var(--c-panel);
+}
+
+.icon-btn {
+  position: relative;
+  justify-content: center;
+  width: 34px;
+  padding: 0;
+  color: var(--c-ink-soft);
+}
+
+.icon-btn .dot {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-neg);
+}
+
+.command-chip {
+  gap: 8px;
+  padding: 0 8px 0 10px;
+  font-size: 13px;
+  color: var(--c-ink-soft);
+}
+
+.command-chip kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--c-line-control);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-ink-soft);
+}
+
+.profile-chip {
+  gap: 8px;
+  padding: 0 10px 0 4px;
+}
+
+.avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--c-avatar);
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.profile-name {
+  max-width: 160px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: none;
+  background: rgba(15, 31, 54, 0.42);
+  border: 0;
+}
+
+/* ---------- Drawer (<= 1200px): the sidebar slides over the panel ---------- */
+@media (max-width: 1200px) {
+  .mobile-only {
+    display: inline-flex !important;
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    width: 280px;
+    max-width: 86vw;
+    background: var(--c-surface);
+    box-shadow: 18px 0 46px rgba(15, 31, 54, 0.16);
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+  }
+
+  .app-shell.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .layout-main {
+    margin: 10px;
+  }
+
+  .topbar {
+    padding: 0 24px;
+  }
+
+  .page-content {
+    padding: 28px 24px 36px;
+  }
+}
+
+@media (min-width: 1201px) {
+  .mobile-overlay {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
+  }
+}
+
+/* ---------- Mobile (<= 768px): panel loses margin and radius; 40px tap targets ---------- */
+@media (max-width: 768px) {
+  .layout-main {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .topbar {
+    gap: 8px;
+    padding: 0 14px;
+  }
+
+  .page-content {
+    gap: 22px;
+    padding: 22px 16px 30px;
+  }
+
+  .icon-btn,
+  .command-chip,
+  .profile-chip,
+  .branch-select .mantine-Select-input {
+    height: 40px;
+    min-height: 40px;
+  }
+
+  .icon-btn {
+    width: 40px;
+  }
+
+  .command-chip span,
+  .command-chip kbd,
+  .profile-name {
+    display: none;
+  }
+
+  .command-chip {
+    justify-content: center;
+    width: 40px;
+    padding: 0;
+  }
+
+  .profile-chip {
+    min-width: 40px;
+    padding: 0 6px;
+  }
+
+  .branch-select {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+}

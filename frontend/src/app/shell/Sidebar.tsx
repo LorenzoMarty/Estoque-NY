@@ -32,7 +32,7 @@ export function Sidebar() {
                   className={({ isActive }) => `nav-link${isActive ? " is-active" : ""}`}
                   aria-label={label}
                 >
-                  <Icon size={18} />
+                  <Icon size={17} />
                   <span className="nav-label">{label}</span>
                 </NavLink>
               );
