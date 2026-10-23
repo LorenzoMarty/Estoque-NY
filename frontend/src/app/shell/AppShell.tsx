@@ -23,11 +23,11 @@ export function AppShell() {
       }`}
       id="appShell"
     >
-      <aside className="sidebar border-gradient" id="sidebar" aria-label="Menu lateral">
+      <aside className="sidebar" id="sidebar" aria-label="Menu lateral">
         <div className="sidebar-header">
           <a className="brand" href="/dashboard" aria-label={`${strings.app_name} - ${strings.nav.dashboard}`}>
-            <span className="brand-mark">
-              <Package size={18} />
+            <span className="brand-mark" aria-hidden>
+              <Package size={17} />
             </span>
             <span className="brand-text">{strings.app_name}</span>
           </a>
@@ -36,12 +36,15 @@ export function AppShell() {
             aria-label="Recolher menu lateral"
             onClick={toggleSidebarCollapsed}
           >
-            <PanelLeftClose size={18} />
+            <PanelLeftClose size={17} />
           </button>
         </div>
 
         <Sidebar />
 
+        <div className="ny-footer" aria-hidden="true">
+          <div className="ny-skyline" />
+        </div>
       </aside>
 
       <button
@@ -52,7 +55,7 @@ export function AppShell() {
       />
 
       <div className="layout-main">
-        <Topbar onOpenCommandPalette={openCommandPalette} />
+        <Topbar onOpenMenu={() => setMobileSidebarOpen(true)} onOpenCommands={openCommandPalette} />
         <main className="page-content" id="pageContent" tabIndex={-1}>
           <VisuallyHidden component="h1">{strings.app_name}</VisuallyHidden>
           <Outlet />

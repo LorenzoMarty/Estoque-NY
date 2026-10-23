@@ -1,8 +1,12 @@
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/charts/styles.css";
+import "../css/tokens.css";
 import "../css/app.css";
 import "../css/responsive.css";
+import "../css/redesign.css";
+import "../css/shell.css";
+import "../css/dashboard.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/App";

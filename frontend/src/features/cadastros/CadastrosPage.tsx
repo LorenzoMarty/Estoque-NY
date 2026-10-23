@@ -1,4 +1,4 @@
-import { Tabs, Text, Title } from "@mantine/core";
+import { Tabs } from "@mantine/core";
 import {
   useBranchesQuery,
   useBrandsQuery,
@@ -9,6 +9,7 @@ import {
   useUpdateBranch,
   useUpdateBrand,
 } from "../../shared/api/catalog";
+import { PageHeader } from "../../shared/ui/PageHeader";
 import { strings } from "../../shared/strings";
 import { LocationsTab } from "./LocationsTab";
 import { NameOnlyTab } from "./NameOnlyTab";
@@ -18,15 +19,10 @@ export function CadastrosPage() {
   const brandsQuery = useBrandsQuery();
 
   return (
-    <div>
-      <Title order={2} mb={4}>
-        {strings.nav.cadastros}
-      </Title>
-      <Text c="dimmed" size="sm" mb="md">
-        Marcas, filiais e locais do estoque
-      </Text>
+    <div className="workspace-page">
+      <PageHeader title={strings.nav.cadastros} subtitle="Marcas, filiais e locais do estoque" />
 
-      <Tabs defaultValue="brands">
+      <Tabs defaultValue="brands" variant="pills">
         <Tabs.List>
           <Tabs.Tab value="brands">Marcas</Tabs.Tab>
           <Tabs.Tab value="branches">Filiais</Tabs.Tab>

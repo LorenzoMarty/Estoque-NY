@@ -1,8 +1,12 @@
-import { Badge, Button, Modal, Table, Text, TextInput, Title } from "@mantine/core";
+import { Button, Group, Modal, Table, Text, TextInput } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { StatusPill } from "../../shared/ui/StatusPill";
+import { DataTable } from "../../shared/ui/DataTable";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import type { StatusTone } from "../../app/theme";
 import { strings } from "../../shared/strings";
 import { useAuditLogsQuery, type AuditLog } from "./api";
 import { computeDiff } from "./diff";
@@ -11,7 +15,7 @@ const tableFeatureSet = tableFeatures({});
 const columnHelper = createColumnHelper<typeof tableFeatureSet, AuditLog>();
 const EMPTY_ROWS: AuditLog[] = [];
 
-const DIFF_COLORS: Record<string, string> = { added: "teal", removed: "red", changed: "yellow", unchanged: "gray" };
+const DIFF_TONES: Record<string, StatusTone> = { added: "good", removed: "critical", changed: "warning", unchanged: "neutral" };
 
 function DiffModal({ log, onClose }: { log: AuditLog | null; onClose: () => void }) {
   const entries = useMemo(() => (log ? computeDiff(log.before_json, log.after_json) : []), [log]);
@@ -29,9 +33,9 @@ function DiffModal({ log, onClose }: { log: AuditLog | null; onClose: () => void
           {entries.map((entry) => (
             <Table.Tr key={entry.key}>
               <Table.Td>
-                <Badge color={DIFF_COLORS[entry.status]} variant="light" size="sm">
+                <StatusPill tone={DIFF_TONES[entry.status]}>
                   {entry.key}
-                </Badge>
+                </StatusPill>
               </Table.Td>
               <Table.Td>
                 <Text size="sm" c={entry.status === "removed" || entry.status === "changed" ? "red" : "dimmed"}>
@@ -89,27 +93,22 @@ export function AuditPage() {
   const table = useTable({ features: tableFeatureSet, columns, data: logs ?? EMPTY_ROWS });
 
   return (
-    <div>
-      <Title order={2} mb={4}>
-        {strings.nav.audit}
-      </Title>
-      <Text c="dimmed" size="sm" mb="md">
-        Trilha de auditoria de ações administrativas
-      </Text>
+    <div className="workspace-page">
+      <PageHeader title={strings.nav.audit} subtitle="Trilha de auditoria de ações administrativas" />
 
-      <TextInput
-        aria-label="Buscar por ação ou recurso"
-        placeholder="Buscar por ação ou recurso"
-        leftSection={<Search size={16} />}
-        mb="md"
-        value={search}
-        onChange={(event) => setSearch(event.currentTarget.value)}
-        maw={360}
-      />
+      <Group className="toolbar-card">
+        <TextInput
+          aria-label="Buscar por ação ou recurso"
+          placeholder="Buscar por ação ou recurso"
+          leftSection={<Search size={16} />}
+          value={search}
+          onChange={(event) => setSearch(event.currentTarget.value)}
+          w={{ base: "100%", sm: 420 }}
+        />
+      </Group>
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(logs ?? []).length === 0} errorMessage="Não foi possível carregar a auditoria." emptyMessage="Nenhum registro de auditoria encontrado." onRetry={() => void refetch()}>
-        <Table.ScrollContainer minWidth={700} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
-          <Table striped highlightOnHover>
+        <DataTable minWidth={700}>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <Table.Tr key={headerGroup.id}>
@@ -130,8 +129,7 @@ export function AuditPage() {
                 </Table.Tr>
               ))}
             </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+        </DataTable>
       </QueryState>
 
       <DiffModal log={selectedLog} onClose={() => setSelectedLog(null)} />

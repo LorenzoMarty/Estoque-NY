@@ -1,0 +1,405 @@
+/* Redesign layer: loaded after app.css/responsive.css. Tokens live in tokens.css; shell and dashboard in shell.css/dashboard.css. */
+
+html,
+body {
+  background: var(--rd-page);
+  color: var(--rd-ink);
+}
+
+/* ---------- Page header ---------- */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
+  min-width: 0;
+}
+
+.page-header > div {
+  min-width: 0;
+}
+
+.page-header h2 {
+  color: var(--rd-ink);
+  letter-spacing: -0.02em;
+}
+
+.page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* ---------- Tables ---------- */
+.data-table-card {
+  border: 1px solid var(--rd-line);
+  border-radius: var(--rd-radius);
+  background: var(--rd-surface);
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ds-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ds-table thead th:first-child {
+  border-top-left-radius: var(--rd-radius-sm);
+  border-bottom-left-radius: var(--rd-radius-sm);
+}
+
+.ds-table thead th:last-child {
+  border-top-right-radius: var(--rd-radius-sm);
+  border-bottom-right-radius: var(--rd-radius-sm);
+}
+
+.ds-table thead th {
+  background: var(--rd-tint);
+  color: var(--rd-ink-2);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rd-line);
+}
+
+.ds-table tbody td {
+  color: var(--rd-ink);
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--rd-line-soft);
+}
+
+.ds-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ds-table tbody tr:hover {
+  background: var(--rd-page);
+}
+
+.status-pill {
+  font-weight: 600;
+}
+
+/* Light-variant pill text darkened to reach 4.5:1 on its tinted background. */
+.status-pill[data-tone="warning"] {
+  color: var(--status-warning-pill-text);
+}
+
+.status-pill[data-tone="good"] {
+  color: var(--status-good-pill-text);
+}
+
+.mantine-Tabs-tab[data-active] {
+  background: var(--rd-primary);
+  color: #ffffff;
+}
+
+/* ---------- Stock breakdown (products) ---------- */
+.stock-summary {
+  display: grid;
+  gap: 14px;
+  padding: 16px 18px;
+  background: var(--rd-surface);
+  border: 1px solid var(--rd-line);
+  border-radius: 16px;
+  box-shadow: var(--rd-shadow);
+}
+
+.stock-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.stock-summary-head strong {
+  font-size: 1.6rem;
+  color: var(--rd-ink);
+}
+
+.stock-bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+}
+
+.stock-bar span {
+  min-width: 4px;
+  border-radius: 4px;
+}
+
+.stock-bar [data-status="in_stock"] {
+  background: var(--status-good);
+}
+
+.stock-bar [data-status="low_stock"] {
+  background: var(--status-warning);
+}
+
+.stock-bar [data-status="out_of_stock"] {
+  background: var(--status-critical);
+}
+
+.stock-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.86rem;
+  color: var(--rd-ink-2);
+}
+
+.stock-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stock-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.stock-legend-dot[data-status="in_stock"] {
+  background: var(--status-good);
+}
+
+.stock-legend-dot[data-status="low_stock"] {
+  background: var(--status-warning);
+}
+
+.stock-legend-dot[data-status="out_of_stock"] {
+  background: var(--status-critical);
+}
+
+.stock-legend strong {
+  color: var(--rd-ink);
+}
+
+/* ---------- Product cards ---------- */
+.product-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  min-width: 0;
+}
+
+.product-card {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: var(--rd-surface);
+  border: 1px solid var(--rd-line);
+  border-radius: 16px;
+  box-shadow: var(--rd-shadow);
+}
+
+.product-card-media {
+  display: grid;
+  place-items: center;
+  height: 110px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--rd-tint), var(--rd-surface-alt));
+  color: var(--rd-primary);
+}
+
+.product-card h3 {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--rd-ink);
+}
+
+.product-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: var(--rd-muted);
+}
+
+/* ---------- Responsive ---------- */
+.workspace-page,
+.toolbar-card,
+.report-tabs,
+.report-split-panel,
+.product-card,
+.stock-summary {
+  min-width: 0;
+}
+
+.toolbar-card,
+.report-split-panel {
+  max-width: 100%;
+}
+
+.toolbar-card > *,
+.page-header-actions > *,
+.report-split-panel > * {
+  min-width: 0;
+}
+
+.report-tabs .mantine-Tabs-list {
+  flex-wrap: wrap;
+}
+
+.report-chart-card {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    align-items: stretch;
+  }
+
+  .page-header,
+  .page-header-actions,
+  .toolbar-card,
+  .report-split-panel {
+    flex-direction: column;
+  }
+
+  .page-header-actions,
+  .page-header-actions .mantine-InputWrapper-root,
+  .page-header-actions .mantine-Button-root,
+  .toolbar-card .mantine-InputWrapper-root,
+  .toolbar-card .mantine-Button-root,
+  .toolbar-card .mantine-SegmentedControl-root {
+    width: 100%;
+  }
+
+  .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Touch widths: Mantine's default sm controls are 30-36px; keep tap targets >= 40px. */
+@media (max-width: 768px) {
+  .mantine-Button-root,
+  .mantine-Input-input,
+  .mantine-Tabs-tab,
+  .mantine-Pagination-control,
+  .mantine-SegmentedControl-label,
+  .mantine-PasswordInput-visibilityToggle {
+    min-height: 40px;
+  }
+
+  .mantine-ActionIcon-root,
+  .mantine-Pagination-control,
+  .mantine-PasswordInput-visibilityToggle {
+    min-width: 40px;
+  }
+
+  .mantine-ActionIcon-root {
+    min-height: 40px;
+  }
+}
+
+/* ---------- Login ---------- */
+.login-stage {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+.login-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.login-credits {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  left: 16px;
+  z-index: 1;
+  margin: 0;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--rd-ink-2);
+}
+
+.login-credits a {
+  color: var(--rd-primary);
+  text-decoration: underline;
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---------- Brand logo ---------- */
+
+.login-logo {
+  display: block;
+  width: 168px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 12px;
+}
+
+/* ---------- Standard shapes ---------- */
+.toolbar-card,
+.stock-summary,
+.product-card {
+  border-radius: var(--rd-radius);
+}
+
+.mantine-Tabs-list {
+  gap: 6px;
+}
+
+.mantine-Tabs-list::before {
+  display: none;
+}
+
+.mantine-Tabs-tab {
+  border-radius: 999px;
+}
+
+/* Reports: legacy rules gave these tabs square-bottom corners and a grey active state. */
+.report-tabs {
+  border-radius: var(--rd-radius);
+}
+
+.report-tabs .mantine-Tabs-list {
+  border-bottom: 0;
+}
+
+.report-tabs .mantine-Tabs-tab {
+  border-radius: 999px;
+  color: var(--rd-ink-2);
+}
+
+.report-tabs .mantine-Tabs-tab[data-active] {
+  background: var(--rd-primary);
+  color: #ffffff;
+}
+
+.tab-stack {
+  display: grid;
+  gap: 16px;
+}
+
+/* app.css forces 14px with !important on small screens; keep the same shape scale everywhere. */
+@media (max-width: 992px) {
+  .toolbar-card,
+  .report-tabs {
+    border-radius: var(--rd-radius) !important;
+  }
+}

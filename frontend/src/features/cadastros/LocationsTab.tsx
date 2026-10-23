@@ -2,6 +2,7 @@ import { Alert, Button, Group, Modal, Select, Stack, Table, TextInput } from "@m
 import { QueryState } from "../../shared/ui/QueryState";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
+import { DataTable } from "../../shared/ui/DataTable";
 import { useBranchesQuery, useCreateLocation, useDeleteLocation, useLocationsQuery, useUpdateLocation } from "../../shared/api/catalog";
 import type { Location, LocationType } from "../../shared/types/stock";
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
@@ -77,8 +78,8 @@ export function LocationsTab() {
   }
 
   return (
-    <div>
-      <Group justify="flex-end" mb="md">
+    <div className="tab-stack">
+      <Group justify="flex-end">
         <Button leftSection={<Plus size={16} />} onClick={openCreate}>
           Novo local
         </Button>
@@ -91,7 +92,7 @@ export function LocationsTab() {
         errorMessage={`Não foi possível carregar os locais.`}
         onRetry={() => void locationsQuery.refetch?.()}
       >
-        <Table striped highlightOnHover>
+        <DataTable minWidth={640}>
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Nome</Table.Th>
@@ -119,7 +120,7 @@ export function LocationsTab() {
               </Table.Tr>
             ))}
           </Table.Tbody>
-        </Table>
+        </DataTable>
       </QueryState>
 
       <Modal

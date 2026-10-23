@@ -1,28 +1,24 @@
 import { useActiveBranch } from "../branch/useActiveBranch";
-import { Button, Group, Modal, Select, Table, Text, Title } from "@mantine/core";
+import { Button, Group, Modal, Select, Table } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
+import { PageHeader } from "../../shared/ui/PageHeader";
+import { DataTable } from "../../shared/ui/DataTable";
+import { MOVE_TYPE_LABELS, MOVE_TYPE_TONES } from "../../shared/moveTypes";
 import { strings } from "../../shared/strings";
+import { StatusPill } from "../../shared/ui/StatusPill";
 import type { StockMove } from "../../shared/types/stock";
 import { useMovesQuery, type MovementsFilters } from "./api";
 import { MovementForm } from "./MovementForm";
-
-const TYPE_LABELS: Record<string, string> = {
-  RECEIPT: "Entrada",
-  ISSUE: "Saída",
-  ADJUSTMENT: "Ajuste",
-  TRANSFER_SHIP: "Transferência (envio)",
-  TRANSFER_RECEIVE: "Transferência (recebimento)",
-};
 
 const tableFeatureSet = tableFeatures({});
 const columnHelper = createColumnHelper<typeof tableFeatureSet, StockMove>();
 const columns = columnHelper.columns([
   columnHelper.accessor("occurred_at", { header: "Data", cell: (info) => new Date(info.getValue()).toLocaleString("pt-BR") }),
   columnHelper.accessor("sku_id", { header: "Variação", cell: (info) => `VAR-${String(info.getValue()).padStart(4, "0")}` }),
-  columnHelper.accessor("move_type", { header: "Tipo", cell: (info) => TYPE_LABELS[info.getValue()] ?? info.getValue() }),
+  columnHelper.accessor("move_type", { header: "Tipo", cell: (info) => <StatusPill tone={MOVE_TYPE_TONES[info.getValue()]}>{MOVE_TYPE_LABELS[info.getValue()]}</StatusPill> }),
   columnHelper.accessor("qty", { header: "Qtd" }),
   columnHelper.accessor("balance_after", { header: "Saldo após" }),
   columnHelper.accessor("reason", { header: "Motivo", cell: (info) => info.getValue() || "—" }),
@@ -41,23 +37,23 @@ export function MovementsPage() {
 
   return (
     <div className="workspace-page operation-page">
-      <Group className="page-hero page-hero-operation" justify="space-between">
-        <div>
-          <Title order={2}>{strings.nav.movements}</Title>
-          <Text c="dimmed" size="sm">
-            Entradas, saídas e ajustes de estoque
-          </Text>
-        </div>
-        <Button leftSection={<Plus size={16} />} onClick={() => setModalOpen(true)}>
+      <PageHeader
+        title={strings.nav.movements}
+        subtitle="Entradas, saídas e ajustes de estoque"
+        actions={
+          <>
+            <Button leftSection={<Plus size={16} />} onClick={() => setModalOpen(true)}>
           Nova movimentação
         </Button>
-      </Group>
+          </>
+        }
+      />
 
       <Group className="toolbar-card">
         <Select
           aria-label="Tipo de movimentação"
           placeholder="Todos os tipos"
-          data={Object.entries(TYPE_LABELS).map(([value, label]) => ({ value, label }))}
+          data={Object.entries(MOVE_TYPE_LABELS).map(([value, label]) => ({ value, label }))}
           clearable
           value={filters.type ?? null}
           onChange={(value) => setFilters((prev) => ({ ...prev, type: value ?? undefined }))}
@@ -65,8 +61,7 @@ export function MovementsPage() {
       </Group>
 
       <QueryState isLoading={isLoading || !ready} isError={isError} isEmpty={(moves ?? []).length === 0} errorMessage="Não foi possível carregar as movimentações." emptyMessage="Nenhuma movimentação encontrada." onRetry={() => void refetch()}>
-        <Table.ScrollContainer className="data-table-card" minWidth={980} scrollAreaProps={{ viewportProps: { tabIndex: 0, role: "region", "aria-label": "Tabela de dados" } }}>
-          <Table striped highlightOnHover>
+        <DataTable minWidth={980}>
             <Table.Thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <Table.Tr key={headerGroup.id}>
@@ -87,8 +82,7 @@ export function MovementsPage() {
                 </Table.Tr>
               ))}
             </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+        </DataTable>
       </QueryState>
 
       <Modal opened={modalOpen} onClose={() => setModalOpen(false)} title="Nova movimentação" size="xl">

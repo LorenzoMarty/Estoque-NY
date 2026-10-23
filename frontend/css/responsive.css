@@ -6,9 +6,6 @@
     overflow-x: clip;
   }
 
-  .app-shell,
-  .layout-main,
-  .page-content,
   .panel,
   .panel.pad,
   .table-card,
@@ -19,7 +16,6 @@
   .content-grid,
   .chart-grid,
   .chart-row,
-  .kpi-grid,
   .mini-kpi-grid,
   .reports-kpi-grid,
   .reports-overview-layout,
@@ -29,83 +25,6 @@
   .users-roles-layout,
   .audit-json-grid {
     min-width: 0;
-  }
-
-  .desktop-only {
-    display: none !important;
-  }
-
-  .mobile-only {
-    display: inline-grid !important;
-  }
-
-  .sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: min(84vw, 320px);
-    height: 100vh;
-    height: 100dvh;
-    transform: translateX(-104%);
-    z-index: 32;
-  }
-
-  .app-shell.sidebar-open .sidebar {
-    transform: translateX(0);
-  }
-
-  .app-shell.sidebar-open .mobile-overlay {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 28;
-    background: rgba(0, 0, 0, 0.5);
-  }
-
-  .app-shell.sidebar-collapsed .sidebar {
-    width: min(84vw, 320px);
-  }
-
-  .app-shell.sidebar-collapsed .brand-text,
-  .app-shell.sidebar-collapsed .nav-label,
-  .app-shell.sidebar-collapsed .nav-badge,
-  .app-shell.sidebar-collapsed .sidebar-footer {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .app-shell.sidebar-collapsed .brand {
-    justify-content: flex-start;
-    width: auto;
-  }
-
-  .app-shell.sidebar-collapsed .nav-link {
-    justify-content: flex-start;
-  }
-
-  .topbar {
-    min-height: 64px;
-    height: auto;
-    padding: 12px 14px;
-    align-items: stretch;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .topbar-left {
-    width: 100%;
-    display: grid;
-    grid-template-columns: auto auto minmax(0, 1fr);
-    align-items: center;
-    gap: 8px;
-  }
-
-  .topbar-actions {
-    width: 100%;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    gap: 8px;
   }
 
   .global-search {
@@ -118,15 +37,8 @@
     min-width: 0;
   }
 
-  .search-kbd,
-  .profile-meta,
-  .nav-badge {
+  .search-kbd {
     display: none;
-  }
-
-  .page-content {
-    padding: 18px 16px 22px;
-    gap: 12px;
   }
 
   .panel.pad,
@@ -153,7 +65,6 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .kpi-grid,
   .mini-kpi-grid,
   .reports-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -228,15 +139,6 @@
 }
 
 @media (max-width: 992px) {
-  .page-head {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .page-head > * {
-    min-width: 0;
-  }
 
   .filters-grid,
   .movements-filter-grid,
@@ -257,7 +159,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .kpi-grid,
   .mini-kpi-grid,
   .reports-kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -274,14 +175,6 @@
   .audit-json-grid,
   .drawer-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .topbar-actions {
-    justify-content: flex-start;
-  }
-
-  .sidebar {
-    width: min(88vw, 320px);
   }
 
   .table-wrap table {
@@ -342,50 +235,16 @@
     line-height: 1.5;
   }
 
-  .topbar {
-    padding: 10px 12px;
-    gap: 8px;
-  }
-
-  .topbar-left {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .topbar-brand {
-    display: none;
-  }
-
-  .topbar-actions {
-    width: 100%;
-    justify-content: space-between;
-  }
-
-  .icon-btn,
   .btn,
   .btn.sm,
-  .profile-chip,
   .field select,
   .field input,
   .field textarea {
     min-height: 44px;
   }
 
-  .icon-btn {
-    width: 44px;
-    height: 44px;
-  }
-
-  .profile-chip {
-    padding: 6px 8px;
-  }
-
   .global-search {
     min-height: 44px;
-  }
-
-  .page-content {
-    padding: 14px 12px 18px;
-    gap: 10px;
   }
 
   .panel.pad,
@@ -394,7 +253,6 @@
     padding: 12px;
   }
 
-  .kpi-grid,
   .mini-kpi-grid,
   .reports-kpi-grid,
   .quick-actions {
@@ -500,29 +358,10 @@
 }
 
 @media (max-width: 480px) {
-  .sidebar {
-    width: min(92vw, 320px);
-  }
-
-  .topbar {
-    padding: 8px 10px;
-    gap: 8px;
-  }
 
   .global-search {
     min-height: 42px;
     padding-inline: 8px;
-  }
-
-  .avatar {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    font-size: 0.72rem;
-  }
-
-  .page-head h1 {
-    font-size: clamp(1.12rem, 6.3vw, 1.32rem);
   }
 
   .section-title {

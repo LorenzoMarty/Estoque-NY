@@ -1,45 +1,33 @@
-import { Button, Kbd, Menu as MantineMenu } from "@mantine/core";
+import { Menu as MantineMenu } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { Bell, Command, LogOut, Menu, UserRound } from "lucide-react";
-import { useAuthStore } from "../../features/auth/store";
+import { Bell, LogOut, Menu, Search, UserRound } from "lucide-react";
 import { BranchSwitcher } from "../../features/branch/BranchSwitcher";
+import { useAuthStore } from "../../features/auth/store";
 import { strings } from "../../shared/strings";
-import { useUiStore } from "../../shared/ui/uiStore";
 
 interface TopbarProps {
-  onOpenCommandPalette: () => void;
+  onOpenMenu: () => void;
+  onOpenCommands: () => void;
 }
 
-export function Topbar({ onOpenCommandPalette }: TopbarProps) {
-  const setMobileSidebarOpen = useUiStore((state) => state.setMobileSidebarOpen);
+export function Topbar({ onOpenMenu, onOpenCommands }: TopbarProps) {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const name = user?.name ?? "Sem sessao";
 
   return (
-    <header className="topbar border-gradient" id="topbar">
-      <div className="topbar-left">
-        <button
-          className="icon-btn mobile-only"
-          aria-label="Abrir menu lateral"
-          onClick={() => setMobileSidebarOpen(true)}
-        >
-          <Menu size={18} />
-        </button>
-        <div className="topbar-brand mobile-only">{strings.app_name}</div>
-        <BranchSwitcher />
-      </div>
+    <header className="topbar">
+      <button className="icon-btn mobile-only" aria-label="Abrir menu lateral" onClick={onOpenMenu}>
+        <Menu size={18} />
+      </button>
+      <BranchSwitcher />
 
       <div className="topbar-actions">
-        <Button
-          className="command-chip"
-          leftSection={<Command size={15} />}
-          onClick={onOpenCommandPalette}
-          radius="md"
-          size="sm"
-          variant="light"
-        >
-          Comandos <Kbd ml={8}>Ctrl K</Kbd>
-        </Button>
+        <button className="command-chip" aria-label="Comandos" onClick={onOpenCommands}>
+          <Search size={14} aria-hidden />
+          <span>Comandos</span>
+          <kbd>Ctrl K</kbd>
+        </button>
 
         <button
           className="icon-btn"
@@ -51,18 +39,17 @@ export function Topbar({ onOpenCommandPalette }: TopbarProps) {
             })
           }
         >
-          <Bell size={18} />
-          <span className="dot" />
+          <Bell size={17} />
+          <span className="dot" aria-hidden />
         </button>
 
         <MantineMenu position="bottom-end" shadow="md" width={230}>
           <MantineMenu.Target>
-            <button className="profile-chip" aria-label="Perfil do usuario">
-              <span className="avatar">{(user?.name ?? "??").slice(0, 2).toUpperCase()}</span>
-              <span className="profile-meta">
-                <strong>{user?.name ?? "Sem sessao"}</strong>
-                <small>{user?.email ?? ""}</small>
+            <button className="profile-chip" aria-label={`Conta de ${name}`}>
+              <span className="avatar" aria-hidden>
+                {name.slice(0, 2).toUpperCase()}
               </span>
+              <span className="profile-name">{name}</span>
             </button>
           </MantineMenu.Target>
           <MantineMenu.Dropdown>
