@@ -98,7 +98,8 @@ export const theme = createTheme({
   primaryColor: "brand",
   primaryShade: 6,
   black: palette.ink,
-  fontFamily: "Inter, sans-serif",
+  fontFamily: "Sora, sans-serif",
+  fontFamilyMonospace: "IBM Plex Mono, ui-monospace, monospace",
   radius: {
     sm: "10px",
     md: "14px",
@@ -109,7 +110,7 @@ export const theme = createTheme({
     zinc,
     brand,
   },
-  headings: { fontWeight: "700" },
+  headings: { fontWeight: "700", fontFamily: "Sora, sans-serif" },
   shadows: {
     xs: "0 1px 2px rgba(15, 31, 54, 0.05)",
     sm: "0 1px 3px rgba(15, 31, 54, 0.06), 0 4px 12px rgba(15, 31, 54, 0.04)",

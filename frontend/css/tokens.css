@@ -1,0 +1,106 @@
+/* Design tokens (design "1a"). Single :root: the --c-* set below is used by shell.css and dashboard.css.
+   The legacy block flattens what used to be four stacked :root layers in app.css, keeping only variables that
+   are still referenced; --zinc-N and --orange-N follow the brand palette from app/theme.ts (--rd-*, cssVariablesResolver). */
+:root {
+  /* Surfaces */
+  --c-shell: #e9eef5;
+  --c-panel: #f6f8fb;
+  --c-surface: #ffffff;
+  --c-hover: #dfe6f0;
+  --c-hover-row: #f5f8ff;
+
+  /* Text */
+  --c-ink-strong: #0b1728;
+  --c-ink: #1f2f46;
+  --c-ink-soft: #53647a;
+  --c-ink-label: #56677f; /* design uses #7a8aa0 (3.4:1); darkened to reach 4.5:1 */
+  --c-icon: #7a8aa0;
+  --c-ink-nav: #334155;
+
+  /* Lines */
+  --c-line: #dbe3ee;
+  --c-line-2: #e6ecf3;
+  --c-line-3: #eef2f7;
+  --c-line-control: #cfd8e6;
+  --c-line-panel: #d8e0eb;
+
+  /* Brand and semantic */
+  --c-primary: #1d4ed8;
+  --c-primary-strong: #123c91;
+  --c-avatar: #0f274a;
+  --c-pos: #047857;
+  --c-pos-bg: #e7f6ef;
+  --c-neg: #b91c1c;
+  --c-neg-bg: #fdecec;
+  --c-warn: #b45309;
+  --c-warn-bg: #fdf3e3;
+  --c-logi: #6d28d9;
+  --c-logi-line: #7c3aed;
+  --c-logi-bg: #f1ebfd;
+  --c-neutral: #53647a;
+  --c-neutral-bg: #eef2f7;
+  --c-segment-bg: #e4eaf2;
+
+  /* Radii and shadows */
+  --r-control: 7px;
+  --r-card: 10px;
+  --r-panel: 14px;
+  --sh-panel: 0 1px 2px rgba(15, 31, 54, 0.05), 0 12px 32px rgba(15, 31, 54, 0.08);
+  --sh-active: 0 1px 2px rgba(15, 31, 54, 0.08);
+
+  /* Fonts */
+  --font-ui: "Sora", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Legacy variables (still referenced by app.css / responsive.css / redesign.css) */
+  --zinc-950: var(--rd-page);
+  --zinc-900: var(--rd-surface);
+  --zinc-850: var(--rd-surface-alt);
+  --zinc-800: var(--rd-tint);
+  --zinc-700: var(--rd-line);
+  --zinc-500: var(--rd-muted);
+  --zinc-400: var(--rd-ink-2);
+  --zinc-300: #2d3e59;
+  --zinc-200: #1f314b;
+  --zinc-100: var(--rd-ink);
+  --orange-700: var(--rd-primary-hover);
+  --orange-600: var(--rd-primary);
+  --orange-500: var(--rd-primary);
+  --orange-400: #60a5fa;
+  --orange-200: var(--rd-tint-strong);
+  --emerald-400: #34d399;
+  --red-400: #f87171;
+  --text-strong: var(--c-ink-strong);
+  --text-body: var(--c-ink);
+  --text-muted: var(--c-ink-soft);
+  --line-soft: var(--c-line-control);
+  --line-strong: #aebdd0;
+  --surface-page: #eef2f7;
+  --surface-shell: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #e8eef6;
+  --surface-control: var(--c-panel);
+  --accent-main: var(--c-primary);
+  --accent-strong: var(--c-primary-strong);
+  --success-main: var(--c-pos);
+  --warning-main: var(--c-warn);
+  --danger-main: var(--c-neg);
+  --shadow-soft: 0 10px 24px rgba(29, 78, 216, 0.12);
+  --shadow-card: 0 16px 40px rgba(15, 31, 54, 0.07);
+  --shadow-hover: 0 18px 34px rgba(37, 99, 235, 0.12);
+  --shadow-shell: 0 18px 44px rgba(15, 31, 54, 0.08);
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 16px;
+  --rd-radius: 16px;
+  --rd-radius-sm: 12px;
+  --transition-fast: 0.2s ease;
+  --transition-mid: 0.35s ease;
+}
+
+/* Mantine's default dimmed grey is ~3:1 on the page background; use the ink-2 shade (>=4.5:1). */
+:root[data-mantine-color-scheme="light"] {
+  --mantine-color-dimmed: var(--rd-ink-2);
+  /* Default placeholder grey measured 1.95:1 on white. */
+  --mantine-color-placeholder: var(--rd-muted);
+}
