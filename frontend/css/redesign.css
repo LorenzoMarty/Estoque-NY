@@ -86,6 +86,13 @@ body {
   color: var(--rd-ink-2);
 }
 
+/* `.page-content > *` forces width:100% on the visually hidden h1; it is absolutely positioned, so it widened the page. */
+.page-content > .mantine-VisuallyHidden-root {
+  width: 1px;
+  max-width: 1px;
+  margin: -1px;
+}
+
 /* ---------- Page header ---------- */
 .page-header {
   display: flex;
@@ -506,6 +513,28 @@ body {
 
   .category-legend {
     width: 100%;
+  }
+}
+
+/* Touch widths: Mantine's default sm controls are 30-36px; keep tap targets >= 40px. */
+@media (max-width: 768px) {
+  .mantine-Button-root,
+  .mantine-Input-input,
+  .mantine-Tabs-tab,
+  .mantine-Pagination-control,
+  .mantine-SegmentedControl-label,
+  .mantine-PasswordInput-visibilityToggle {
+    min-height: 40px;
+  }
+
+  .mantine-ActionIcon-root,
+  .mantine-Pagination-control,
+  .mantine-PasswordInput-visibilityToggle {
+    min-width: 40px;
+  }
+
+  .mantine-ActionIcon-root {
+    min-height: 40px;
   }
 }
 
