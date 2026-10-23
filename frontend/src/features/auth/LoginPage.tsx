@@ -80,6 +80,25 @@ export function LoginPage() {
           </Button>
         </form>
       </article>
+      <p className="login-credits">
+        Silhueta do skyline: &ldquo;NYC Skyline Silhouette&rdquo;, de Diego Torres Silvestre, sob licen&ccedil;a{" "}
+        <a href="https://creativecommons.org/licenses/by/2.0/" rel="noreferrer" target="_blank">
+          CC BY 2.0
+        </a>{" "}
+        (
+        <a
+          href="https://commons.wikimedia.org/wiki/File:NYC_Skyline_Silhouette.png"
+          rel="noreferrer"
+          target="_blank"
+        >
+          Wikimedia Commons
+        </a>
+        ). Est&aacute;tua da Liberdade: Bea.miau,{" "}
+        <a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="noreferrer" target="_blank">
+          CC0
+        </a>
+        .
+      </p>
     </main>
   );
 }
