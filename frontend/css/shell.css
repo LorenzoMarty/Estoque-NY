@@ -141,7 +141,7 @@
   outline-offset: 2px;
 }
 
-/* Decorative NY footer: both layers use the image as a CSS mask over a flat color. */
+/* Decorative NY footer: the statue + skyline silhouette (one SVG) is a CSS mask over a flat color. */
 .ny-footer {
   position: absolute;
   inset: auto 0 0;
@@ -150,27 +150,14 @@
   pointer-events: none;
 }
 
-.ny-liberty {
-  position: absolute;
-  /* ~50% of the original 118x203. Measured on skyline.png: under x=140..200 the roofline peaks 34.6px above the layer bottom, so the base rests at 35px. */
-  bottom: 35px;
-  left: 140px;
-  width: 60px;
-  height: 103px;
-  background: var(--c-primary);
-  opacity: 0.14;
-  -webkit-mask: url("/assets/liberty.svg") center bottom / contain no-repeat;
-  mask: url("/assets/liberty.svg") center bottom / contain no-repeat;
-}
-
 .ny-skyline {
   position: absolute;
   inset: auto 0 0;
-  height: 101px;
+  aspect-ratio: 933 / 677;
   background: linear-gradient(180deg, #3b6fe0, #1d4ed8);
   opacity: 0.2;
-  -webkit-mask: url("/assets/skyline.png") center bottom / 100% 100% no-repeat;
-  mask: url("/assets/skyline.png") center bottom / 100% 100% no-repeat;
+  -webkit-mask: url("/assets/silhueta-ny.svg") left bottom / 100% 100% no-repeat;
+  mask: url("/assets/silhueta-ny.svg") left bottom / 100% 100% no-repeat;
 }
 
 /* Collapsed (desktop only): icon rail. */

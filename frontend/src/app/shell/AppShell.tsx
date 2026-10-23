@@ -43,7 +43,6 @@ export function AppShell() {
         <Sidebar />
 
         <div className="ny-footer" aria-hidden="true">
-          <div className="ny-liberty" />
           <div className="ny-skyline" />
         </div>
       </aside>
