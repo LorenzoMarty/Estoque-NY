@@ -1,41 +1,43 @@
 import { BarChart, DonutChart } from "@mantine/charts";
-import { Card, Group, Pagination, Select, Table, Tabs, Text, Title } from "@mantine/core";
+import { Card, Pagination, SegmentedControl, Table, Tabs, Text, Title } from "@mantine/core";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import {
-  AlertTriangle,
-  ArrowLeftRight,
-  Boxes,
-  ClipboardCheck,
-  Layers,
-  PackageX,
-  type LucideIcon,
-} from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router";
 import AnimatedRow from "../../shared/reactbits/AnimatedRow";
 import { palette } from "../../app/theme";
 import { useActiveBranch } from "../branch/useActiveBranch";
-import { MOVE_TYPE_LABELS, MOVE_TYPE_TONES, moveInGroup, type MoveGroup } from "../../shared/moveTypes";
+import { moveInGroup, type MoveGroup } from "../../shared/moveTypes";
 import { strings } from "../../shared/strings";
 import type { MoveType } from "../../shared/types/stock";
 import { DataTable } from "../../shared/ui/DataTable";
 import { QueryState } from "../../shared/ui/QueryState";
-import { KpiCard } from "../../shared/ui/KpiCard";
-import { PageHeader } from "../../shared/ui/PageHeader";
-import { StatusPill } from "../../shared/ui/StatusPill";
 import { useDashboardQuery } from "./api";
+import { KpiStrip } from "./KpiStrip";
 import { flowByBucket, stockByCategory } from "./charts";
-import { computeDashboardKpis, resolvePeriodRange, type DashboardFilters, type Kpi } from "./kpis";
-
-const KPI_META: Record<Kpi["key"], { label: string; icon: LucideIcon }> = {
-  stock_total: { label: "Saldo total", icon: Boxes },
-  active_variations: { label: "Variações ativas", icon: Layers },
-  stockout: { label: "Rupturas", icon: PackageX },
-  low_stock: { label: "Estoque baixo", icon: AlertTriangle },
-  pending_transfers: { label: "Transferências pendentes", icon: ArrowLeftRight },
-  open_counts: { label: "Contagens abertas", icon: ClipboardCheck },
-};
+import { computeDashboardKpis, resolvePeriodRange, type DashboardFilters } from "./kpis";
 
 const PAGE_SIZE = 8;
+const PERIOD_OPTIONS = [
+  { value: "7", label: "7 dias" },
+  { value: "30", label: "30 dias" },
+  { value: "90", label: "90 dias" },
+];
+
+type ChipTone = "pos" | "neg" | "warn" | "logi" | "neutral";
+
+const MOVE_CHIPS: Record<MoveType, { label: string; tone: ChipTone }> = {
+  RECEIPT: { label: "Entrada", tone: "pos" },
+  ISSUE: { label: "Saída", tone: "neg" },
+  ADJUSTMENT: { label: "Ajuste", tone: "warn" },
+  TRANSFER_SHIP: { label: "Envio de transferência", tone: "logi" },
+  TRANSFER_RECEIVE: { label: "Recebimento de transf.", tone: "logi" },
+};
+
+function formatSignedQty(qty: number): string {
+  const sign = qty > 0 ? "+" : qty < 0 ? "−" : "";
+  return `${sign}${Math.abs(qty).toLocaleString("pt-BR")}`;
+}
+
 const PAGINATION_LABELS = { first: "Primeira página", previous: "Página anterior", next: "Próxima página", last: "Última página" } as const;
 
 interface MoveRow {
@@ -53,27 +55,54 @@ const columnHelper = createColumnHelper<typeof tableFeatureSet, MoveRow>();
 const moveColumns = columnHelper.columns([
   columnHelper.accessor("occurred_at", {
     header: "Data",
-    cell: (info) => new Date(info.getValue()).toLocaleString("pt-BR"),
+    cell: (info) => {
+      const date = new Date(info.getValue());
+      return (
+        <span className="cell-date">
+          <span>{date.toLocaleDateString("pt-BR")}</span>
+          <span className="mono cell-time">{date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+        </span>
+      );
+    },
   }),
   columnHelper.accessor("sku_id", {
     header: "Variação",
-    cell: (info) => `VAR-${String(info.getValue()).padStart(4, "0")}`,
+    cell: (info) => <span className="mono">{`VAR-${String(info.getValue()).padStart(4, "0")}`}</span>,
   }),
   columnHelper.accessor("move_type", {
     header: "Tipo",
+    cell: (info) => {
+      const chip = MOVE_CHIPS[info.getValue()] ?? { label: String(info.getValue()), tone: "neutral" as const };
+      return (
+        <span className="chip" data-tone={chip.tone}>
+          {chip.label}
+        </span>
+      );
+    },
+  }),
+  columnHelper.accessor("qty", {
+    header: "Qtd",
     cell: (info) => (
-      <StatusPill tone={MOVE_TYPE_TONES[info.getValue()]}>{MOVE_TYPE_LABELS[info.getValue()]}</StatusPill>
+      <span className="mono cell-qty" data-sign={Math.sign(info.getValue())}>
+        {formatSignedQty(info.getValue())}
+      </span>
     ),
   }),
-  columnHelper.accessor("qty", { header: "Qtd" }),
-  columnHelper.accessor("balance_after", { header: "Saldo após" }),
-  columnHelper.accessor("reference_id", { header: "Referência", cell: (info) => info.getValue() || "—" }),
+  columnHelper.accessor("balance_after", {
+    header: "Saldo após",
+    cell: (info) => <span className="mono">{info.getValue().toLocaleString("pt-BR")}</span>,
+  }),
+  columnHelper.accessor("reference_id", {
+    header: "Referência",
+    cell: (info) => <span className="mono cell-ref">{info.getValue() || "—"}</span>,
+  }),
 ]);
+const NUMERIC_COLUMNS = new Set(["qty", "balance_after"]);
 const EMPTY_MOVE_ROWS: MoveRow[] = [];
 
 export function DashboardPage() {
-  const { data, isLoading, isError, refetch } = useDashboardQuery();
-  const { active } = useActiveBranch();
+  const { data, isLoading, isError, refetch, dataUpdatedAt } = useDashboardQuery();
+  const { active, branches } = useActiveBranch();
   const [period, setPeriod] = useState<DashboardFilters["period"]>("30");
   const filters = useMemo<DashboardFilters>(
     () => ({ branchId: active === null || active === "all" ? "all" : String(active), period }),
@@ -121,41 +150,116 @@ export function DashboardPage() {
     );
   }
 
+  const branchName =
+    active === null || active === "all" ? "Todas as filiais" : (branches.find((branch) => branch.id === active)?.name ?? "Filial ativa");
+  const updatedAt = new Date(dataUpdatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  const rangeStart = pagedRows.length ? (page - 1) * PAGE_SIZE + 1 : 0;
+  const rangeEnd = pagedRows.length ? rangeStart + pagedRows.length - 1 : 0;
   const categoryTotal = categorySlices.reduce((sum, slice) => sum + slice.value, 0);
   const hasFlow = flow.some((point) => point.entradas > 0 || point.saidas > 0);
 
   return (
     <div className="workspace-page dashboard-page">
-      <PageHeader
-        title={strings.nav.dashboard}
-        subtitle="Visão geral do estoque"
-        actions={
-          <>
-            <Select
-              aria-label="Período"
-              data={[
-                { value: "7", label: "Últimos 7 dias" },
-                { value: "30", label: "Últimos 30 dias" },
-                { value: "90", label: "Últimos 90 dias" },
-              ]}
-              value={filters.period}
-              onChange={(value) => setPeriod((value as DashboardFilters["period"]) ?? "30")}
-            />
-          </>
-        }
-      />
+      <header className="dash-header">
+        <div className="dash-header-text">
+          <span className="dash-eyebrow">Operação · {branchName}</span>
+          <Title order={2} className="dash-title">
+            {strings.nav.dashboard}
+          </Title>
+          <p className="dash-subtitle">
+            Atualizado hoje às {updatedAt} · comparado aos {filters.period} dias anteriores
+          </p>
+        </div>
+        <SegmentedControl
+          aria-label="Período"
+          className="period-control"
+          data={PERIOD_OPTIONS}
+          value={filters.period}
+          onChange={(value) => setPeriod(value as DashboardFilters["period"])}
+        />
+      </header>
 
-      <section className="kpi-tile-grid" aria-label="Indicadores">
-        {kpis.map((kpi) => (
-          <KpiCard
-            key={kpi.key}
-            label={KPI_META[kpi.key].label}
-            icon={KPI_META[kpi.key].icon}
-            value={kpi.value}
-            trend={kpi.trend}
-          />
-        ))}
-      </section>
+      <KpiStrip kpis={kpis} />
+
+      <Card className="dash-card" padding={0}>
+        <div className="dash-card-head">
+          <Title order={3} className="dash-card-title">
+            Movimentações recentes
+          </Title>
+          <Tabs
+            value={group}
+            onChange={(value) => {
+              setGroup((value as MoveGroup) ?? "all");
+              setPage(1);
+            }}
+            variant="pills"
+            className="dash-group-tabs"
+          >
+            <Tabs.List>
+              <Tabs.Tab value="all">Todas</Tabs.Tab>
+              <Tabs.Tab value="in">Entradas</Tabs.Tab>
+              <Tabs.Tab value="out">Saídas</Tabs.Tab>
+              <Tabs.Tab value="transfer">Transferências</Tabs.Tab>
+            </Tabs.List>
+          </Tabs>
+          <Link className="dash-link" to="/movimentacoes">
+            Ver todas as movimentações →
+          </Link>
+        </div>
+        <DataTable bare tableClassName="dash-table" minWidth={760} label="Movimentações recentes">
+          <Table.Thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <Table.Tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <Table.Th key={header.id} className={NUMERIC_COLUMNS.has(header.column.id) ? "num" : undefined}>
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                  </Table.Th>
+                ))}
+              </Table.Tr>
+            ))}
+          </Table.Thead>
+          <Table.Tbody>
+            {table.getRowModel().rows.map((row, index) => (
+              <AnimatedRow
+                key={row.id}
+                index={index}
+                animate={!rowsEntered}
+                onEntered={index === lastAnimatedIndex ? () => setRowsEntered(true) : undefined}
+              >
+                {row.getAllCells().map((cell) => (
+                  <Table.Td key={cell.id} className={NUMERIC_COLUMNS.has(cell.column.id) ? "num" : undefined}>
+                    <table.FlexRender cell={cell} />
+                  </Table.Td>
+                ))}
+              </AnimatedRow>
+            ))}
+            {pagedRows.length === 0 && (
+              <Table.Tr>
+                <Table.Td colSpan={moveColumns.length}>
+                  <Text c="dimmed" ta="center" py="md">
+                    Nenhuma movimentação no período selecionado.
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            )}
+          </Table.Tbody>
+        </DataTable>
+        <div className="dash-card-foot">
+          <span className="dash-range">
+            Mostrando {rangeStart}–{rangeEnd} de {moveRows.length.toLocaleString("pt-BR")}
+          </span>
+          <nav aria-label="Paginação das movimentações">
+            <Pagination
+              total={totalPages}
+              value={page}
+              onChange={setPage}
+              size="sm"
+              className="dash-pagination"
+              getControlProps={(control) => ({ "aria-label": PAGINATION_LABELS[control] })}
+            />
+          </nav>
+        </div>
+      </Card>
 
       <div className="dashboard-charts">
         <Card padding="lg">
@@ -217,72 +321,6 @@ export function DashboardPage() {
           )}
         </Card>
       </div>
-
-      <Card padding="lg">
-        <Group justify="space-between" mb="sm">
-          <Title order={3}>Movimentações recentes</Title>
-          <Tabs
-            value={group}
-            onChange={(value) => {
-              setGroup((value as MoveGroup) ?? "all");
-              setPage(1);
-            }}
-            variant="pills"
-          >
-            <Tabs.List>
-              <Tabs.Tab value="all">Todas</Tabs.Tab>
-              <Tabs.Tab value="in">Entradas</Tabs.Tab>
-              <Tabs.Tab value="out">Saídas</Tabs.Tab>
-              <Tabs.Tab value="transfer">Transferências</Tabs.Tab>
-            </Tabs.List>
-          </Tabs>
-        </Group>
-        <DataTable minWidth={760} label="Movimentações recentes">
-          <Table.Thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <Table.Tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <Table.Th key={header.id}>{header.isPlaceholder ? null : <table.FlexRender header={header} />}</Table.Th>
-                ))}
-              </Table.Tr>
-            ))}
-          </Table.Thead>
-          <Table.Tbody>
-            {table.getRowModel().rows.map((row, index) => (
-              <AnimatedRow
-                key={row.id}
-                index={index}
-                animate={!rowsEntered}
-                onEntered={index === lastAnimatedIndex ? () => setRowsEntered(true) : undefined}
-              >
-                {row.getAllCells().map((cell) => (
-                  <Table.Td key={cell.id}>
-                    <table.FlexRender cell={cell} />
-                  </Table.Td>
-                ))}
-              </AnimatedRow>
-            ))}
-            {pagedRows.length === 0 && (
-              <Table.Tr>
-                <Table.Td colSpan={moveColumns.length}>
-                  <Text c="dimmed" ta="center" py="md">
-                    Nenhuma movimentação no período selecionado.
-                  </Text>
-                </Table.Td>
-              </Table.Tr>
-            )}
-          </Table.Tbody>
-        </DataTable>
-        <Group justify="flex-end" mt="sm">
-          <Pagination
-            total={totalPages}
-            value={page}
-            onChange={setPage}
-            size="sm"
-            getControlProps={(control) => ({ "aria-label": PAGINATION_LABELS[control] })}
-          />
-        </Group>
-      </Card>
     </div>
   );
 }

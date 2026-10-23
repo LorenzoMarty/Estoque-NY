@@ -1,0 +1,455 @@
+/* Visao geral (design "1a"): page header, single KPI strip with sparklines, recent-movements card, charts. */
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ---------- Page header ---------- */
+.dash-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  min-width: 0;
+}
+
+.dash-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dash-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-primary);
+}
+
+.dash-header .dash-title {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--c-ink-strong);
+}
+
+.dash-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: var(--c-ink-soft);
+}
+
+.period-control {
+  padding: 3px;
+  background: var(--c-segment-bg);
+  border-radius: 8px;
+}
+
+.period-control .mantine-SegmentedControl-indicator {
+  background: var(--c-surface);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(15, 31, 54, 0.12);
+}
+
+.period-control .mantine-SegmentedControl-label {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-ink-soft);
+}
+
+.period-control .mantine-SegmentedControl-label[data-active] {
+  color: var(--c-ink-strong);
+}
+
+.period-control:has(:focus-visible) {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+/* ---------- KPI strip ---------- */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  min-width: 0;
+  overflow: hidden;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-card);
+}
+
+/* Cell dividers: each cell draws its left/top edge; the strip's overflow hides the outer ones. */
+.kpi-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 20px 22px;
+  box-shadow:
+    -1px 0 0 var(--c-line-2),
+    0 -1px 0 var(--c-line-2);
+}
+
+.kpi-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--c-ink-soft);
+}
+
+/* Two-line labels ("Transferências pendentes") must not push the value out of line with the other cells. */
+@media (min-width: 769px) {
+  .kpi-label {
+    min-height: 2.6em;
+  }
+}
+
+.kpi-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 0.4em;
+  border-radius: 2px;
+}
+
+.kpi-value {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-ink-strong);
+}
+
+.kpi-spark {
+  display: block;
+  width: 100%;
+  height: 36px;
+}
+
+.kpi-trend {
+  margin-top: auto;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.kpi-trend[data-tone="good"] {
+  color: var(--c-pos);
+}
+
+.kpi-trend[data-tone="critical"] {
+  color: var(--c-neg);
+}
+
+.kpi-trend[data-tone="neutral"] {
+  color: var(--c-neutral);
+}
+
+@media (max-width: 1200px) {
+  .kpi-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kpi-cell {
+    padding: 16px 16px;
+  }
+
+  .kpi-value {
+    font-size: 26px;
+  }
+}
+
+/* ---------- Recent movements card ---------- */
+.dash-card {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-card);
+  box-shadow: none;
+}
+
+.dash-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+  padding: 18px 22px;
+}
+
+.dash-card-title {
+  margin: 0 auto 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--c-ink-strong);
+}
+
+.dash-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-primary);
+}
+
+.dash-link:hover {
+  text-decoration: underline;
+}
+
+.dash-link:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+.dash-group-tabs .mantine-Tabs-tab {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dash-table {
+  --table-highlight-on-hover-color: var(--c-hover-row);
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dash-table thead th {
+  height: 38px;
+  padding: 0 12px;
+  background: var(--c-panel);
+  border-top: 1px solid var(--c-line-2);
+  border-bottom: 1px solid var(--c-line-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-ink-soft);
+  white-space: nowrap;
+}
+
+.dash-table tbody td {
+  height: 52px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--c-line-3);
+  font-size: 14px;
+  color: var(--c-ink-strong);
+}
+
+.dash-table th:first-child,
+.dash-table td:first-child {
+  padding-left: 22px;
+}
+
+.dash-table th:last-child,
+.dash-table td:last-child {
+  padding-right: 22px;
+}
+
+.dash-table th.num,
+.dash-table td.num {
+  text-align: right;
+}
+
+.cell-date {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cell-time {
+  font-size: 12px;
+  color: var(--c-ink-label);
+}
+
+.dash-table td .mono {
+  font-size: 13px;
+}
+
+.cell-qty {
+  font-weight: 500;
+}
+
+.cell-qty[data-sign="1"] {
+  color: var(--c-pos);
+}
+
+.cell-qty[data-sign="-1"] {
+  color: var(--c-neg);
+}
+
+.cell-ref {
+  color: var(--c-ink-soft);
+}
+
+.chip {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chip[data-tone="pos"] {
+  background: var(--c-pos-bg);
+  color: var(--c-pos);
+}
+
+.chip[data-tone="neg"] {
+  background: var(--c-neg-bg);
+  color: var(--c-neg);
+}
+
+.chip[data-tone="warn"] {
+  background: var(--c-warn-bg);
+  color: var(--c-warn);
+}
+
+.chip[data-tone="logi"] {
+  background: var(--c-logi-bg);
+  color: var(--c-logi);
+}
+
+.chip[data-tone="neutral"] {
+  background: var(--c-neutral-bg);
+  color: var(--c-neutral);
+}
+
+.dash-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  padding: 14px 22px;
+}
+
+.dash-range {
+  font-size: 13px;
+  color: var(--c-ink-soft);
+}
+
+.dash-pagination {
+  --pagination-control-size: 30px;
+  --pagination-control-radius: 6px;
+}
+
+.dash-pagination .mantine-Pagination-control {
+  border-color: var(--c-line-control);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--c-ink-strong);
+}
+
+.dash-pagination .mantine-Pagination-control[data-active] {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #ffffff;
+}
+
+.dash-pagination .mantine-Pagination-control:focus-visible {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 2px;
+}
+
+/* ---------- Charts ---------- */
+.dashboard-charts {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  min-width: 0;
+}
+
+.category-donut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 18px 24px;
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.category-legend {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  min-width: 180px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.category-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--rd-ink-2);
+}
+
+.category-legend .legend-name {
+  flex: 1;
+}
+
+.category-legend strong {
+  color: var(--rd-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .dash-header {
+    align-items: stretch;
+  }
+
+  .dash-header .dash-title {
+    font-size: 28px;
+  }
+
+  .period-control {
+    width: 100%;
+  }
+
+  .category-donut {
+    align-items: stretch;
+  }
+
+  .category-legend {
+    width: 100%;
+  }
+}
+
+/* Touch widths: keep 40px tap targets on the period control and the card link. */
+@media (max-width: 768px) {
+  .dash-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
+  .period-control .mantine-SegmentedControl-label {
+    min-height: 40px;
+  }
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { InventoryCount, StockBalance, Transfer } from "../../shared/types/stock";
-import { computeDashboardKpis, computeTrend, filterByBranch, resolvePeriodRange } from "./kpis";
+import type { InventoryCount, StockBalance, StockMove, Transfer } from "../../shared/types/stock";
+import { computeDashboardKpis, computeTrend, filterByBranch, resolvePeriodRange, trendArrow } from "./kpis";
 
 const NOW = new Date("2026-09-13T12:00:00.000Z");
 
@@ -173,3 +173,75 @@ function emptyCount(): InventoryCount {
     lines: [],
   };
 }
+
+describe("trendArrow", () => {
+  it("follows the direction for KPIs where higher is better", () => {
+    expect(trendArrow("stock_total", "up")).toBe("↑");
+    expect(trendArrow("active_variations", "down")).toBe("↓");
+  });
+
+  it("flips the direction back for lower-is-better KPIs (up = fewer = value went down)", () => {
+    expect(trendArrow("stockout", "up")).toBe("↓");
+    expect(trendArrow("open_counts", "down")).toBe("↑");
+  });
+
+  it("is a flat arrow for flat trends", () => {
+    expect(trendArrow("low_stock", "flat")).toBe("→");
+  });
+});
+
+describe("computeDashboardKpis series", () => {
+  const day = (n: number) => `2026-09-${String(n).padStart(2, "0")}T10:00:00.000Z`;
+  function move(overrides: Partial<StockMove>): StockMove {
+    return {
+      id: 1, branch_id: 1, sku_id: 1, location_id: null, transfer_id: null, inventory_count_id: null, created_by: null,
+      move_type: "RECEIPT", qty: 1, occurred_at: day(13), created_at: day(13), reason: null, reference_id: null, balance_after: 0,
+      ...overrides,
+    };
+  }
+  const base = { balances: [balance({ on_hand: 100 })], transfers: [] as Transfer[], counts: [] as InventoryCount[], itemsById: new Map() };
+  const get = (moves: StockMove[], key: string, period: "7" | "30" = "7", extra: Partial<typeof base> = {}) =>
+    computeDashboardKpis({ ...base, ...extra, moves }, { branchId: "all", period }, NOW).find((k) => k.key === key)!;
+
+  it("has one point per day of the period on every KPI", () => {
+    for (const period of ["7", "30"] as const) {
+      const kpis = computeDashboardKpis({ ...base, moves: [] }, { branchId: "all", period }, NOW);
+      for (const kpi of kpis) expect(kpi.series).toHaveLength(Number(period));
+    }
+  });
+
+  it("rebuilds the daily balance backwards from today's stock", () => {
+    // 7 days: 09-07 .. 09-13. +20 on 09-12, -5 on 09-13, balance today = 100.
+    const series = get([move({ qty: 20, occurred_at: day(12) }), move({ id: 2, qty: -5, occurred_at: day(13) })], "stock_total").series;
+    expect(series).toEqual([85, 85, 85, 85, 85, 105, 100]);
+  });
+
+  it("counts distinct SKUs moved per day for active_variations", () => {
+    const series = get(
+      [move({ sku_id: 1, occurred_at: day(13) }), move({ id: 2, sku_id: 1, occurred_at: day(13) }), move({ id: 3, sku_id: 2, occurred_at: day(13) })],
+      "active_variations"
+    ).series;
+    expect(series[6]).toBe(2);
+    expect(series.slice(0, 6).every((n) => n === 0)).toBe(true);
+  });
+
+  it("approximates stockout and low_stock by daily ISSUE/TRANSFER_SHIP moves", () => {
+    const moves = [
+      move({ move_type: "ISSUE", occurred_at: day(12) }),
+      move({ id: 2, move_type: "TRANSFER_SHIP", occurred_at: day(12) }),
+      move({ id: 3, move_type: "RECEIPT", occurred_at: day(12) }),
+    ];
+    expect(get(moves, "stockout").series[5]).toBe(2);
+    expect(get(moves, "low_stock").series).toEqual(get(moves, "stockout").series);
+  });
+
+  it("counts transfers and inventory counts created per day", () => {
+    const transfers: Transfer[] = [
+      { ...emptyTransfer(), id: 1, created_at: day(11) },
+      { ...emptyTransfer(), id: 2, created_at: day(11) },
+    ];
+    const counts: InventoryCount[] = [{ ...emptyCount(), id: 1, started_at: day(13) }];
+    expect(get([], "pending_transfers", "7", { transfers }).series[4]).toBe(2);
+    expect(get([], "open_counts", "7", { counts }).series[6]).toBe(1);
+  });
+});

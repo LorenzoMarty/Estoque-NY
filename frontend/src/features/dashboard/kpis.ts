@@ -26,10 +26,24 @@ export interface Trend {
   value: number;
 }
 
+export type KpiKey = "stock_total" | "active_variations" | "stockout" | "low_stock" | "pending_transfers" | "open_counts";
+
 export interface Kpi {
-  key: "stock_total" | "active_variations" | "stockout" | "low_stock" | "pending_transfers" | "open_counts";
+  key: KpiKey;
   value: number;
   trend: Trend;
+  /** One point per day of the selected period, oldest first (feeds the sparkline). */
+  series: number[];
+}
+
+/** KPIs where a lower value is better: computeTrend flips their sign, so `direction` means better/worse, not up/down. */
+const LOWER_IS_BETTER: ReadonlySet<KpiKey> = new Set(["stockout", "low_stock", "pending_transfers", "open_counts"]);
+
+/** Arrow for the real change of the value: for "lower is better" KPIs the trend direction is inverted back. */
+export function trendArrow(key: KpiKey, direction: Trend["direction"]): "↑" | "↓" | "→" {
+  if (direction === "flat") return "→";
+  const valueWentUp = LOWER_IS_BETTER.has(key) ? direction === "down" : direction === "up";
+  return valueWentUp ? "↑" : "↓";
 }
 
 function utcDayStart(date: Date): Date {
@@ -74,6 +88,21 @@ export function computeTrend(current: number, previous: number, invert = false):
   if (invert) raw *= -1;
   const direction = raw > 1 ? "up" : raw < -1 ? "down" : "flat";
   return { direction, value: Math.abs(raw) };
+}
+
+/** Index of the UTC day of `date` within [from, from + days), or -1 when outside. */
+function dayIndex(date: Date, from: Date, days: number): number {
+  const index = Math.floor((utcDayStart(date).getTime() - from.getTime()) / 86_400_000);
+  return index >= 0 && index < days ? index : -1;
+}
+
+function dailySeries<T>(rows: T[], dateOf: (row: T) => string, from: Date, days: number, count: (bucket: T[]) => number): number[] {
+  const buckets: T[][] = Array.from({ length: days }, () => []);
+  for (const row of rows) {
+    const index = dayIndex(new Date(dateOf(row)), from, days);
+    if (index >= 0) buckets[index].push(row);
+  }
+  return buckets.map(count);
 }
 
 export function computeDashboardKpis(data: DashboardData, filters: DashboardFilters, now: Date = new Date()): Kpi[] {
@@ -151,12 +180,52 @@ export function computeDashboardKpis(data: DashboardData, filters: DashboardFilt
   }).length;
   const openCountPreviousEstimate = Math.max(0, openCounts + (previousOpenCountCreated - currentOpenCountCreated));
 
+  // Sparkline series, one point per day of the period (oldest first).
+  const { from } = periodRange;
+  // periodDays above rounds up (31 for a 30-day period); the series needs exactly one point per calendar day.
+  const seriesDays = Math.floor((periodRange.to.getTime() - from.getTime()) / 86_400_000) + 1;
+  const flowPerDay = dailySeries(movesInPeriod, (move) => move.occurred_at, from, seriesDays, (bucket) =>
+    bucket.reduce((acc, move) => acc + Number(move.qty || 0), 0)
+  );
+  // Closing balance per day: today's balance minus the net flow of every later day. ponytail: assumes no moves after the period end.
+  const stockSeries = new Array<number>(seriesDays);
+  let running = totalStock;
+  for (let i = seriesDays - 1; i >= 0; i--) {
+    stockSeries[i] = running;
+    running -= flowPerDay[i];
+  }
+  const variationsSeries = dailySeries(movesInPeriod, (move) => move.occurred_at, from, seriesDays, (bucket) =>
+    new Set(bucket.map((move) => move.sku_id)).size
+  );
+  // No per-SKU balance history: approximate stockout/low stock pressure by the daily issue/ship moves.
+  const pressureSeries = dailySeries(
+    movesInPeriod.filter((move) => ["ISSUE", "TRANSFER_SHIP"].includes(move.move_type)),
+    (move) => move.occurred_at,
+    from,
+    seriesDays,
+    (bucket) => bucket.length
+  );
+  const transfersSeries = dailySeries(
+    data.transfers.filter((transfer) => filterByBranch(transfer, filters.branchId)),
+    (transfer) => transfer.created_at,
+    from,
+    seriesDays,
+    (bucket) => bucket.length
+  );
+  const countsSeries = dailySeries(
+    data.counts.filter((count) => filterByBranch(count, filters.branchId)),
+    (count) => count.started_at,
+    from,
+    seriesDays,
+    (bucket) => bucket.length
+  );
+
   return [
-    { key: "stock_total", value: totalStock, trend: computeTrend(totalStock, previousStock) },
-    { key: "active_variations", value: uniqueActiveItems.size, trend: computeTrend(currentVarMoved, previousVarMoved) },
-    { key: "stockout", value: ruptures, trend: computeTrend(ruptures, previousRuptureEstimate, true) },
-    { key: "low_stock", value: lowStock, trend: computeTrend(lowStock, previousLowStockEstimate, true) },
-    { key: "pending_transfers", value: pendingTransfers, trend: computeTrend(pendingTransfers, pendingPreviousEstimate, true) },
-    { key: "open_counts", value: openCounts, trend: computeTrend(openCounts, openCountPreviousEstimate, true) },
+    { key: "stock_total", value: totalStock, trend: computeTrend(totalStock, previousStock), series: stockSeries },
+    { key: "active_variations", value: uniqueActiveItems.size, trend: computeTrend(currentVarMoved, previousVarMoved), series: variationsSeries },
+    { key: "stockout", value: ruptures, trend: computeTrend(ruptures, previousRuptureEstimate, true), series: pressureSeries },
+    { key: "low_stock", value: lowStock, trend: computeTrend(lowStock, previousLowStockEstimate, true), series: pressureSeries },
+    { key: "pending_transfers", value: pendingTransfers, trend: computeTrend(pendingTransfers, pendingPreviousEstimate, true), series: transfersSeries },
+    { key: "open_counts", value: openCounts, trend: computeTrend(openCounts, openCountPreviousEstimate, true), series: countsSeries },
   ];
 }

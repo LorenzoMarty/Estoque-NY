@@ -1,10 +1,10 @@
 import { MantineProvider } from "@mantine/core";
 import { render, screen } from "@testing-library/react";
-import { Package } from "lucide-react";
 import type { ReactElement } from "react";
 import { describe, expect, it } from "vitest";
 import { statusTones, theme } from "../../app/theme";
-import { KpiCard } from "./KpiCard";
+import { KpiStrip, trendText } from "../../features/dashboard/KpiStrip";
+import type { Kpi } from "../../features/dashboard/kpis";
 import { PageHeader } from "./PageHeader";
 import { StatusPill } from "./StatusPill";
 
@@ -23,26 +23,34 @@ describe("StatusPill", () => {
   });
 });
 
-describe("KpiCard", () => {
-  it("shows label, localized value and the upward trend as good", () => {
-    renderWithTheme(<KpiCard label="Saldo total" value={1500} icon={Package} trend={{ direction: "up", value: 56.4 }} />);
-    expect(screen.getByText("Saldo total")).toBeInTheDocument();
-    expect(screen.getByText("1.500")).toBeInTheDocument();
-    expect(screen.getByText("56%").closest("[data-tone]")).toHaveAttribute("data-tone", "good");
+describe("KpiStrip", () => {
+  const kpi = (overrides: Partial<Kpi>): Kpi => ({
+    key: "stock_total",
+    value: 1500,
+    trend: { direction: "up", value: 56.4 },
+    series: [1, 2, 3],
+    ...overrides,
   });
 
-  it("shows a downward trend as critical and a flat trend as neutral text", () => {
-    const { rerender } = renderWithTheme(
-      <KpiCard label="Rupturas" value={3} icon={Package} trend={{ direction: "down", value: 20 }} />
-    );
-    expect(screen.getByText("20%").closest("[data-tone]")).toHaveAttribute("data-tone", "critical");
+  it("shows label, localized value and the improving trend as good", () => {
+    renderWithTheme(<KpiStrip kpis={[kpi({})]} />);
+    expect(screen.getByText("Saldo total")).toBeInTheDocument();
+    expect(screen.getByText("1.500")).toBeInTheDocument();
+    expect(screen.getByText("↑ 56% vs. período anterior")).toHaveAttribute("data-tone", "good");
+  });
 
-    rerender(
-      <MantineProvider theme={theme}>
-        <KpiCard label="Rupturas" value={3} icon={Package} trend={{ direction: "flat", value: 0 }} />
-      </MantineProvider>
-    );
-    expect(screen.getByText("Estável").closest("[data-tone]")).toHaveAttribute("data-tone", "neutral");
+  it("colors by direction (better/worse) but draws the arrow from the real value change", () => {
+    // Fewer stockouts: direction "up" (better, green) while the value went down.
+    expect(trendText({ key: "stockout", trend: { direction: "up", value: 20 } })).toBe("↓ 20% vs. período anterior");
+    renderWithTheme(<KpiStrip kpis={[kpi({ key: "stockout", value: 3, trend: { direction: "down", value: 20 } })]} />);
+    const text = screen.getByText("↑ 20% vs. período anterior");
+    expect(text).toHaveAttribute("data-tone", "critical");
+  });
+
+  it("shows flat trends as neutral text and hides the sparkline from assistive tech", () => {
+    const { container } = renderWithTheme(<KpiStrip kpis={[kpi({ key: "open_counts", trend: { direction: "flat", value: 0 } })]} />);
+    expect(screen.getByText("→ estável no período")).toHaveAttribute("data-tone", "neutral");
+    expect(container.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   });
 });
 
