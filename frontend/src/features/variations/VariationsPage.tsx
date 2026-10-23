@@ -1,4 +1,4 @@
-import { Button, Group, Modal, Table, Text, TextInput } from "@mantine/core";
+import { Button, Group, Modal, Table, TextInput } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Pencil, Plus, Search } from "lucide-react";

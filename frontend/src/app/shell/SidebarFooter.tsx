@@ -12,7 +12,7 @@ export function SidebarFooter() {
     <div className="sidebar-account">
       <MantineMenu position="top-start" shadow="md" width={230}>
         <MantineMenu.Target>
-          <button className="profile-chip" aria-label="Perfil do usuario">
+          <button className="profile-chip">
             <span className="avatar">{(user?.name ?? "??").slice(0, 2).toUpperCase()}</span>
             <span className="profile-meta">
               <strong>{user?.name ?? "Sem sessao"}</strong>

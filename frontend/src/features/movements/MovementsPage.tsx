@@ -1,5 +1,5 @@
 import { useActiveBranch } from "../branch/useActiveBranch";
-import { Button, Group, Modal, Select, Table, Text } from "@mantine/core";
+import { Button, Group, Modal, Select, Table } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
