@@ -89,6 +89,9 @@ uv run pytest                      # API tests
 cd frontend && npm run typecheck && npm run test
 ```
 
+The CI lint gate (ruff check, ruff format --check, mypy) also runs locally as a
+pre-commit hook: `uvx pre-commit install`, or `uvx pre-commit run -a` on demand.
+
 ## Status
 
 - The API domains above are implemented.
