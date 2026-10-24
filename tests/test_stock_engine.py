@@ -171,3 +171,13 @@ async def test_purge_expired_idempotency_keys_keeps_recent_ones(client):
     assert await purge_expired_idempotency_keys() == 1
     async with get_sessionmaker()() as session:
         assert list(await session.scalars(select(IdempotencyKey.key))) == ["recent"]
+
+
+def test_idempotency_ttl_must_be_at_least_one_hour(monkeypatch):
+    from pydantic import ValidationError
+
+    from app.core.config import Settings
+
+    monkeypatch.setenv("IDEMPOTENCY_TTL_HOURS", "0")
+    with pytest.raises(ValidationError):
+        Settings()

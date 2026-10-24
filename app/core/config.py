@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _PRODUCTION_ENVS = {"prod", "production"}
@@ -45,7 +45,8 @@ class Settings(BaseSettings):
 
     allow_negative_stock: bool = False
     idempotency_required_in_production: bool = True
-    idempotency_ttl_hours: int = 24
+    # >= 1: a zero TTL would also purge in-flight keys and allow double-apply on retry.
+    idempotency_ttl_hours: int = Field(default=24, ge=1)
 
     cors_origins: str = "*"
     # Host header allow-list, comma-separated (e.g. "api.example.com,*.onrender.com").
