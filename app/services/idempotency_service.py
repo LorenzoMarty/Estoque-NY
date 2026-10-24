@@ -1,6 +1,7 @@
 import hashlib
 import json
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import HTTPException, Request, status
@@ -147,3 +148,15 @@ async def abort_idempotency(state: IdempotencyState) -> None:
             )
         )
         await session.commit()
+
+
+async def purge_expired_idempotency_keys() -> int:
+    """Delete keys older than the TTL (replay window); return how many were purged."""
+    cutoff = datetime.now(UTC) - timedelta(hours=get_settings().idempotency_ttl_hours)
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as session:
+        result = await session.execute(
+            delete(IdempotencyKey).where(IdempotencyKey.created_at < cutoff)
+        )
+        await session.commit()
+        return result.rowcount or 0

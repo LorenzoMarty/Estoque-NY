@@ -45,6 +45,7 @@ class Settings(BaseSettings):
 
     allow_negative_stock: bool = False
     idempotency_required_in_production: bool = True
+    idempotency_ttl_hours: int = 24
 
     cors_origins: str = "*"
     # Host header allow-list, comma-separated (e.g. "api.example.com,*.onrender.com").

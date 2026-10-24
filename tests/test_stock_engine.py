@@ -141,3 +141,33 @@ async def test_idempotency_key_replays_without_double_applying(client):
     different = await receipt(client, headers, branch_id, location_id, sku_id, 7, **key)
     assert different.status_code == 409
     assert await on_hand(client, headers, branch_id, sku_id) == 5
+
+
+@pytest.mark.asyncio
+async def test_purge_expired_idempotency_keys_keeps_recent_ones(client):
+    from datetime import UTC, datetime, timedelta
+
+    from sqlalchemy import select
+
+    from app.core.db import get_sessionmaker
+    from app.models.entities import IdempotencyKey
+    from app.services.idempotency_service import purge_expired_idempotency_keys
+
+    old = datetime.now(UTC) - timedelta(hours=48)
+    async with get_sessionmaker()() as session:
+        for key, created in (("old", old), ("recent", datetime.now(UTC))):
+            session.add(
+                IdempotencyKey(
+                    key=key,
+                    route="POST:/x",
+                    request_hash="h",
+                    response_body={},
+                    status_code=201,
+                    created_at=created,
+                )
+            )
+        await session.commit()
+
+    assert await purge_expired_idempotency_keys() == 1
+    async with get_sessionmaker()() as session:
+        assert list(await session.scalars(select(IdempotencyKey.key))) == ["recent"]
