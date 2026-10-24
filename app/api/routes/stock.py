@@ -86,6 +86,7 @@ async def create_receipt(
             sku_id=payload.sku_id,
             qty_delta=payload.qty,
             move_type=MoveType.RECEIPT,
+            unit_cost=payload.unit_cost,
             reason=payload.reason,
             reference_id=payload.reference_id,
             occurred_at=payload.occurred_at,

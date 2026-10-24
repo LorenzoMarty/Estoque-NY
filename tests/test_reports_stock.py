@@ -149,3 +149,45 @@ async def test_stock_reports_paginate(client):
     assert page.status_code == 200
     assert len(page.json()["items"]) == 1
     assert page.json()["meta"]["total"] == 2
+
+
+@pytest.mark.asyncio
+async def test_margin_report_groups_stock_value_by_sku_category_and_branch(client):
+    headers, branch_id, *_ = await _scenario(
+        client
+    )  # A: 60 units, B: 9; cost 10, price 20
+
+    by_sku = (
+        await client.get("/reports/stock/margin?group_by=sku", headers=headers)
+    ).json()["items"]
+    assert {
+        r["name"]: (r["on_hand"], r["margin"], r["margin_pct"]) for r in by_sku
+    } == {
+        "REP-A": (60, "600.00", "50.00"),
+        "REP-B": (9, "90.00", "50.00"),
+    }
+
+    by_category = (
+        await client.get("/reports/stock/margin?group_by=category", headers=headers)
+    ).json()["items"]
+    assert [(r["name"], r["on_hand"], r["margin"]) for r in by_category] == [
+        ("Sem categoria", 69, "690.00")
+    ]
+
+    by_branch = (
+        await client.get(
+            f"/reports/stock/margin?group_by=branch&branch_id={branch_id}",
+            headers=headers,
+        )
+    ).json()["items"]
+    assert [(r["group_id"], r["cost_value"], r["price_value"]) for r in by_branch] == [
+        (branch_id, "690.00", "1380.00")
+    ]
+
+
+@pytest.mark.asyncio
+async def test_margin_report_requires_auth_and_valid_group(client):
+    assert (await client.get("/reports/stock/margin")).status_code == 401
+    headers = await register_and_login(client)
+    bad = await client.get("/reports/stock/margin?group_by=bogus", headers=headers)
+    assert bad.status_code in (400, 422)

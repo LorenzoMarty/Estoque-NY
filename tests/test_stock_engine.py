@@ -181,3 +181,44 @@ def test_idempotency_ttl_must_be_at_least_one_hour(monkeypatch):
     monkeypatch.setenv("IDEMPOTENCY_TTL_HOURS", "0")
     with pytest.raises(ValidationError):
         Settings()
+
+
+async def _cost(client, headers, sku_id) -> str:
+    resp = await client.get("/catalog/skus", params={"page_size": 200}, headers=headers)
+    return next(s["cost"] for s in resp.json()["items"] if s["id"] == sku_id)
+
+
+@pytest.mark.asyncio
+async def test_receipts_with_unit_cost_move_the_sku_cost_to_the_moving_average(client):
+    headers, branch_id, location_id, sku_id = await _setup(client)  # cost starts 10.00
+
+    async def receive(qty, unit_cost=None):
+        body = {
+            "branch_id": branch_id,
+            "location_id": location_id,
+            "sku_id": sku_id,
+            "qty": qty,
+        }
+        if unit_cost is not None:
+            body["unit_cost"] = unit_cost
+        resp = await client.post("/stock/receipts", json=body, headers=headers)
+        assert resp.status_code == 201, resp.text
+
+    await receive(10)  # no unit_cost: cost untouched
+    assert await _cost(client, headers, sku_id) == "10.00"
+    await receive(10, "20.00")  # (10*10 + 10*20) / 20
+    assert await _cost(client, headers, sku_id) == "15.00"
+    await receive(5, "30.00")  # (20*15 + 5*30) / 25
+    assert await _cost(client, headers, sku_id) == "18.00"
+
+
+def test_moving_average_cost_edges():
+    from decimal import Decimal
+
+    from app.domain.stock_engine import moving_average_cost
+
+    d = Decimal
+    assert moving_average_cost(0, d("10"), 4, d("7.5")) == d("7.50")  # empty stock
+    assert moving_average_cost(-3, d("10"), 4, d("7.5")) == d("7.50")  # negative stock
+    assert moving_average_cost(3, d("10.00"), 1, d("11")) == d("10.25")
+    assert moving_average_cost(1, d("1.00"), 2, d("1.01")) == d("1.01")  # rounds

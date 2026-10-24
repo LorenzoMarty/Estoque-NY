@@ -21,6 +21,16 @@ class StockValuationRow(SchemaBase):
     valuation: Decimal
 
 
+class MarginRow(SchemaBase):
+    group_id: int | None
+    name: str | None
+    on_hand: int
+    cost_value: Decimal
+    price_value: Decimal
+    margin: Decimal
+    margin_pct: Decimal | None
+
+
 class StockTurnoverRow(SchemaBase):
     branch_id: int
     location_id: int | None

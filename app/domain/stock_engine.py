@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
+from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +15,19 @@ from app.domain.errors import (
 )
 from app.models.entities import SKU, Branch, Location, StockBalance, StockMove
 from app.models.enums import MoveType
+
+
+def moving_average_cost(
+    on_hand: int, cost: Decimal, qty: int, unit_cost: Decimal
+) -> Decimal:
+    """New SKU cost after receiving `qty` units at `unit_cost` (rounded to cents).
+
+    Without stock on hand (or with a negative balance) the receipt sets the cost.
+    """
+    if on_hand <= 0:
+        return Decimal(unit_cost).quantize(Decimal("0.01"))
+    total = (on_hand * Decimal(cost) + qty * Decimal(unit_cost)) / (on_hand + qty)
+    return total.quantize(Decimal("0.01"))
 
 
 async def apply_move(
@@ -30,6 +44,7 @@ async def apply_move(
     inventory_count_id: int | None = None,
     created_by: int | None = None,
     allow_inactive_sku: bool = False,
+    unit_cost: Decimal | None = None,
 ) -> tuple[StockMove, StockBalance]:
     if qty_delta == 0:
         raise ValidationError("qty_delta must be non-zero")
@@ -49,6 +64,7 @@ async def apply_move(
             inventory_count_id=inventory_count_id,
             created_by=created_by,
             allow_inactive_sku=allow_inactive_sku,
+            unit_cost=unit_cost,
         )
 
     async with session.begin():
@@ -66,6 +82,7 @@ async def apply_move(
             inventory_count_id=inventory_count_id,
             created_by=created_by,
             allow_inactive_sku=allow_inactive_sku,
+            unit_cost=unit_cost,
         )
 
 
@@ -84,6 +101,7 @@ async def _apply_move_inner(
     inventory_count_id: int | None,
     created_by: int | None,
     allow_inactive_sku: bool,
+    unit_cost: Decimal | None = None,
 ) -> tuple[StockMove, StockBalance]:
     settings = get_settings()
     move_occurred_at = occurred_at or datetime.now(UTC)
@@ -94,7 +112,10 @@ async def _apply_move_inner(
     if branch_exists is None:
         raise NotFoundError(f"branch {branch_id} not found")
 
-    sku = await session.scalar(select(SKU).where(SKU.id == sku_id))
+    sku_query = select(SKU).where(SKU.id == sku_id)
+    if unit_cost is not None:
+        sku_query = sku_query.with_for_update()  # serialize cost updates per SKU
+    sku = await session.scalar(sku_query)
     if sku is None:
         raise NotFoundError(f"sku {sku_id} not found")
     if not sku.active and not allow_inactive_sku:
@@ -137,6 +158,16 @@ async def _apply_move_inner(
             raise ConflictError(
                 "insufficient stock for "
                 f"sku {sku_id} in location {resolved_location_id}"
+            )
+
+        if unit_cost is not None and move_type == MoveType.RECEIPT:
+            on_hand_now = await session.scalar(
+                select(func.coalesce(func.sum(StockBalance.on_hand), 0)).where(
+                    StockBalance.sku_id == sku_id
+                )
+            )
+            sku.cost = moving_average_cost(
+                int(on_hand_now or 0), sku.cost, qty_delta, unit_cost
             )
 
         balance.on_hand = new_on_hand
