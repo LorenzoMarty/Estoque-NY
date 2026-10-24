@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "./httpClient";
 import type { Paginated } from "../types/pagination";
-import type { Branch, Brand, Category, Location, LocationType, Sku } from "../types/stock";
+import type { Branch, BranchProfile, Brand, Category, Location, LocationType, Sku } from "../types/stock";
 
 export function useBranchesQuery() {
   return useQuery({
@@ -70,7 +70,7 @@ export function useCreateBranch() {
 export function useUpdateBranch(id: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (values: { name: string }) => apiClient.put<Branch>(`/branches/${id}`, values),
+    mutationFn: (values: { name: string } & Partial<BranchProfile>) => apiClient.put<Branch>(`/branches/${id}`, values),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["branches"] }),
   });
 }

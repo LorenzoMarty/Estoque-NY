@@ -3,7 +3,18 @@ export type TransferStatus = "DRAFT" | "SHIPPED" | "RECEIVED" | "CANCELLED";
 export type InventoryCountStatus = "OPEN" | "CLOSED" | "POSTED" | "CANCELLED";
 export type LocationType = "STORE" | "STOCK" | "DAMAGED";
 
-export interface Branch {
+export type OpeningHours = Partial<Record<"mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun", string | null>>;
+
+/** Public store profile (published to the site only when public_name is set). */
+export interface BranchProfile {
+  public_name: string | null;
+  address: string | null;
+  phone: string | null;
+  opening_hours: OpeningHours | null;
+  timezone: string | null;
+}
+
+export interface Branch extends BranchProfile {
   id: number;
   name: string;
   created_at: string;

@@ -54,8 +54,9 @@ async def create_branch(
     session: AsyncSession,
     *,
     name: str,
+    **profile: object,
 ) -> Branch:
-    branch = Branch(name=name)
+    branch = Branch(name=name, **profile)
     session.add(branch)
     await session.flush()
     return branch
@@ -66,8 +67,11 @@ async def update_branch(
     *,
     branch: Branch,
     name: str,
+    **profile: object,
 ) -> Branch:
     branch.name = name
+    for field, value in profile.items():
+        setattr(branch, field, value)
     await session.flush()
     return branch
 

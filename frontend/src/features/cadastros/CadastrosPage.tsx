@@ -1,4 +1,6 @@
-import { Tabs } from "@mantine/core";
+import { Button, Tabs } from "@mantine/core";
+import { Globe } from "lucide-react";
+import { useState } from "react";
 import {
   useBranchesQuery,
   useBrandsQuery,
@@ -9,14 +11,17 @@ import {
   useUpdateBranch,
   useUpdateBrand,
 } from "../../shared/api/catalog";
+import type { Branch } from "../../shared/types/stock";
 import { PageHeader } from "../../shared/ui/PageHeader";
 import { strings } from "../../shared/strings";
+import { BranchProfileModal } from "./BranchProfileModal";
 import { LocationsTab } from "./LocationsTab";
 import { NameOnlyTab } from "./NameOnlyTab";
 
 export function CadastrosPage() {
   const branchesQuery = useBranchesQuery();
   const brandsQuery = useBrandsQuery();
+  const [profileBranch, setProfileBranch] = useState<Branch | null>(null);
 
   return (
     <div className="workspace-page">
@@ -48,7 +53,13 @@ export function CadastrosPage() {
             useCreate={useCreateBranch}
             useUpdate={useUpdateBranch}
             useDelete={useDeleteBranch}
+            renderRowActions={(branch) => (
+              <Button size="xs" variant="subtle" leftSection={<Globe size={14} />} onClick={() => setProfileBranch(branch)}>
+                Perfil público
+              </Button>
+            )}
           />
+          <BranchProfileModal branch={profileBranch} onClose={() => setProfileBranch(null)} />
         </Tabs.Panel>
 
         <Tabs.Panel value="locations" pt="md">

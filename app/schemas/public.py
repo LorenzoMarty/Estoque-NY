@@ -15,6 +15,20 @@ class PublicProductOut(SchemaBase):
     in_stock: bool
 
 
+class PublicBranchOut(SchemaBase):
+    """Store contact card. Never carries the internal id, costs or quantities."""
+
+    name: str
+    address: str | None
+    phone: str | None
+    opening_hours: dict[str, str | None] | None
+    timezone: str | None
+
+
+class PublicBranchesOut(SchemaBase):
+    branches: list[PublicBranchOut]
+
+
 class PublicSectorOut(SchemaBase):
     name: str
     products: list[PublicProductOut]
