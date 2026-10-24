@@ -23,7 +23,7 @@ jobs:
       - name: Sem token configurado
         if: env.HAS_TOKEN != 'true'
         run: echo "::notice::Review pulado. Configure o secret CLAUDE_CODE_OAUTH_TOKEN (rode /install-github-app no Claude Code)."
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: env.HAS_TOKEN == 'true'
         with:
           fetch-depth: 1
