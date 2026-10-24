@@ -1,11 +1,12 @@
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any
+from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import delete, select
+from sqlalchemy import CursorResult, delete, select
 from sqlalchemy.exc import IntegrityError
 
 from app.core.db import get_sessionmaker
@@ -147,3 +148,15 @@ async def abort_idempotency(state: IdempotencyState) -> None:
             )
         )
         await session.commit()
+
+
+async def purge_expired_idempotency_keys() -> int:
+    """Delete keys older than the TTL (replay window); return how many were purged."""
+    cutoff = datetime.now(UTC) - timedelta(hours=get_settings().idempotency_ttl_hours)
+    sessionmaker = get_sessionmaker()
+    async with sessionmaker() as session:
+        result = await session.execute(
+            delete(IdempotencyKey).where(IdempotencyKey.created_at < cutoff)
+        )
+        await session.commit()
+        return cast(CursorResult[Any], result).rowcount or 0
