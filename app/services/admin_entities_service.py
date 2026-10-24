@@ -47,7 +47,9 @@ async def create_branch(
     payload: BranchCreate,
 ) -> Branch:
     try:
-        return await admin_repository.create_branch(session, name=payload.name)
+        return await admin_repository.create_branch(
+            session, **payload.model_dump(exclude_unset=True)
+        )
     except IntegrityError as exc:
         raise ConflictError("branch name already exists") from exc
 
@@ -63,7 +65,7 @@ async def update_branch(
         return await admin_repository.update_branch(
             session,
             branch=branch,
-            name=payload.name,
+            **payload.model_dump(exclude_unset=True),
         )
     except IntegrityError as exc:
         raise ConflictError("branch name already exists") from exc

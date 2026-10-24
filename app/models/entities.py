@@ -40,6 +40,12 @@ class Branch(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    # Public store profile (ADR 0001): a branch is published only with a public_name.
+    public_name: Mapped[str | None] = mapped_column(String(120))
+    address: Mapped[str | None] = mapped_column(String(255))
+    phone: Mapped[str | None] = mapped_column(String(40))
+    opening_hours: Mapped[dict | None] = mapped_column(JSON)
+    timezone: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
