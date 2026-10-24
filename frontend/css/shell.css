@@ -141,7 +141,7 @@
   outline-offset: 2px;
 }
 
-/* Decorative NY footer: the statue + skyline silhouette (one SVG) is a CSS mask over a flat color. */
+/* Decorative NY footer: the skyline silhouette (SVG) is a CSS mask over a flat color. */
 .ny-footer {
   position: absolute;
   inset: auto 0 0;

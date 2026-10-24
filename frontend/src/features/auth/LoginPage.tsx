@@ -93,11 +93,7 @@ export function LoginPage() {
         >
           Wikimedia Commons
         </a>
-        ). Est&aacute;tua da Liberdade: Bea.miau,{" "}
-        <a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="noreferrer" target="_blank">
-          CC0
-        </a>
-        .
+        ).
       </p>
     </main>
   );
