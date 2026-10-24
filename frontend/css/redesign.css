@@ -321,23 +321,6 @@ body {
   z-index: 0;
 }
 
-.login-credits {
-  position: absolute;
-  right: 16px;
-  bottom: 12px;
-  left: 16px;
-  z-index: 1;
-  margin: 0;
-  font-size: 0.75rem;
-  text-align: center;
-  color: var(--rd-ink-2);
-}
-
-.login-credits a {
-  color: var(--rd-primary);
-  text-decoration: underline;
-}
-
 .login-card {
   position: relative;
   z-index: 1;
