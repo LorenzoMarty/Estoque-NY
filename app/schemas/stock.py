@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import Field, field_validator
 
@@ -35,6 +36,10 @@ class StockReceiptIn(_MoveInBase):
     branch_id: int
     sku_id: int
     qty: int = Field(..., gt=0)
+    # Purchase cost per unit; when given, the SKU cost becomes the moving average.
+    unit_cost: Decimal | None = Field(
+        default=None, ge=0, max_digits=12, decimal_places=4
+    )
     location_id: int | None = None
     reason: str | None = None
     reference_id: str | None = None

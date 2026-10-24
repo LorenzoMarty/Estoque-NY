@@ -2,9 +2,10 @@ import csv
 from datetime import datetime
 from decimal import Decimal
 from io import StringIO
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import case, desc, func, literal_column, select
+from sqlalchemy import Select, case, desc, func, literal_column, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
@@ -14,8 +15,10 @@ from app.core.db import get_session
 from app.core.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, page_meta
 from app.models.entities import (
     SKU,
+    Branch,
     Campaign,
     CampaignProduct,
+    Category,
     Product,
     Promotion,
     PromotionSKU,
@@ -27,6 +30,7 @@ from app.schemas.report import (
     CampaignProductRow,
     CampaignRow,
     LowTurnoverCandidateRow,
+    MarginRow,
     MarketingDashboardSummary,
     PromotionSKURow,
     StockABCRow,
@@ -85,6 +89,84 @@ async def stock_valuation(
         ).model_dump(mode="json")
         for row in rows
     ]
+    return {
+        "items": items,
+        "meta": page_meta(total=int(total), page=page, page_size=page_size),
+    }
+
+
+@router.get(
+    "/margin",
+    dependencies=[Depends(require_permission("reports.read", branch_scoped=True))],
+)
+async def stock_margin(
+    group_by: Literal["sku", "category", "branch"] = Query(default="sku"),
+    branch_id: int | None = Query(default=None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+    scope: BranchScope = Depends(get_branch_scope),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Margin of the stock on hand: price value minus cost value, per group.
+
+    Weighted by quantity on hand, so SKUs without stock do not appear.
+    """
+    group_id, name = {
+        "sku": (SKU.id, SKU.sku_code),
+        "category": (Category.id, func.coalesce(Category.name, "Sem categoria")),
+        "branch": (Branch.id, Branch.name),
+    }[group_by]
+    on_hand = func.sum(StockBalance.on_hand)
+    cost_value = func.sum(StockBalance.on_hand * SKU.cost)
+    price_value = func.sum(StockBalance.on_hand * SKU.price)
+    stmt: Select[Any] = (
+        select(
+            group_id.label("group_id"),
+            name.label("name"),
+            on_hand.label("on_hand"),
+            cost_value.label("cost_value"),
+            price_value.label("price_value"),
+        )
+        .select_from(StockBalance)
+        .join(SKU, SKU.id == StockBalance.sku_id)
+        .where(StockBalance.on_hand > 0)
+        .group_by(group_id, name)
+    )
+    if group_by == "category":
+        stmt = stmt.join(Product, Product.id == SKU.product_id).join(
+            Category, Category.id == Product.category_id, isouter=True
+        )
+    elif group_by == "branch":
+        stmt = stmt.join(Branch, Branch.id == StockBalance.branch_id)
+    stmt = scope.apply(stmt, StockBalance.branch_id, branch_id)
+
+    total = await session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    rows = (
+        await session.execute(
+            stmt.order_by(desc(price_value - cost_value), group_id)
+            .limit(page_size)
+            .offset((page - 1) * page_size)
+        )
+    ).all()
+    items = []
+    for row in rows:
+        margin = Decimal(row.price_value) - Decimal(row.cost_value)
+        pct = (
+            (margin / Decimal(row.price_value) * 100).quantize(Decimal("0.01"))
+            if row.price_value
+            else None
+        )
+        items.append(
+            MarginRow(
+                group_id=row.group_id,
+                name=row.name,
+                on_hand=int(row.on_hand),
+                cost_value=row.cost_value,
+                price_value=row.price_value,
+                margin=margin,
+                margin_pct=pct,
+            ).model_dump(mode="json")
+        )
     return {
         "items": items,
         "meta": page_meta(total=int(total), page=page, page_size=page_size),
