@@ -84,7 +84,11 @@ async def public_catalog(
     Cached for a minute and served with an ETag: a request with a matching
     `If-None-Match` gets `304`.
     """
-    visible = (Product.published.is_(True), Product.active.is_(True))
+    visible = (
+        Product.published.is_(True),
+        Product.active.is_(True),
+        Product.archived_at.is_(None),
+    )
     total_products = int(
         await session.scalar(select(func.count()).select_from(Product).where(*visible))
         or 0
@@ -111,7 +115,11 @@ async def public_catalog(
                 func.min(priced).label("low"),
                 func.max(priced).label("high"),
             )
-            .where(SKU.active.is_(True), SKU.product_id.in_(product_ids))
+            .where(
+                SKU.active.is_(True),
+                SKU.archived_at.is_(None),
+                SKU.product_id.in_(product_ids),
+            )
             .group_by(SKU.product_id)
         )
     }
@@ -121,6 +129,7 @@ async def public_catalog(
             .join(StockBalance, StockBalance.sku_id == SKU.id)
             .where(
                 SKU.active.is_(True),
+                SKU.archived_at.is_(None),
                 SKU.product_id.in_(product_ids),
                 StockBalance.on_hand > 0,
             )

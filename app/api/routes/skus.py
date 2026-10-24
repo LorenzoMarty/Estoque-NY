@@ -286,10 +286,13 @@ async def delete_sku_barcode(
 async def list_skus(
     product_id: int | None = Query(default=None),
     active: bool | None = Query(default=None),
+    archived: bool = Query(default=False),
     params: PaginationParams = Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
 ) -> SKUListOut:
-    stmt = select(SKU)
+    stmt = select(SKU).where(
+        SKU.archived_at.is_not(None) if archived else SKU.archived_at.is_(None)
+    )
     if product_id is not None:
         stmt = stmt.where(SKU.product_id == product_id)
     if active is not None:

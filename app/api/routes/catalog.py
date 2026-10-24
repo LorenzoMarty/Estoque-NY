@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,10 +67,15 @@ async def create_category(
 )
 async def list_categories(
     request: Request,
+    archived: bool = Query(default=False),
     params=Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
 ) -> dict:
-    stmt = select(Category)
+    stmt = select(Category).where(
+        Category.archived_at.is_not(None)
+        if archived
+        else Category.archived_at.is_(None)
+    )
     if params.q:
         stmt = stmt.where(Category.name.ilike(f"%{params.q}%"))
 

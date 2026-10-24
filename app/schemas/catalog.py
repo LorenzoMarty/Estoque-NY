@@ -25,6 +25,8 @@ class CategoryOut(SchemaBase):
     id: int
     name: str
     created_at: datetime
+    archived_at: datetime | None
+    archive_reason: str | None
 
 
 class BrandBase(SchemaBase):
