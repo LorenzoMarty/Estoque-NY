@@ -2,12 +2,15 @@ import hashlib
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from pydantic import BaseModel
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
-from app.models.entities import SKU, Brand, Category, Product, StockBalance
+from app.models.entities import SKU, Branch, Brand, Category, Product, StockBalance
 from app.schemas.public import (
+    PublicBranchesOut,
+    PublicBranchOut,
     PublicCatalogMeta,
     PublicCatalogOut,
     PublicProductOut,
@@ -32,6 +35,39 @@ def _client_has(etag: str, if_none_match: str | None) -> bool:
         return False
     tokens = [token.strip().removeprefix("W/") for token in if_none_match.split(",")]
     return "*" in tokens or etag in tokens
+
+
+def _cached_json(request: Request, payload: BaseModel) -> Response:
+    body = payload.model_dump_json().encode()
+    headers = {"ETag": _etag(body), "Cache-Control": CACHE_CONTROL}
+    if _client_has(headers["ETag"], request.headers.get("if-none-match")):
+        return Response(status_code=304, headers=headers)
+    return Response(content=body, media_type="application/json", headers=headers)
+
+
+@router.get("/v1/branches", response_model=PublicBranchesOut)
+async def public_branches(
+    request: Request, session: AsyncSession = Depends(get_session)
+) -> Response:
+    """Store contact cards. Only branches with a `public_name` are listed (ADR 0001)."""
+    rows = await session.scalars(
+        select(Branch)
+        .where(Branch.public_name.is_not(None))
+        .order_by(Branch.public_name, Branch.id)
+    )
+    payload = PublicBranchesOut(
+        branches=[
+            PublicBranchOut(
+                name=branch.public_name or "",
+                address=branch.address,
+                phone=branch.phone,
+                opening_hours=branch.opening_hours,
+                timezone=branch.timezone,
+            )
+            for branch in rows
+        ]
+    )
+    return _cached_json(request, payload)
 
 
 @router.get("/v1/catalog", response_model=PublicCatalogOut)
@@ -121,8 +157,4 @@ async def public_catalog(
             has_more=page * page_size < total_products,
         ),
     )
-    body = payload.model_dump_json().encode()
-    headers = {"ETag": _etag(body), "Cache-Control": CACHE_CONTROL}
-    if _client_has(headers["ETag"], request.headers.get("if-none-match")):
-        return Response(status_code=304, headers=headers)
-    return Response(content=body, media_type="application/json", headers=headers)
+    return _cached_json(request, payload)

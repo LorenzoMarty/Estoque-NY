@@ -1,7 +1,7 @@
 import { Alert, Button, Group, Modal, Stack, Table, TextInput } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import type { UseMutationResult, UseQueryResult } from "@tanstack/react-query";
 import { DataTable } from "../../shared/ui/DataTable";
 import { ConfirmDeleteModal } from "./ConfirmDeleteModal";
@@ -18,9 +18,10 @@ interface NameOnlyTabProps<T extends NamedEntity> {
   useCreate: () => UseMutationResult<T, Error, { name: string }>;
   useUpdate: (id: number) => UseMutationResult<T, Error, { name: string }>;
   useDelete: () => UseMutationResult<unknown, Error, number>;
+  renderRowActions?: (entity: T) => ReactNode;
 }
 
-export function NameOnlyTab<T extends NamedEntity>({ label, newLabel, query, useCreate, useUpdate, useDelete }: NameOnlyTabProps<T>) {
+export function NameOnlyTab<T extends NamedEntity>({ label, newLabel, query, useCreate, useUpdate, useDelete, renderRowActions }: NameOnlyTabProps<T>) {
   const [editing, setEditing] = useState<T | null>(null);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
@@ -104,6 +105,7 @@ export function NameOnlyTab<T extends NamedEntity>({ label, newLabel, query, use
                 <Table.Td>{entity.name}</Table.Td>
                 <Table.Td>
                   <Group gap="xs">
+                    {renderRowActions?.(entity)}
                     <Button size="xs" variant="subtle" leftSection={<Pencil size={14} />} onClick={() => openEdit(entity)}>
                       Editar
                     </Button>
