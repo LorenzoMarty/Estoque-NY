@@ -3,7 +3,7 @@ from math import ceil
 from typing import Any
 
 from fastapi import Query
-from sqlalchemy import Select
+from sqlalchemy import Select, inspect
 
 MAX_PAGE_SIZE = 200
 DEFAULT_PAGE_SIZE = 50
@@ -45,11 +45,13 @@ def apply_order_and_pagination(
     sort_field = params.sort if params.sort in allowed_sort_fields else default_sort
     column = getattr(model, sort_field, None)
     if column is not None:
-        if params.order == "asc":
-            stmt = stmt.order_by(column.asc())
-        else:
-            stmt = stmt.order_by(column.desc())
-    return stmt.limit(params.page_size).offset((params.page - 1) * params.page_size)
+        stmt = stmt.order_by(column.asc() if params.order == "asc" else column.desc())
+    # Primary key as tie-breaker (or sole order) keeps pages stable and non-overlapping.
+    return (
+        stmt.order_by(*inspect(model).primary_key)
+        .limit(params.page_size)
+        .offset((params.page - 1) * params.page_size)
+    )
 
 
 def page_meta(*, total: int, page: int, page_size: int) -> dict[str, int | None]:
