@@ -8,7 +8,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "build": "npm run typecheck && npm run test && vite build",
+    "build": "npm run typecheck && npm run test && vite build && npm run check:bundle",
+    "check:bundle": "node ./scripts/check-bundle-budget.mjs",
     "serve:static": "node ./scripts/serve-static.mjs",
     "build:release": "npm run build && node ./scripts/move-sourcemaps.mjs"
   },
