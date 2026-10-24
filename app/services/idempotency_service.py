@@ -2,11 +2,11 @@ import hashlib
 import json
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from fastapi import HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
-from sqlalchemy import delete, select
+from sqlalchemy import CursorResult, delete, select
 from sqlalchemy.exc import IntegrityError
 
 from app.core.db import get_sessionmaker
@@ -159,4 +159,4 @@ async def purge_expired_idempotency_keys() -> int:
             delete(IdempotencyKey).where(IdempotencyKey.created_at < cutoff)
         )
         await session.commit()
-        return result.rowcount or 0
+        return cast(CursorResult[Any], result).rowcount or 0
