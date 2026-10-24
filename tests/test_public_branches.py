@@ -74,6 +74,7 @@ async def test_editing_a_branch_changes_the_response_and_etag(client):
     [
         {"opening_hours": {"funday": "09:00-18:00"}},
         {"opening_hours": {"mon": "9-18"}},
+        {"opening_hours": {"mon": "18:00-09:00"}},
         {"timezone": "Mars/Base"},
     ],
 )

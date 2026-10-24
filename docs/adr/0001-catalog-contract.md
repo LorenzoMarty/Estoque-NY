@@ -42,7 +42,7 @@ category (`sector`) name.
 Branch contact cards (`GET /public/v1/branches`, #125) are public too: `name` (the branch's
 `public_name`, not its internal name), `address`, `phone`, `opening_hours` (weekday to
 `HH:MM-HH:MM` or null) and `timezone`. A branch is listed only when it has a `public_name`;
-clearing it unpublishes the store. The response never carries the internal branch id, the
+clearing it unpublishes the store (it can take up to the 60 s cache window to disappear from the site). The response never carries the internal branch id, the
 internal name, costs or quantities.
 
 Never public: cost, SKU codes, barcodes, stock quantities, internal branch names or ids, user or

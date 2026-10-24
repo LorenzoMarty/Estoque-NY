@@ -33,8 +33,12 @@ class BranchBase(SchemaBase):
         for day, span in value.items():
             if day not in WEEKDAYS:
                 raise ValueError(f"unknown weekday {day!r}")
-            if span is not None and not _HOURS.match(span):
-                raise ValueError(f"{day}: use HH:MM-HH:MM or null")
+            if span is not None:
+                if not _HOURS.match(span):
+                    raise ValueError(f"{day}: use HH:MM-HH:MM or null")
+                start, end = span.split("-")
+                if end <= start:
+                    raise ValueError(f"{day}: closing time must be after opening")
         return value
 
     @field_validator("timezone")
