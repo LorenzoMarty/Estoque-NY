@@ -1,0 +1,20 @@
+# Mirrors the CI gate (.github/workflows/ci.yml); local hooks reuse the locked uv env.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check .
+        language: system
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff format --check
+        entry: uv run ruff format --check .
+        language: system
+        pass_filenames: false
+      - id: mypy
+        name: mypy app
+        entry: uv run mypy app
+        language: system
+        pass_filenames: false
+        types: [python]

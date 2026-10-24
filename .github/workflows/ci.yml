@@ -46,7 +46,6 @@ jobs:
         if: matrix.db == 'sqlite'
       - run: uv run mypy app
         if: matrix.db == 'sqlite'
-        continue-on-error: true
       - run: uv run pytest -q --cov
       - name: Coverage summary
         if: always()

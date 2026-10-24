@@ -1,9 +1,10 @@
 """Server-side record of refresh tokens: rotation, revocation and reuse detection."""
 
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 from uuid import uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import CursorResult, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_refresh_token
@@ -55,4 +56,4 @@ async def consume_token(session: AsyncSession, jti: str) -> bool:
         .where(RefreshToken.jti == jti, RefreshToken.revoked_at.is_(None))
         .values(revoked_at=datetime.now(UTC))
     )
-    return result.rowcount == 1
+    return cast(CursorResult[Any], result).rowcount == 1
