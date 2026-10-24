@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
 import { PlaceholderPage } from "../features/placeholder/PlaceholderPage";
 import { AppShell } from "./shell/AppShell";
 import { RequireAuth } from "./shell/RequireAuth";
+import { RouteError } from "./shell/RouteError";
 import { ROUTES } from "./routes";
 
 // Each screen is its own chunk, loaded on first visit (keeps the initial JS small, see
@@ -28,9 +29,10 @@ const domainRoutes: RouteObject[] = ROUTES.filter((route) => route.id !== "login
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/dashboard" replace /> },
-  { path: "/login", HydrateFallback: () => null, lazy: async () => ({ Component: (await import("../features/auth/LoginPage")).LoginPage }) },
+  { path: "/login", HydrateFallback: () => null, errorElement: <RouteError />, lazy: async () => ({ Component: (await import("../features/auth/LoginPage")).LoginPage }) },
   {
     HydrateFallback: () => null,
+    errorElement: <RouteError />,
     element: <RequireAuth />,
     children: [
       {
