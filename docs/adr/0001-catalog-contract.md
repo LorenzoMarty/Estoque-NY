@@ -39,7 +39,13 @@ Public (the whole contract, see `app/schemas/public.py`): product `id`, `name`, 
 `description`, `price_usd`, `price_is_from`, `featured`, `image_url`, `in_stock`, and the
 category (`sector`) name.
 
-Never public: cost, SKU codes, barcodes, stock quantities, branch names or ids, user or
+Branch contact cards (`GET /public/v1/branches`, #125) are public too: `name` (the branch's
+`public_name`, not its internal name), `address`, `phone`, `opening_hours` (weekday to
+`HH:MM-HH:MM` or null) and `timezone`. A branch is listed only when it has a `public_name`;
+clearing it unpublishes the store (it can take up to the 60 s cache window to disappear from the site). The response never carries the internal branch id, the
+internal name, costs or quantities.
+
+Never public: cost, SKU codes, barcodes, stock quantities, internal branch names or ids, user or
 customer data, anything from `auth`, `audit`, `marketing` administration or reports.
 A product appears only if it is `published` **and** `active`. Prices come from SKU
 `price` (the lowest positive one, flagged `price_is_from` when SKUs differ); no price

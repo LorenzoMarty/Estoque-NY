@@ -17,6 +17,7 @@ EXEMPT = {
     "/data/export/catalog.csv",  # file download
     "/reports/marketing/dashboard-summary",  # single aggregate object
     "/public/v1/catalog",  # frozen public contract, see test_public_contract
+    "/public/v1/branches",  # frozen public contract, bounded by branch count
 }
 
 

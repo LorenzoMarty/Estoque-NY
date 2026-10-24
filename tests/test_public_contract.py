@@ -17,13 +17,24 @@ from pathlib import Path
 
 import pytest
 
-from app.schemas.public import PublicCatalogOut
+from app.schemas.public import PublicBranchesOut, PublicCatalogOut
 
-SNAPSHOT = Path(__file__).parent / "contracts" / "public_catalog_v1.schema.json"
+CONTRACTS = Path(__file__).parent / "contracts"
+# route -> (response model, frozen snapshot)
+FROZEN = {
+    "/public/v1/catalog": (
+        PublicCatalogOut,
+        CONTRACTS / "public_catalog_v1.schema.json",
+    ),
+    "/public/v1/branches": (
+        PublicBranchesOut,
+        CONTRACTS / "public_branches_v1.schema.json",
+    ),
+}
 
 
-def current_schema() -> dict:
-    return PublicCatalogOut.model_json_schema()
+def current_schema(route: str = "/public/v1/catalog") -> dict:
+    return FROZEN[route][0].model_json_schema()
 
 
 def _type(prop: dict) -> str:
@@ -64,25 +75,26 @@ def breaking_changes(old: dict, new: dict) -> list[str]:
     return problems
 
 
-def test_public_catalog_v1_matches_the_frozen_contract():
+@pytest.mark.parametrize("route", FROZEN)
+def test_public_v1_matches_the_frozen_contract(route):
+    snapshot = FROZEN[route][1]
     if os.environ.get("UPDATE_CONTRACT"):
-        SNAPSHOT.write_text(
-            json.dumps(current_schema(), indent=2, sort_keys=True) + "\n",
+        snapshot.write_text(
+            json.dumps(current_schema(route), indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-    frozen = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
-    current = current_schema()
+    frozen = json.loads(snapshot.read_text(encoding="utf-8"))
+    current = current_schema(route)
 
     breaking = breaking_changes(frozen, current)
     assert not breaking, (
-        "BREAKING change to /public/v1/catalog: "
+        f"BREAKING change to {route}: "
         + "; ".join(breaking)
         + ". Do not change v1; add /public/v2 and keep v1 for 90 days (ADR 0001)."
     )
     assert current == frozen, (
-        "The /public/v1/catalog schema changed (additive). Regenerate the snapshot "
-        "with "
-        "UPDATE_CONTRACT=1 and copy it to Catalogo-NY."
+        f"The {route} schema changed (additive). Regenerate the snapshot "
+        "with UPDATE_CONTRACT=1 and copy it to Catalogo-NY."
     )
 
 

@@ -1,0 +1,90 @@
+{
+  "$defs": {
+    "PublicBranchOut": {
+      "description": "Store contact card. Never carries the internal id, costs or quantities.",
+      "properties": {
+        "address": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Address"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "opening_hours": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Opening Hours"
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Phone"
+        },
+        "timezone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Timezone"
+        }
+      },
+      "required": [
+        "name",
+        "address",
+        "phone",
+        "opening_hours",
+        "timezone"
+      ],
+      "title": "PublicBranchOut",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "branches": {
+      "items": {
+        "$ref": "#/$defs/PublicBranchOut"
+      },
+      "title": "Branches",
+      "type": "array"
+    }
+  },
+  "required": [
+    "branches"
+  ],
+  "title": "PublicBranchesOut",
+  "type": "object"
+}
