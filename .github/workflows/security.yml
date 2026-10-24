@@ -13,7 +13,7 @@ permissions:
 jobs:
   pip-audit:
     runs-on: ubuntu-latest
-    # Report-only until the open advisories are cleared (see the follow-up issue); then drop this.
+    # Report-only until the open advisories are cleared (see #142); then drop this.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
