@@ -1,43 +1,36 @@
-import type { ReactElement } from "react";
-import { createBrowserRouter, Navigate } from "react-router";
-import { LoginPage } from "../features/auth/LoginPage";
-import { DashboardPage } from "../features/dashboard/DashboardPage";
-import { MovementsPage } from "../features/movements/MovementsPage";
+import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
 import { PlaceholderPage } from "../features/placeholder/PlaceholderPage";
-import { ProductsPage } from "../features/products/ProductsPage";
-import { InventoryCountsPage } from "../features/inventory-counts/InventoryCountsPage";
-import { AuditPage } from "../features/audit/AuditPage";
-import { CadastrosPage } from "../features/cadastros/CadastrosPage";
-import { ReportsPage } from "../features/reports/ReportsPage";
-import { TransfersPage } from "../features/transfers/TransfersPage";
-import { UsersPage } from "../features/users/UsersPage";
-import { VariationsPage } from "../features/variations/VariationsPage";
 import { AppShell } from "./shell/AppShell";
 import { RequireAuth } from "./shell/RequireAuth";
 import { ROUTES } from "./routes";
 
-const SCREEN_ELEMENTS: Partial<Record<string, ReactElement>> = {
-  dashboard: <DashboardPage />,
-  movimentacoes: <MovementsPage />,
-  produtos: <ProductsPage />,
-  variacoes: <VariationsPage />,
-  transferencias: <TransfersPage />,
-  contagem: <InventoryCountsPage />,
-  relatorios: <ReportsPage />,
-  cadastros: <CadastrosPage />,
-  auditoria: <AuditPage />,
-  usuarios: <UsersPage />,
+// Each screen is its own chunk, loaded on first visit (keeps the initial JS small, see
+// scripts/check-bundle-budget.mjs). Screens are named exports, hence the Component pick.
+const SCREENS: Partial<Record<string, NonNullable<RouteObject["lazy"]>>> = {
+  dashboard: async () => ({ Component: (await import("../features/dashboard/DashboardPage")).DashboardPage }),
+  movimentacoes: async () => ({ Component: (await import("../features/movements/MovementsPage")).MovementsPage }),
+  produtos: async () => ({ Component: (await import("../features/products/ProductsPage")).ProductsPage }),
+  variacoes: async () => ({ Component: (await import("../features/variations/VariationsPage")).VariationsPage }),
+  transferencias: async () => ({ Component: (await import("../features/transfers/TransfersPage")).TransfersPage }),
+  contagem: async () => ({ Component: (await import("../features/inventory-counts/InventoryCountsPage")).InventoryCountsPage }),
+  relatorios: async () => ({ Component: (await import("../features/reports/ReportsPage")).ReportsPage }),
+  cadastros: async () => ({ Component: (await import("../features/cadastros/CadastrosPage")).CadastrosPage }),
+  auditoria: async () => ({ Component: (await import("../features/audit/AuditPage")).AuditPage }),
+  usuarios: async () => ({ Component: (await import("../features/users/UsersPage")).UsersPage }),
 };
 
-const domainRoutes = ROUTES.filter((route) => route.id !== "login").map((route) => ({
-  path: `/${route.id}`,
-  element: SCREEN_ELEMENTS[route.id] ?? <PlaceholderPage navKey={route.navKey} />,
-}));
+const domainRoutes: RouteObject[] = ROUTES.filter((route) => route.id !== "login").map((route) => {
+  const lazy = SCREENS[route.id];
+  return lazy
+    ? { path: `/${route.id}`, lazy }
+    : { path: `/${route.id}`, element: <PlaceholderPage navKey={route.navKey} /> };
+});
 
 export const router = createBrowserRouter([
   { path: "/", element: <Navigate to="/dashboard" replace /> },
-  { path: "/login", element: <LoginPage /> },
+  { path: "/login", HydrateFallback: () => null, lazy: async () => ({ Component: (await import("../features/auth/LoginPage")).LoginPage }) },
   {
+    HydrateFallback: () => null,
     element: <RequireAuth />,
     children: [
       {
