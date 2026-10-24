@@ -17,7 +17,7 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
         with:
           prune-cache: false
       - run: uv export --frozen --no-hashes --no-emit-project -o requirements-audit.txt
