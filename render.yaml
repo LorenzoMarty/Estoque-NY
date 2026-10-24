@@ -38,3 +38,21 @@ services:
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: .
+  - type: cron
+    name: estoque-ny-jobs
+    env: python
+    schedule: "0 3 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.jobs purge_idempotency_keys
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      # Same values as the API: settings validation needs them even for a job.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
