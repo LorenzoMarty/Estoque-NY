@@ -9,7 +9,7 @@ The API uses credentials. A `*` in `CORS_ORIGINS` became `allow_origin_regex=".*
 
 ## Decision
 
-With `APP_ENV=production`, an empty `CORS_ORIGINS` or one containing `*` makes the API refuse to start.
+With `APP_ENV=production`, an empty `CORS_ORIGINS` or one containing `*` makes the API refuse to start, and so does an entry that is not a plain `scheme://host[:port]` origin (it would never match and CORS would break silently).
 
 ## Consequences
 
