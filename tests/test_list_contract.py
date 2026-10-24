@@ -77,3 +77,68 @@ async def test_list_routes_envelope_cap_and_sort_whitelist(client):
                 assert resp.status_code == 200, (path, bad)
             bad_order = await client.get(path, params={"order": "up"}, headers=headers)
             assert bad_order.status_code in (400, 422), path
+
+
+def _walk_pages(session, sort: str, order: str) -> list[int]:
+    from sqlalchemy import select
+
+    from app.core.pagination import PaginationParams, apply_order_and_pagination
+    from app.models.entities import Category
+
+    ids: list[int] = []
+    for page in range(1, 6):
+        params = PaginationParams(page=page, page_size=3, sort=sort, order=order)
+        stmt = apply_order_and_pagination(
+            select(Category.id),
+            model=Category,
+            params=params,
+            allowed_sort_fields={"created_at"},
+        )
+        ids += list(session.scalars(stmt))
+    return ids
+
+
+@pytest.mark.parametrize("sort", ["bogus", "created_at"])
+@pytest.mark.parametrize("order", ["asc", "desc"])
+def test_pages_are_stable_and_non_overlapping(sort, order):
+    """Unknown or tied sort values still page each row exactly once (#130)."""
+    from datetime import UTC, datetime
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from app.models.base import Base
+    from app.models.entities import Category
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine, tables=[Category.__table__])
+    same = datetime(2026, 1, 1, tzinfo=UTC)
+    with Session(engine) as session:
+        session.add_all(Category(name=f"c{i}", created_at=same) for i in range(10))
+        session.commit()
+        ids = _walk_pages(session, sort, order)
+    assert sorted(ids) == list(range(1, 11))
+    assert len(ids) == len(set(ids))
+
+
+@pytest.mark.parametrize("sort", ["bogus", "created_at"])
+def test_order_by_always_ends_with_primary_key(sort):
+    """SQLite masks missing ORDER BY (rowid order), so assert the SQL itself (#130)."""
+    from sqlalchemy import select
+
+    from app.core.pagination import PaginationParams, apply_order_and_pagination
+    from app.models.entities import Category
+
+    stmt = apply_order_and_pagination(
+        select(Category.id),
+        model=Category,
+        params=PaginationParams(sort=sort),
+        allowed_sort_fields={"created_at"},
+    )
+    assert (
+        str(stmt)
+        .split("ORDER BY")[1]
+        .split("LIMIT")[0]
+        .strip()
+        .endswith("categories.id")
+    )
