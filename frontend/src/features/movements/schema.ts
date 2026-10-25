@@ -3,6 +3,18 @@ import { z } from "zod";
 export const moveKindSchema = z.enum(["receipt", "issue", "adjustment"]);
 export type MoveKind = z.infer<typeof moveKindSchema>;
 
+/** Why stock left (issues and adjustments); feeds the shrinkage report. Keep in sync with the API's StockReason. */
+export const STOCK_REASONS = {
+  BREAKAGE: "Quebra",
+  THEFT: "Furto",
+  EXPIRY: "Vencimento",
+  DAMAGE: "Avaria",
+  SAMPLE: "Amostra",
+  COUNT_CORRECTION: "Correção de contagem",
+  OTHER: "Outro",
+} as const;
+export const stockReasonSchema = z.enum(Object.keys(STOCK_REASONS) as [keyof typeof STOCK_REASONS]);
+
 const baseFields = {
   branch_id: z.coerce.number({ error: "Selecione a filial." }).int().positive(),
   sku_id: z.coerce.number({ error: "Selecione a variação." }).int().positive(),
@@ -18,11 +30,13 @@ export const receiptSchema = z.object({
 
 export const issueSchema = z.object({
   ...baseFields,
+  reason_code: stockReasonSchema.optional(),
   qty: z.coerce.number({ error: "Informe a quantidade." }).int().positive("Quantidade deve ser maior que zero."),
 });
 
 export const adjustmentSchema = z.object({
   ...baseFields,
+  reason_code: stockReasonSchema.optional(),
   qty_delta: z.coerce
     .number({ error: "Informe o ajuste." })
     .int()
@@ -46,6 +60,7 @@ export const movementFormSchema = z.object({
   location_id: z.number().int().positive().optional(),
   reason: z.string().max(240).optional(),
   reference_id: z.string().max(120).optional(),
+  reason_code: stockReasonSchema.optional(),
   qty: z.number().int().optional(),
   qty_delta: z.number().int().optional(),
 });

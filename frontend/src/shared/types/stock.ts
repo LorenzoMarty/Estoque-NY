@@ -92,6 +92,7 @@ export interface StockMove {
   occurred_at: string;
   created_at: string;
   reason: string | null;
+  reason_code?: string | null;
   reference_id: string | null;
   balance_after: number;
 }

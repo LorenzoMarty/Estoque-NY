@@ -655,6 +655,10 @@ class StockMove(Base):
         server_default=func.now(),
     )
     reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # StockReason value for issues and adjustments (shrinkage report).
+    reason_code: Mapped[str | None] = mapped_column(
+        String(32), nullable=True, index=True
+    )
     reference_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
 

@@ -16,6 +16,7 @@ EXEMPT = {
     "/auth/permissions",  # bounded reference data, bare array kept for clients
     "/data/export/catalog.csv",  # file download
     "/reports/marketing/dashboard-summary",  # single aggregate object
+    "/reports/stock/shrinkage",  # paged items plus a totals block
     "/public/v1/catalog",  # frozen public contract, see test_public_contract
     "/public/v1/branches",  # frozen public contract, bounded by branch count
 }

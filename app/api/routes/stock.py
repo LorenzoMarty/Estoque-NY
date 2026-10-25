@@ -52,6 +52,7 @@ def build_move_out(move: StockMove, balance_after: int) -> StockMoveOut:
         occurred_at=move.occurred_at,
         created_at=move.created_at,
         reason=move.reason,
+        reason_code=move.reason_code,
         reference_id=move.reference_id,
         balance_after=balance_after,
     )
@@ -153,6 +154,7 @@ async def create_issue(
             qty_delta=-payload.qty,
             move_type=MoveType.ISSUE,
             reason=payload.reason,
+            reason_code=payload.reason_code,
             reference_id=payload.reference_id,
             occurred_at=payload.occurred_at,
             location_id=payload.location_id,
@@ -218,6 +220,7 @@ async def create_adjustment(
             qty_delta=payload.qty_delta,
             move_type=MoveType.ADJUSTMENT,
             reason=payload.reason,
+            reason_code=payload.reason_code,
             reference_id=payload.reference_id,
             occurred_at=payload.occurred_at,
             location_id=payload.location_id,

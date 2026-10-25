@@ -11,6 +11,7 @@ import {
   issueSchema,
   movementFormSchema,
   receiptSchema,
+  STOCK_REASONS,
   type MoveKind,
   type MovementFormValues,
 } from "./schema";
@@ -147,6 +148,22 @@ export function MovementForm({ onSuccess }: { onSuccess: () => void }) {
                 error={errors.qty?.message}
                 value={field.value ?? ""}
                 onChange={(value) => field.onChange(value)}
+              />
+            )}
+          />
+        )}
+        {kind !== "receipt" && (
+          <Controller
+            name="reason_code"
+            control={control}
+            render={({ field }) => (
+              <Select
+                label="Tipo de motivo (opcional)"
+                description="Alimenta o relatório de perdas"
+                clearable
+                data={Object.entries(STOCK_REASONS).map(([value, label]) => ({ value, label }))}
+                value={field.value ?? null}
+                onChange={(value) => field.onChange(value ?? undefined)}
               />
             )}
           />

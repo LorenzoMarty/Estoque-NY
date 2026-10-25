@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from pydantic import Field, field_validator
 
-from app.models.enums import MoveType
+from app.models.enums import MoveType, StockReason
 from app.schemas.base import SchemaBase
 
 
@@ -28,6 +28,7 @@ class StockAdjustmentIn(_MoveInBase):
     qty_delta: int
     location_id: int | None = None
     reason: str | None = None
+    reason_code: StockReason | None = None
     reference_id: str | None = None
     occurred_at: datetime | None = None
 
@@ -52,6 +53,7 @@ class StockIssueIn(_MoveInBase):
     qty: int = Field(..., gt=0)
     location_id: int | None = None
     reason: str | None = None
+    reason_code: StockReason | None = None
     reference_id: str | None = None
     occurred_at: datetime | None = None
 
@@ -69,6 +71,7 @@ class StockMoveOut(SchemaBase):
     occurred_at: datetime
     created_at: datetime
     reason: str | None
+    reason_code: str | None = None
     reference_id: str | None
     balance_after: int
 
