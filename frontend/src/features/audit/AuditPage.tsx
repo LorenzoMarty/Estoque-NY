@@ -1,14 +1,16 @@
-import { Button, Group, Modal, Table, Text, TextInput } from "@mantine/core";
+import { Button, Group, Modal, Select, Table, Text, TextInput } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import { QueryState } from "../../shared/ui/QueryState";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { StatusPill } from "../../shared/ui/StatusPill";
 import { DataTable } from "../../shared/ui/DataTable";
 import { PageHeader } from "../../shared/ui/PageHeader";
 import type { StatusTone } from "../../app/theme";
 import { strings } from "../../shared/strings";
-import { useAuditLogsQuery, type AuditLog } from "./api";
+import { useBranchesQuery } from "../../shared/api/catalog";
+import { downloadAuditCsv, useAuditLogsQuery, type AuditFilters, type AuditLog } from "./api";
 import { computeDiff } from "./diff";
 
 const tableFeatureSet = tableFeatures({});
@@ -65,9 +67,25 @@ function DiffModal({ log, onClose }: { log: AuditLog | null; onClose: () => void
 }
 
 export function AuditPage() {
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<AuditFilters>({});
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
-  const { data: logs, isLoading, isError, refetch } = useAuditLogsQuery({ q: search || undefined });
+  const { data: logs, isLoading, isError, refetch } = useAuditLogsQuery(filters);
+  const { data: branches } = useBranchesQuery();
+  const branchOptions = useMemo(() => (branches ?? []).map((b) => ({ value: String(b.id), label: b.name })), [branches]);
+  const setFilter = (key: keyof AuditFilters) => (value: string | null) =>
+    setFilters((current) => ({ ...current, [key]: value || undefined }));
+
+  async function exportCsv() {
+    try {
+      await downloadAuditCsv(filters);
+    } catch (error) {
+      notifications.show({
+        color: "red",
+        title: "Não foi possível exportar",
+        message: error instanceof Error ? error.message : "Tente novamente.",
+      });
+    }
+  }
 
   const columns = useMemo(
     () =>
@@ -101,10 +119,55 @@ export function AuditPage() {
           aria-label="Buscar por ação ou recurso"
           placeholder="Buscar por ação ou recurso"
           leftSection={<Search size={16} />}
-          value={search}
-          onChange={(event) => setSearch(event.currentTarget.value)}
-          w={{ base: "100%", sm: 420 }}
+          value={filters.q ?? ""}
+          onChange={(event) => setFilter("q")(event.currentTarget.value)}
+          w={{ base: "100%", sm: 320 }}
         />
+        <TextInput
+          aria-label="Recurso"
+          placeholder="Recurso (ex.: branch)"
+          value={filters.resourceType ?? ""}
+          onChange={(event) => setFilter("resourceType")(event.currentTarget.value)}
+          w={{ base: "100%", sm: 170 }}
+        />
+        <TextInput
+          aria-label="ID do recurso"
+          placeholder="ID do recurso"
+          value={filters.resourceId ?? ""}
+          onChange={(event) => setFilter("resourceId")(event.currentTarget.value)}
+          w={{ base: "100%", sm: 130 }}
+        />
+        <TextInput
+          aria-label="ID do usuário"
+          placeholder="ID do usuário"
+          value={filters.userId ?? ""}
+          onChange={(event) => setFilter("userId")(event.currentTarget.value)}
+          w={{ base: "100%", sm: 130 }}
+        />
+        <Select
+          aria-label="Filial"
+          placeholder="Todas as filiais"
+          clearable
+          data={branchOptions}
+          value={filters.branchId ?? null}
+          onChange={setFilter("branchId")}
+          w={{ base: "100%", sm: 190 }}
+        />
+        <TextInput
+          type="date"
+          aria-label="De"
+          value={filters.fromDate ?? ""}
+          onChange={(event) => setFilter("fromDate")(event.currentTarget.value)}
+        />
+        <TextInput
+          type="date"
+          aria-label="Até"
+          value={filters.toDate ?? ""}
+          onChange={(event) => setFilter("toDate")(event.currentTarget.value)}
+        />
+        <Button variant="default" leftSection={<Download size={16} />} onClick={() => void exportCsv()}>
+          Exportar CSV
+        </Button>
       </Group>
 
       <QueryState isLoading={isLoading} isError={isError} isEmpty={(logs ?? []).length === 0} errorMessage="Não foi possível carregar a auditoria." emptyMessage="Nenhum registro de auditoria encontrado." onRetry={() => void refetch()}>
