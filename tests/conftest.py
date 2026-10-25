@@ -28,7 +28,7 @@ async def client(tmp_path):
 
     os.environ["DATABASE_URL"] = database_url
     os.environ["AUTH_ENABLED"] = "true"
-    os.environ["JWT_SECRET"] = "test-secret-key"
+    os.environ["JWT_SECRET"] = "test-secret-key-0123456789-abcdefghijkl"
     os.environ["APP_ENV"] = "test"
 
     get_settings.cache_clear()
