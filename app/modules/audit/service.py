@@ -12,6 +12,15 @@ from app.modules.audit.repository import list_audit_logs
 # One export never returns more than this many rows; narrow the filters for more.
 EXPORT_LIMIT = 10_000
 
+
+class ExportTooLargeError(Exception):
+    def __init__(self, total: int):
+        super().__init__(
+            f"{total} rows match, the export limit is {EXPORT_LIMIT}; "
+            "narrow the filters (dates, branch, user) and try again"
+        )
+
+
 CSV_COLUMNS = [
     "id",
     "created_at",
@@ -115,10 +124,15 @@ async def export_audit_logs_csv(
     order: str,
     **filters: Any,
 ) -> str:
-    """Every row matching the same filters as the list, up to EXPORT_LIMIT."""
-    _, rows = await list_audit_logs(
+    """Every row matching the same filters as the list.
+
+    Refuses (413) above EXPORT_LIMIT rather than hand over a silently partial file.
+    """
+    total, rows = await list_audit_logs(
         session, page=1, page_size=EXPORT_LIMIT, sort=sort, order=order, **filters
     )
+    if total > EXPORT_LIMIT:
+        raise ExportTooLargeError(total)
     buffer = StringIO()
     writer = csv.DictWriter(buffer, fieldnames=CSV_COLUMNS)
     writer.writeheader()

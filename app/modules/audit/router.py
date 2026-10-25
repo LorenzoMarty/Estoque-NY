@@ -1,13 +1,17 @@
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.security import require_permission
 from app.db.session import get_session
-from app.modules.audit.service import export_audit_logs_csv, list_audit_logs_service
+from app.modules.audit.service import (
+    ExportTooLargeError,
+    export_audit_logs_csv,
+    list_audit_logs_service,
+)
 
 router = APIRouter(
     prefix="/admin",
@@ -47,11 +51,18 @@ async def list_audit_logs(
         "to_date": to_date,
     }
     if export == "csv":
-        body = await export_audit_logs_csv(session, sort=sort, order=order, **filters)
+        try:
+            body = await export_audit_logs_csv(
+                session, sort=sort, order=order, **filters
+            )
+        except ExportTooLargeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE, detail=str(exc)
+            ) from exc
         return Response(
             content=body,
             media_type="text/csv",
-            headers={"Content-Disposition": "attachment; filename=audit_logs.csv"},
+            headers={"Content-Disposition": "attachment; filename=auditoria.csv"},
         )
     return await list_audit_logs_service(
         session,

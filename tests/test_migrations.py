@@ -121,3 +121,36 @@ def test_user_branches_migration_keeps_existing_users_working(tmp_path, monkeypa
             "SELECT user_id, branch_id FROM user_branches"
         ).fetchall()
     assert len(pairs) == 6  # 2 users x 3 branches: nobody is locked out by the upgrade
+
+
+def test_audit_branch_id_migration_backfills_existing_rows(tmp_path, monkeypatch):
+    db_file = tmp_path / "audit_backfill.db"
+    monkeypatch.setenv("DATABASE_URL", f"sqlite+aiosqlite:///{db_file.as_posix()}")
+    config = _alembic_config()
+
+    command.upgrade(config, "e6b3c8a1d5f2")  # the revision before audit_logs.branch_id
+    rows = [
+        ("branch.create", "branch", "7", None, '{"id": 7}'),
+        ("stock.receipt.create", "stock_move", "1", None, '{"branch_id": 3}'),
+        ("sku.update", "sku", "9", '{"branch_id": 4}', None),
+        ("product.create", "product", "2", None, '{"id": 2}'),
+    ]
+    with sqlite3.connect(db_file) as connection:
+        connection.executemany(
+            "INSERT INTO audit_logs (action, resource_type, resource_id, before_json, "
+            "after_json, created_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
+            rows,
+        )
+
+    command.upgrade(config, "head")
+
+    with sqlite3.connect(db_file) as connection:
+        found = dict(
+            connection.execute("SELECT action, branch_id FROM audit_logs").fetchall()
+        )
+    assert found == {
+        "branch.create": 7,
+        "stock.receipt.create": 3,
+        "sku.update": 4,
+        "product.create": None,
+    }

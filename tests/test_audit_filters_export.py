@@ -70,7 +70,7 @@ async def test_csv_export_matches_the_filtered_list(client):
 
     assert exported.status_code == 200
     assert exported.headers["content-type"].startswith("text/csv")
-    assert "audit_logs.csv" in exported.headers["content-disposition"]
+    assert "auditoria.csv" in exported.headers["content-disposition"]
     rows = _rows(exported.text)
     assert list(rows[0].keys()) == CSV_COLUMNS
     assert [r["id"] for r in rows] == [str(i["id"]) for i in listed]
@@ -103,3 +103,31 @@ async def test_formula_like_cells_are_neutralised():
     assert _safe_cell("-5") == "'-5"
     assert _safe_cell("branch.create") == "branch.create"
     assert _safe_cell(7) == 7
+
+
+async def test_csv_export_refuses_instead_of_truncating(client, monkeypatch):
+    from app.modules.audit import service
+
+    headers, *_ = await _scenario(client)
+    monkeypatch.setattr(service, "EXPORT_LIMIT", 2)
+
+    resp = await client.get(LOGS, params={"export": "csv"}, headers=headers)
+
+    assert resp.status_code == 413
+    assert "narrow the filters" in resp.text
+    # a filter that fits under the limit still exports
+    ok = await client.get(
+        LOGS, params={"export": "csv", "action": "branch.create"}, headers=headers
+    )
+    assert ok.status_code == 200
+
+
+async def test_csv_export_forbidden_without_audit_permission(client):
+    await register_and_login(client)  # the first user is the admin
+    # the second user only gets the default stock_operator role, which cannot read audit
+    other = await register_and_login(client, email="op@example.com", name="Operator")
+
+    listed = await client.get(LOGS, headers=other)
+    exported = await client.get(LOGS, params={"export": "csv"}, headers=other)
+
+    assert listed.status_code == exported.status_code == 403

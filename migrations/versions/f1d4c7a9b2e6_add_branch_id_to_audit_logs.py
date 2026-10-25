@@ -22,6 +22,37 @@ def upgrade() -> None:
     with op.batch_alter_table("audit_logs") as batch:
         batch.add_column(sa.Column("branch_id", sa.Integer(), nullable=True))
         batch.create_index("ix_audit_logs_branch_id", ["branch_id"])
+    _backfill()
+
+
+def _backfill() -> None:
+    """Fill branch_id on existing rows the way write_audit_log does for new ones."""
+    audit = sa.table(
+        "audit_logs",
+        sa.column("id", sa.Integer),
+        sa.column("resource_type", sa.String),
+        sa.column("resource_id", sa.String),
+        sa.column("branch_id", sa.Integer),
+        sa.column("before_json", sa.JSON),
+        sa.column("after_json", sa.JSON),
+    )
+    bind = op.get_bind()
+    for row in bind.execute(sa.select(audit)).mappings():
+        branch_id = None
+        if row["resource_type"] == "branch" and str(row["resource_id"]).isdigit():
+            branch_id = int(row["resource_id"])
+        else:
+            for payload in (row["after_json"], row["before_json"]):
+                value = payload.get("branch_id") if isinstance(payload, dict) else None
+                if isinstance(value, int):
+                    branch_id = value
+                    break
+        if branch_id is not None:
+            bind.execute(
+                sa.update(audit)
+                .where(audit.c.id == row["id"])
+                .values(branch_id=branch_id)
+            )
 
 
 def downgrade() -> None:
