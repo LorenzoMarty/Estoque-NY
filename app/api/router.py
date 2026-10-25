@@ -6,6 +6,7 @@ from app.api.routes import (
     health,
     lots,
     public,
+    purchasing,
     thresholds,
 )
 from app.modules import (
@@ -35,6 +36,7 @@ api_router.include_router(skus.router)
 api_router.include_router(archive.router)
 api_router.include_router(thresholds.router)
 api_router.include_router(lots.router)
+api_router.include_router(purchasing.router)
 api_router.include_router(stock.router)
 api_router.include_router(transfers.router)
 api_router.include_router(inventory.router)

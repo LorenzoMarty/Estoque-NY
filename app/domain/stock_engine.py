@@ -48,6 +48,8 @@ async def apply_move(
     unit_cost: Decimal | None = None,
     reason_code: str | None = None,
     lot: LotSpec | None = None,
+    supplier_id: int | None = None,
+    purchase_order_id: int | None = None,
 ) -> tuple[StockMove, StockBalance]:
     if qty_delta == 0:
         raise ValidationError("qty_delta must be non-zero")
@@ -70,6 +72,8 @@ async def apply_move(
             unit_cost=unit_cost,
             reason_code=reason_code,
             lot=lot,
+            supplier_id=supplier_id,
+            purchase_order_id=purchase_order_id,
         )
 
     async with session.begin():
@@ -90,6 +94,8 @@ async def apply_move(
             unit_cost=unit_cost,
             reason_code=reason_code,
             lot=lot,
+            supplier_id=supplier_id,
+            purchase_order_id=purchase_order_id,
         )
 
 
@@ -111,6 +117,8 @@ async def _apply_move_inner(
     unit_cost: Decimal | None = None,
     reason_code: str | None = None,
     lot: LotSpec | None = None,
+    supplier_id: int | None = None,
+    purchase_order_id: int | None = None,
 ) -> tuple[StockMove, StockBalance]:
     settings = get_settings()
     move_occurred_at = occurred_at or datetime.now(UTC)
@@ -205,6 +213,8 @@ async def _apply_move_inner(
             occurred_at=move_occurred_at,
             reason=reason,
             reason_code=reason_code,
+            supplier_id=supplier_id,
+            purchase_order_id=purchase_order_id,
             reference_id=reference_id,
         )
         session.add(move)

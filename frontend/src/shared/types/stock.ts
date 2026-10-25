@@ -97,6 +97,9 @@ export interface StockMove {
   reason_code?: string | null;
   reference_id: string | null;
   balance_after: number;
+  supplier_id?: number | null;
+  supplier_name?: string | null;
+  purchase_order_id?: number | null;
 }
 
 export interface TransferItem {

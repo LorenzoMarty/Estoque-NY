@@ -371,3 +371,57 @@ async def test_lots_follow_the_branch_scope(shop):
         headers=ana,
     )
     assert plan.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_purchase_orders_follow_the_branch_scope(shop):
+    a, b = shop["branches"]["A"], shop["branches"]["B"]
+    client, admin, sku = shop["client"], shop["admin"], shop["sku"]
+    supplier = await client.post(
+        "/stock/suppliers", json={"name": "Forn"}, headers=admin
+    )
+    supplier_id = supplier.json()["id"]
+    ids = {}
+    for name, (branch_id, location_id) in (("A", a), ("B", b)):
+        resp = await client.post(
+            "/stock/purchase-orders",
+            json={
+                "supplier_id": supplier_id,
+                "branch_id": branch_id,
+                "location_id": location_id,
+                "items": [{"sku_id": sku, "qty": 3}],
+            },
+            headers=admin,
+        )
+        assert resp.status_code == 201
+        ids[name] = resp.json()["id"]
+    await _put_branches(shop, "ana@example.com", [a[0]], {a[0]: "manager"})
+    ana = shop["ana"]
+
+    mine = await client.get("/stock/purchase-orders", headers=ana)
+    assert [o["id"] for o in mine.json()["items"]] == [ids["A"]]
+    assert (
+        await client.get(f"/stock/purchase-orders/{ids['B']}", headers=ana)
+    ).status_code == 403
+    receive_b = await client.post(
+        f"/stock/purchase-orders/{ids['B']}/receive",
+        json={"items": [{"sku_id": sku, "qty": 1}]},
+        headers=ana,
+    )
+    assert receive_b.status_code == 403
+    create_b = await client.post(
+        "/stock/purchase-orders",
+        json={
+            "supplier_id": supplier_id,
+            "branch_id": b[0],
+            "items": [{"sku_id": sku, "qty": 1}],
+        },
+        headers=ana,
+    )
+    assert create_b.status_code == 403
+    receive_a = await client.post(
+        f"/stock/purchase-orders/{ids['A']}/receive",
+        json={"items": [{"sku_id": sku, "qty": 1}]},
+        headers=ana,
+    )
+    assert receive_a.status_code == 200

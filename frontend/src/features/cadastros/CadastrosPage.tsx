@@ -18,10 +18,12 @@ import { BranchProfileModal } from "./BranchProfileModal";
 import { LocationsTab } from "./LocationsTab";
 import { NameOnlyTab } from "./NameOnlyTab";
 import { ThresholdsTab } from "./ThresholdsTab";
+import { useCreateSupplier, useDeleteSupplier, useSuppliersQuery, useUpdateSupplier } from "./suppliers";
 
 export function CadastrosPage() {
   const branchesQuery = useBranchesQuery();
   const brandsQuery = useBrandsQuery();
+  const suppliersQuery = useSuppliersQuery();
   const [profileBranch, setProfileBranch] = useState<Branch | null>(null);
 
   return (
@@ -32,6 +34,7 @@ export function CadastrosPage() {
         <Tabs.List>
           <Tabs.Tab value="brands">Marcas</Tabs.Tab>
           <Tabs.Tab value="branches">Filiais</Tabs.Tab>
+          <Tabs.Tab value="suppliers">Fornecedores</Tabs.Tab>
           <Tabs.Tab value="locations">Locais</Tabs.Tab>
           <Tabs.Tab value="thresholds">Estoque mínimo</Tabs.Tab>
         </Tabs.List>
@@ -62,6 +65,17 @@ export function CadastrosPage() {
             )}
           />
           <BranchProfileModal branch={profileBranch} onClose={() => setProfileBranch(null)} />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="suppliers" pt="md">
+          <NameOnlyTab
+            label="Fornecedor"
+            newLabel="Novo fornecedor"
+            query={suppliersQuery}
+            useCreate={useCreateSupplier}
+            useUpdate={useUpdateSupplier}
+            useDelete={useDeleteSupplier}
+          />
         </Tabs.Panel>
 
         <Tabs.Panel value="locations" pt="md">

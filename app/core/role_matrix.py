@@ -23,10 +23,15 @@ _SELLER = {
     "stock.branch.read",
     "stock.location.read",
     "stock.transfer.read",
+    "stock.supplier.read",
+    "stock.purchase.read",
     "marketing.promotion.read",
 } | _CATALOG_READ
 _STOCKKEEPER = _SELLER | {
     "stock.receipt.create",
+    "stock.purchase.create",
+    "stock.purchase.receive",
+    "stock.purchase.cancel",
     "stock.adjustment.create",
     "stock.transfer.create",
     "stock.transfer.ship",
@@ -43,6 +48,9 @@ _STOCKKEEPER = _SELLER | {
 _MANAGER = (
     _STOCKKEEPER
     | {
+        "stock.supplier.create",
+        "stock.supplier.update",
+        "stock.supplier.delete",
         "catalog.category.create",
         "catalog.category.update",
         "catalog.brand.create",

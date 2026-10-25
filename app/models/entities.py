@@ -28,6 +28,7 @@ from app.models.enums import (
     MarketingChannelType,
     MoveType,
     PromotionStatus,
+    PurchaseOrderStatus,
     TransferStatus,
 )
 
@@ -660,6 +661,83 @@ class LotAllocation(Base):
     qty: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
+class Supplier(Base):
+    __tablename__ = "suppliers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(160), unique=True, nullable=False)
+    email: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    tax_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    active: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default=text("true")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class PurchaseOrder(Base):
+    """What was ordered from a supplier for one branch, and how much has arrived."""
+
+    __tablename__ = "purchase_orders"
+    __table_args__ = (Index("ix_purchase_orders_status", "status"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    supplier_id: Mapped[int] = mapped_column(
+        ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False
+    )
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.id", ondelete="RESTRICT"), nullable=False
+    )
+    # Where received stock goes unless the receipt names another location.
+    location_id: Mapped[int | None] = mapped_column(
+        ForeignKey("locations.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[PurchaseOrderStatus] = mapped_column(
+        Enum(PurchaseOrderStatus, name="purchase_order_status"),
+        nullable=False,
+        default=PurchaseOrderStatus.OPEN,
+        server_default=PurchaseOrderStatus.OPEN.value,
+    )
+    reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    expected_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    created_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class PurchaseOrderItem(Base):
+    __tablename__ = "purchase_order_items"
+    __table_args__ = (
+        UniqueConstraint("purchase_order_id", "sku_id", name="uq_po_items_order_sku"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    purchase_order_id: Mapped[int] = mapped_column(
+        ForeignKey("purchase_orders.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    sku_id: Mapped[int] = mapped_column(
+        ForeignKey("skus.id", ondelete="RESTRICT"), nullable=False
+    )
+    qty_ordered: Mapped[int] = mapped_column(Integer, nullable=False)
+    qty_received: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    # Price agreed with the supplier; feeds the moving average cost on receipt.
+    unit_cost: Mapped[Decimal | None] = mapped_column(Numeric(12, 4), nullable=True)
+
+
 class StockMove(Base):
     __tablename__ = "stock_moves"
     __table_args__ = (
@@ -726,6 +804,13 @@ class StockMove(Base):
     # StockReason value for issues and adjustments (shrinkage report).
     reason_code: Mapped[str | None] = mapped_column(
         String(32), nullable=True, index=True
+    )
+    # Set when the move is a purchase order receipt.
+    supplier_id: Mapped[int | None] = mapped_column(
+        ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True
+    )
+    purchase_order_id: Mapped[int | None] = mapped_column(
+        ForeignKey("purchase_orders.id", ondelete="SET NULL"), nullable=True
     )
     reference_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
