@@ -42,7 +42,7 @@ describe("ArchiveProductModal", () => {
     expect(submit).toBeDisabled();
 
     await userEvent.click(confirm);
-    await userEvent.type(screen.getByLabelText("Motivo (opcional)"), "baixa de linha");
+    await userEvent.type(screen.getByLabelText("Motivo"), "baixa de linha");
     expect(submit).toBeEnabled();
     await userEvent.click(submit);
 

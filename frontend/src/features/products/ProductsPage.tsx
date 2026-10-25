@@ -110,7 +110,7 @@ export function ProductsPage() {
             ),
         }),
       ]),
-    [showArchived, restore]
+    [showArchived, restore.mutate, restore.isPending, restore.variables]
   );
 
   const table = useTable({ features: tableFeatureSet, columns, data: rows.length ? rows : EMPTY_ROWS });

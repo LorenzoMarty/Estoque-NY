@@ -38,7 +38,7 @@ export function ArchiveProductModal({ product, onClose }: { product: Product | n
       <form onSubmit={handleSubmit}>
         <Stack>
           <Textarea
-            label="Motivo (opcional)"
+            label={needsForce ? "Motivo" : "Motivo (opcional)"}
             value={reason}
             onChange={(event) => setReason(event.currentTarget.value)}
             maxLength={255}

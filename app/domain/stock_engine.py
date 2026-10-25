@@ -124,8 +124,10 @@ async def _apply_move_inner(
         raise NotFoundError(f"sku {sku_id} not found")
     if not sku.active and not allow_inactive_sku:
         raise BusinessRuleError("cannot move inactive sku")
-    if sku.archived_at is not None and qty_delta > 0 and not allow_inactive_sku:
-        # Stock already there may still leave (write-off, sale); nothing new comes in.
+    incoming_new_stock = qty_delta > 0 and move_type != MoveType.TRANSFER_RECEIVE
+    if sku.archived_at is not None and incoming_new_stock and not allow_inactive_sku:
+        # Stock already there may still leave (write-off, sale) and stock already in
+        # transit may land; nothing new comes in.
         raise BusinessRuleError("cannot add stock to an archived sku")
 
     resolved_location_id = await _resolve_location_id(
