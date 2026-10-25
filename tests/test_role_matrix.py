@@ -284,3 +284,26 @@ async def test_margin_report_is_limited_to_the_users_branches(shop):
 
     other = await client.get(f"/reports/stock/margin?branch_id={b}", headers=ana)
     assert other.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_shrinkage_report_is_limited_to_the_users_branches(shop):
+    a, b = shop["branches"]["A"][0], shop["branches"]["B"][0]
+    for name in "AB":
+        resp = await _post(shop, "/stock/issues", shop["admin"], name, qty=2)
+        assert resp.status_code == 201
+    # an untagged issue per branch (excluded from the report), then a tagged one
+    for name in "AB":
+        resp = await _post(
+            shop, "/stock/issues", shop["admin"], name, qty=3, reason_code="THEFT"
+        )
+        assert resp.status_code == 201
+    await _put_branches(shop, "ana@example.com", [a], {a: "manager"})
+    ana, client = shop["ana"], shop["client"]
+
+    mine = await client.get("/reports/stock/shrinkage", headers=ana)
+    assert {r["branch_id"] for r in mine.json()["items"]} == {a}
+    assert mine.json()["totals"]["units"] == 3
+
+    other = await client.get(f"/reports/stock/shrinkage?branch_id={b}", headers=ana)
+    assert other.status_code == 403
