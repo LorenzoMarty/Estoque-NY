@@ -13,6 +13,7 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.errors import ConflictError, NotFoundError, ValidationError
@@ -92,17 +93,8 @@ async def allocate_lots(
     return await _issue(session, move, spec)
 
 
-async def _receive(
-    session: AsyncSession, move: StockMove, spec: LotSpec
-) -> list[Allocation]:
-    if spec.lot_id is not None:
-        raise ValidationError("lot_id only applies to outgoing movements")
-    if spec.expires_on is not None and not spec.code:
-        raise ValidationError("expires_on needs a lot_code")
-    if not spec.code:
-        return []
-    code = spec.code.strip()
-    lot = await session.scalar(
+async def _find_lot(session: AsyncSession, move: StockMove, code: str) -> Lot | None:
+    return await session.scalar(
         select(Lot)
         .where(
             Lot.branch_id == move.branch_id,
@@ -111,16 +103,51 @@ async def _receive(
         )
         .with_for_update()
     )
-    if lot is None:
-        lot = Lot(
-            branch_id=move.branch_id,
-            sku_id=move.sku_id,
-            code=code,
-            expires_on=spec.expires_on,
-            on_hand=0,
-        )
-        session.add(lot)
-    elif spec.expires_on is not None and lot.expires_on != spec.expires_on:
+
+
+async def _get_or_create_lot(
+    session: AsyncSession, move: StockMove, code: str, expires_on: date | None
+) -> Lot:
+    """The lot, created on first use.
+
+    FOR UPDATE cannot lock a row that does not exist yet, so two receipts creating the
+    same new lot can race: the loser hits the unique constraint inside a savepoint and
+    then reads the winner's row instead of failing the whole move.
+    """
+    lot = await _find_lot(session, move, code)
+    if lot is not None:
+        return lot
+    lot = Lot(
+        branch_id=move.branch_id,
+        sku_id=move.sku_id,
+        code=code,
+        expires_on=expires_on,
+        on_hand=0,
+    )
+    try:
+        async with session.begin_nested():
+            session.add(lot)
+            await session.flush()
+    except IntegrityError:
+        existing = await _find_lot(session, move, code)
+        if existing is None:
+            raise
+        return existing
+    return lot
+
+
+async def _receive(
+    session: AsyncSession, move: StockMove, spec: LotSpec
+) -> list[Allocation]:
+    if spec.lot_id is not None:
+        raise ValidationError("lot_id only applies to outgoing movements")
+    code = (spec.code or "").strip()
+    if spec.expires_on is not None and not code:
+        raise ValidationError("expires_on needs a lot_code")
+    if not code:
+        return []
+    lot = await _get_or_create_lot(session, move, code, spec.expires_on)
+    if spec.expires_on is not None and lot.expires_on != spec.expires_on:
         raise ConflictError(
             f"lot {code} already expires on {lot.expires_on}; "
             "use another lot code for a different expiry"

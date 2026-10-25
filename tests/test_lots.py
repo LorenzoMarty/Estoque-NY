@@ -223,3 +223,61 @@ async def test_adjustments_use_lots_too_and_transfers_do_not_touch_them(client):
 
 async def test_lots_require_auth(client):
     assert (await client.get("/stock/lots")).status_code == 401
+
+
+async def test_a_blank_lot_code_is_no_lot_and_never_a_lot_named_empty(client):
+    setup = await _setup(client)
+    headers = setup[0]
+    day = today_local() + timedelta(30)
+
+    plain = await _receive(client, headers, setup, 2, "   ")
+    assert plain.status_code == 201 and plain.json()["lots"] == []
+    assert await _lots(client, headers) == []
+
+    dated = await _receive(client, headers, setup, 2, "   ", day)
+    assert dated.status_code == 400 and "needs a lot_code" in dated.text
+
+
+async def test_losing_the_race_to_create_a_lot_joins_the_winners_lot(
+    client, monkeypatch
+):
+    from sqlalchemy import select
+
+    from app.core.db import get_sessionmaker
+    from app.domain import lots as lots_module
+    from app.models.entities import Lot, StockMove
+    from app.models.enums import MoveType
+
+    setup = await _setup(client)
+    _, branch_id, _, sku_id = setup
+    day = today_local() + timedelta(30)
+    # the winner: this lot already exists when the loser looks it up
+    await _receive(client, setup[0], setup, 1, "RACE", day)
+
+    real_find = lots_module._find_lot
+    calls = []
+
+    async def blind_first_time(session, move, code):
+        calls.append(code)
+        if len(calls) == 1:
+            return None  # the loser did not see the winner's row yet
+        return await real_find(session, move, code)
+
+    monkeypatch.setattr(lots_module, "_find_lot", blind_first_time)
+
+    async with get_sessionmaker()() as session:
+        move = StockMove(
+            branch_id=branch_id, sku_id=sku_id, move_type=MoveType.RECEIPT, qty=4
+        )
+        session.add(move)
+        await session.flush()
+        allocations = await lots_module.allocate_lots(
+            session, move, lots_module.LotSpec(code="RACE", expires_on=day)
+        )
+        await session.commit()
+
+    assert calls == ["RACE", "RACE"]  # looked up, hit the constraint, looked up again
+    assert [(a.code, a.qty) for a in allocations] == [("RACE", 4)]
+    async with get_sessionmaker()() as session:
+        rows = (await session.scalars(select(Lot))).all()
+    assert len(rows) == 1  # one lot, not two and not an error
