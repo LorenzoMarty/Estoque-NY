@@ -15,7 +15,7 @@ from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.domain import purchasing
 from app.domain.errors import DomainError, NotFoundError
-from app.models.entities import PurchaseOrder, Supplier, User
+from app.models.entities import PurchaseOrder, PurchaseOrderItem, Supplier, User
 from app.models.enums import PurchaseOrderStatus
 from app.schemas.purchasing import (
     PurchaseOrderCreate,
@@ -195,8 +195,14 @@ async def delete_supplier(
 # --- purchase orders ---------------------------------------------------------------
 
 
-async def _order_out(session: AsyncSession, order: PurchaseOrder) -> PurchaseOrderOut:
-    items = await purchasing.get_items(session, order.id)
+async def _order_out(
+    session: AsyncSession,
+    order: PurchaseOrder,
+    items: list[PurchaseOrderItem] | None = None,
+) -> PurchaseOrderOut:
+    """`items` lets a list load them for every order at once instead of one by one."""
+    if items is None:
+        items = await purchasing.get_items(session, order.id)
     return PurchaseOrderOut(
         id=order.id,
         supplier_id=order.supplier_id,
@@ -288,8 +294,17 @@ async def list_purchase_orders(
         default_sort="id",
     )
     orders = (await session.scalars(stmt)).all()
+    by_order: dict[int, list[PurchaseOrderItem]] = {o.id: [] for o in orders}
+    if orders:
+        found = await session.scalars(
+            select(PurchaseOrderItem)
+            .where(PurchaseOrderItem.purchase_order_id.in_(by_order))
+            .order_by(PurchaseOrderItem.id)
+        )
+        for item in found:
+            by_order[item.purchase_order_id].append(item)
     return PurchaseOrderListOut(
-        items=[await _order_out(session, o) for o in orders],
+        items=[await _order_out(session, o, by_order[o.id]) for o in orders],
         meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
     )
 

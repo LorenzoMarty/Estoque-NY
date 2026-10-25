@@ -60,8 +60,14 @@ async def create_order(
         location = await session.get(Location, payload.location_id)
         if location is None or location.branch_id != payload.branch_id:
             raise ValidationError("location does not belong to the branch")
+    skus = {
+        sku.id: sku
+        for sku in await session.scalars(
+            select(SKU).where(SKU.id.in_([line.sku_id for line in payload.items]))
+        )
+    }
     for line in payload.items:
-        sku = await session.get(SKU, line.sku_id)
+        sku = skus.get(line.sku_id)
         if sku is None:
             raise NotFoundError(f"sku {line.sku_id} not found")
         if sku.archived_at is not None or not sku.active:

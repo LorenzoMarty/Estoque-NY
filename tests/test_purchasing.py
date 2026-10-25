@@ -299,3 +299,39 @@ async def test_a_name_only_update_keeps_the_other_supplier_fields(client):
         "a@b.com",
         "123",
     )
+
+
+async def test_listing_purchase_orders_does_not_query_per_order(client):
+    from sqlalchemy import event
+
+    from app.core.db import get_engine
+
+    setup = await _setup(client)
+    headers = setup[0]
+    counts = {}
+
+    async def statements_for(n_orders):
+        for _ in range(n_orders):
+            await _order(client, headers, setup)
+        seen = []
+        engine = get_engine().sync_engine
+
+        def count(conn, cursor, statement, *args):
+            seen.append(statement)
+
+        event.listen(engine, "before_cursor_execute", count)
+        try:
+            resp = await client.get(
+                "/stock/purchase-orders", params={"page_size": 50}, headers=headers
+            )
+        finally:
+            event.remove(engine, "before_cursor_execute", count)
+        assert resp.status_code == 200
+        return len(resp.json()["items"]), len(seen)
+
+    counts[1] = await statements_for(1)
+    counts[5] = await statements_for(4)  # 5 orders in total now
+
+    (n1, q1), (n5, q5) = counts[1], counts[5]
+    assert (n1, n5) == (1, 5)
+    assert q5 == q1  # same number of queries however many orders
