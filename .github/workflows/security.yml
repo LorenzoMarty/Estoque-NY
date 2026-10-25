@@ -16,8 +16,8 @@ jobs:
     # Report-only until the open advisories are cleared (see #142); then drop this.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
         with:
           prune-cache: false
       - run: uv export --frozen --no-hashes --no-emit-project -o requirements-audit.txt
@@ -30,8 +30,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: npm audit --audit-level=high
