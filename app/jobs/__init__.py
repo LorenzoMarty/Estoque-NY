@@ -28,7 +28,8 @@ async def run_job(name: str) -> bool:
     try:
         result = await JOBS[name]()
     except Exception:
-        logger.exception("job failed name=%s", name)
+        elapsed_ms = (time.monotonic() - started) * 1000
+        logger.exception("job failed name=%s duration_ms=%.0f", name, elapsed_ms)
         return False
     elapsed_ms = (time.monotonic() - started) * 1000
     logger.info(

@@ -271,3 +271,16 @@ async def test_a_branch_scope_without_a_permission_context_denies(client):
 
     assert scope.allows(1) is False
     assert scope.visible_ids == frozenset()
+
+
+@pytest.mark.asyncio
+async def test_margin_report_is_limited_to_the_users_branches(shop):
+    a, b = shop["branches"]["A"][0], shop["branches"]["B"][0]
+    await _put_branches(shop, "ana@example.com", [a], {a: "manager"})
+    ana, client = shop["ana"], shop["client"]
+
+    mine = await client.get("/reports/stock/margin?group_by=branch", headers=ana)
+    assert [r["group_id"] for r in mine.json()["items"]] == [a]
+
+    other = await client.get(f"/reports/stock/margin?branch_id={b}", headers=ana)
+    assert other.status_code == 403

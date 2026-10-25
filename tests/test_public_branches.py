@@ -82,3 +82,18 @@ async def test_invalid_profile_is_rejected(client, bad):
     headers = await register_and_login(client)
     resp = await client.post("/branches", json={"name": "X", **bad}, headers=headers)
     assert resp.status_code == 400
+
+
+@pytest.mark.parametrize("cleared", [None, "   "])
+async def test_clearing_the_public_name_unpublishes_the_branch(client, cleared):
+    headers = await register_and_login(client)
+    branch_id = await _branch(client, headers, "Filial A", **PROFILE)
+    assert len((await client.get(URL)).json()["branches"]) == 1
+
+    resp = await client.put(
+        f"/branches/{branch_id}",
+        json={"name": "Filial A", "public_name": cleared},
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    assert (await client.get(URL)).json() == {"branches": []}

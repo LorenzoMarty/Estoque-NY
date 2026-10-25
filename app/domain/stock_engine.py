@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -162,9 +162,15 @@ async def _apply_move_inner(
 
         if unit_cost is not None and move_type == MoveType.RECEIPT:
             on_hand_now = await session.scalar(
-                select(func.coalesce(func.sum(StockBalance.on_hand), 0)).where(
-                    StockBalance.sku_id == sku_id
-                )
+                # Negative balances (ALLOW_NEGATIVE_STOCK) must not offset real stock.
+                select(
+                    func.coalesce(
+                        func.sum(
+                            case((StockBalance.on_hand > 0, StockBalance.on_hand))
+                        ),
+                        0,
+                    )
+                ).where(StockBalance.sku_id == sku_id)
             )
             sku.cost = moving_average_cost(
                 int(on_hand_now or 0), sku.cost, qty_delta, unit_cost
