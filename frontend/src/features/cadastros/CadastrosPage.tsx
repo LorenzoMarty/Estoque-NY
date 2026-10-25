@@ -17,6 +17,7 @@ import { strings } from "../../shared/strings";
 import { BranchProfileModal } from "./BranchProfileModal";
 import { LocationsTab } from "./LocationsTab";
 import { NameOnlyTab } from "./NameOnlyTab";
+import { ThresholdsTab } from "./ThresholdsTab";
 
 export function CadastrosPage() {
   const branchesQuery = useBranchesQuery();
@@ -32,6 +33,7 @@ export function CadastrosPage() {
           <Tabs.Tab value="brands">Marcas</Tabs.Tab>
           <Tabs.Tab value="branches">Filiais</Tabs.Tab>
           <Tabs.Tab value="locations">Locais</Tabs.Tab>
+          <Tabs.Tab value="thresholds">Estoque mínimo</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="brands" pt="md">
@@ -64,6 +66,10 @@ export function CadastrosPage() {
 
         <Tabs.Panel value="locations" pt="md">
           <LocationsTab />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="thresholds" pt="md">
+          <ThresholdsTab />
         </Tabs.Panel>
       </Tabs>
     </div>

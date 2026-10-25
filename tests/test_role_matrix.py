@@ -307,3 +307,35 @@ async def test_shrinkage_report_is_limited_to_the_users_branches(shop):
 
     other = await client.get(f"/reports/stock/shrinkage?branch_id={b}", headers=ana)
     assert other.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_thresholds_and_low_stock_follow_the_branch_scope(shop):
+    a, b = shop["branches"]["A"][0], shop["branches"]["B"][0]
+    client, admin, sku = shop["client"], shop["admin"], shop["sku"]
+    for branch in (a, b):  # every branch holds 50 units; ask for more
+        resp = await client.put(
+            "/stock/thresholds",
+            json={"branch_id": branch, "sku_id": sku, "min_qty": 80},
+            headers=admin,
+        )
+        assert resp.status_code == 200
+    await _put_branches(shop, "ana@example.com", [a], {a: "manager"})
+    ana = shop["ana"]
+
+    mine = await client.get("/stock/low-stock", headers=ana)
+    assert {i["branch_id"] for i in mine.json()["items"]} == {a}
+    assert (
+        await client.get(f"/stock/low-stock?branch_id={b}", headers=ana)
+    ).status_code == 403
+    assert {
+        t["branch_id"]
+        for t in (await client.get("/stock/thresholds", headers=ana)).json()["items"]
+    } == {a}
+
+    denied = await client.put(
+        "/stock/thresholds",
+        json={"branch_id": b, "sku_id": sku, "min_qty": 1},
+        headers=ana,
+    )
+    assert denied.status_code == 403

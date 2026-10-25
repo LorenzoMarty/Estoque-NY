@@ -13,11 +13,13 @@ from collections.abc import Awaitable, Callable
 from app.core.logging import configure_logging
 from app.db.session import dispose_engine
 from app.services.idempotency_service import purge_expired_idempotency_keys
+from app.services.low_stock_service import send_low_stock_alert
 
 logger = logging.getLogger("app.jobs")
 
 JOBS: dict[str, Callable[[], Awaitable[object]]] = {
     "purge_idempotency_keys": purge_expired_idempotency_keys,
+    "low_stock_alert": send_low_stock_alert,
 }
 
 

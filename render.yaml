@@ -56,3 +56,32 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+  - type: cron
+    name: estoque-ny-low-stock
+    env: python
+    # 11:00 UTC = 08:00 in Sao Paulo.
+    schedule: "0 11 * * *"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m app.jobs low_stock_alert
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      # Optional: without SMTP the alert is only written to the job log.
+      - key: ALERT_EMAIL_TO
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
