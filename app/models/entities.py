@@ -1,9 +1,10 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    Date,
     DateTime,
     Enum,
     ForeignKey,
@@ -590,6 +591,30 @@ class StockBalance(Base):
         default=_utc_now,
         server_default=func.now(),
     )
+
+
+class StockThreshold(Base):
+    """Reorder thresholds of one SKU in one branch (summed over its locations)."""
+
+    __tablename__ = "stock_thresholds"
+    __table_args__ = (
+        UniqueConstraint("branch_id", "sku_id", name="uq_stock_thresholds_branch_sku"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.id", ondelete="CASCADE"), nullable=False
+    )
+    sku_id: Mapped[int] = mapped_column(
+        ForeignKey("skus.id", ondelete="CASCADE"), nullable=False
+    )
+    # 0 means "no alert"; the SKU is low when its branch total is below min_qty.
+    min_qty: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    max_qty: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Day (America/Sao_Paulo) of the last alert, so a SKU alerts once a day.
+    last_alert_on: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 
 class StockMove(Base):

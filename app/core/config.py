@@ -48,6 +48,14 @@ class Settings(BaseSettings):
     # >= 1: a zero TTL would also purge in-flight keys and allow double-apply on retry.
     idempotency_ttl_hours: int = Field(default=24, ge=1)
 
+    # Low-stock alert e-mail; with no SMTP host or recipient the alert is only logged.
+    alert_email_to: str | None = None
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_from: str = "estoque@localhost"
+
     cors_origins: str = "*"
     # Host header allow-list, comma-separated (e.g. "api.example.com,*.onrender.com").
     # "*" accepts any host: the safe default for dev/tests, set it in production.
