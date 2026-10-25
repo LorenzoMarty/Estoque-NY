@@ -152,6 +152,18 @@ export function MovementForm({ onSuccess }: { onSuccess: () => void }) {
             )}
           />
         )}
+        {kind === "receipt" && (
+          <>
+            <TextInput label="Lote (opcional)" {...register("lot_code")} />
+            <TextInput
+              type="date"
+              label="Validade do lote (opcional)"
+              description="Defina ao criar o lote; vale para as próximas entradas dele"
+              error={errors.expires_on?.message}
+              {...register("expires_on")}
+            />
+          </>
+        )}
         {kind !== "receipt" && (
           <Controller
             name="reason_code"

@@ -13,6 +13,7 @@ from app.domain.errors import (
     NotFoundError,
     ValidationError,
 )
+from app.domain.lots import LotSpec, allocate_lots
 from app.models.entities import SKU, Branch, Location, StockBalance, StockMove
 from app.models.enums import MoveType
 
@@ -46,6 +47,7 @@ async def apply_move(
     allow_inactive_sku: bool = False,
     unit_cost: Decimal | None = None,
     reason_code: str | None = None,
+    lot: LotSpec | None = None,
 ) -> tuple[StockMove, StockBalance]:
     if qty_delta == 0:
         raise ValidationError("qty_delta must be non-zero")
@@ -67,6 +69,7 @@ async def apply_move(
             allow_inactive_sku=allow_inactive_sku,
             unit_cost=unit_cost,
             reason_code=reason_code,
+            lot=lot,
         )
 
     async with session.begin():
@@ -86,6 +89,7 @@ async def apply_move(
             allow_inactive_sku=allow_inactive_sku,
             unit_cost=unit_cost,
             reason_code=reason_code,
+            lot=lot,
         )
 
 
@@ -106,6 +110,7 @@ async def _apply_move_inner(
     allow_inactive_sku: bool,
     unit_cost: Decimal | None = None,
     reason_code: str | None = None,
+    lot: LotSpec | None = None,
 ) -> tuple[StockMove, StockBalance]:
     settings = get_settings()
     move_occurred_at = occurred_at or datetime.now(UTC)
@@ -205,6 +210,8 @@ async def _apply_move_inner(
         session.add(move)
         await session.flush()
         await session.refresh(move)
+        # Not a column: lets the route show which lots the move touched.
+        move.allocated_lots = await allocate_lots(session, move, lot)  # type: ignore[attr-defined]
 
     except IntegrityError as exc:
         raise ConflictError("movement conflicts with existing reference_id") from exc

@@ -339,3 +339,35 @@ async def test_thresholds_and_low_stock_follow_the_branch_scope(shop):
         headers=ana,
     )
     assert denied.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_lots_follow_the_branch_scope(shop):
+    a, b = shop["branches"]["A"], shop["branches"]["B"]
+    client, admin, sku = shop["client"], shop["admin"], shop["sku"]
+    for branch_id, location_id in (a, b):
+        resp = await client.post(
+            "/stock/receipts",
+            json={
+                "branch_id": branch_id,
+                "location_id": location_id,
+                "sku_id": sku,
+                "qty": 2,
+                "lot_code": f"L-{branch_id}",
+            },
+            headers=admin,
+        )
+        assert resp.status_code == 201
+    await _put_branches(shop, "ana@example.com", [a[0]], {a[0]: "manager"})
+    ana = shop["ana"]
+
+    mine = await client.get("/stock/lots", headers=ana)
+    assert {lot["branch_id"] for lot in mine.json()["items"]} == {a[0]}
+    other = await client.get(f"/stock/lots?branch_id={b[0]}", headers=ana)
+    assert other.status_code == 403
+    plan = await client.get(
+        "/stock/lots/fefo",
+        params={"branch_id": b[0], "sku_id": sku, "qty": 1},
+        headers=ana,
+    )
+    assert plan.status_code == 403

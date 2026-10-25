@@ -617,6 +617,49 @@ class StockThreshold(Base):
     last_alert_on: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 
+class Lot(Base):
+    """A batch of one SKU in one branch, with its own expiry (issue #19)."""
+
+    __tablename__ = "lots"
+    __table_args__ = (
+        UniqueConstraint("branch_id", "sku_id", "code", name="uq_lots_branch_sku_code"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.id", ondelete="CASCADE"), nullable=False
+    )
+    sku_id: Mapped[int] = mapped_column(
+        ForeignKey("skus.id", ondelete="CASCADE"), nullable=False
+    )
+    code: Mapped[str] = mapped_column(String(60), nullable=False)
+    expires_on: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    on_hand: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+
+
+class LotAllocation(Base):
+    """Units a stock move put into (+) or took out of (-) a lot."""
+
+    __tablename__ = "lot_allocations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    move_id: Mapped[int] = mapped_column(
+        ForeignKey("stock_moves.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    lot_id: Mapped[int] = mapped_column(
+        ForeignKey("lots.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    qty: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
 class StockMove(Base):
     __tablename__ = "stock_moves"
     __table_args__ = (
