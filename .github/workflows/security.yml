@@ -13,8 +13,6 @@ permissions:
 jobs:
   pip-audit:
     runs-on: ubuntu-latest
-    # Report-only until the open advisories are cleared (see #142); then drop this.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -25,7 +23,6 @@ jobs:
 
   npm-audit:
     runs-on: ubuntu-latest
-    continue-on-error: true
     defaults:
       run:
         working-directory: frontend
