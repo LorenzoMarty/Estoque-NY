@@ -13,6 +13,7 @@ import { DataTable } from "../../shared/ui/DataTable";
 import { QueryState } from "../../shared/ui/QueryState";
 import { useDashboardQuery } from "./api";
 import { KpiStrip } from "./KpiStrip";
+import { ExpiringLotsCard } from "./ExpiringLotsCard";
 import { LowStockCard } from "./LowStockCard";
 import { flowByBucket, stockByCategory } from "./charts";
 import { computeDashboardKpis, resolvePeriodRange, type DashboardFilters } from "./kpis";
@@ -324,6 +325,10 @@ export function DashboardPage() {
       </div>
 
       <LowStockCard
+        branchId={filters.branchId === "all" ? null : Number(filters.branchId)}
+        branchNames={new Map((data?.branches ?? []).map((b) => [b.id, b.name]))}
+      />
+      <ExpiringLotsCard
         branchId={filters.branchId === "all" ? null : Number(filters.branchId)}
         branchNames={new Map((data?.branches ?? []).map((b) => [b.id, b.name]))}
       />

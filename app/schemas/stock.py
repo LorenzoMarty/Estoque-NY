@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 
 from pydantic import Field, field_validator
@@ -29,6 +29,11 @@ class StockAdjustmentIn(_MoveInBase):
     location_id: int | None = None
     reason: str | None = None
     reason_code: StockReason | None = None
+    # Lots: a positive adjustment names the lot it adds to; a negative one may name the
+    # lot to take from (default: first-expiring-first-out).
+    lot_code: str | None = Field(default=None, max_length=60)
+    expires_on: date | None = None
+    lot_id: int | None = None
     reference_id: str | None = None
     occurred_at: datetime | None = None
 
@@ -41,6 +46,9 @@ class StockReceiptIn(_MoveInBase):
     unit_cost: Decimal | None = Field(
         default=None, ge=0, max_digits=12, decimal_places=4
     )
+    # Lot the units go into; expires_on is set when the lot is created.
+    lot_code: str | None = Field(default=None, max_length=60)
+    expires_on: date | None = None
     location_id: int | None = None
     reason: str | None = None
     reference_id: str | None = None
@@ -54,8 +62,17 @@ class StockIssueIn(_MoveInBase):
     location_id: int | None = None
     reason: str | None = None
     reason_code: StockReason | None = None
+    # Take from this lot instead of first-expiring-first-out.
+    lot_id: int | None = None
     reference_id: str | None = None
     occurred_at: datetime | None = None
+
+
+class LotAllocationOut(SchemaBase):
+    lot_id: int
+    code: str
+    expires_on: date | None
+    qty: int
 
 
 class StockMoveOut(SchemaBase):
@@ -74,6 +91,7 @@ class StockMoveOut(SchemaBase):
     reason_code: str | None = None
     reference_id: str | None
     balance_after: int
+    lots: list[LotAllocationOut] = []
 
 
 class StockBalanceOut(SchemaBase):

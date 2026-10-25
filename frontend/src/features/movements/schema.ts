@@ -23,8 +23,21 @@ const baseFields = {
   reference_id: z.string().max(120).optional(),
 };
 
+/** Empty form inputs arrive as "" and must not reach the API (an empty date would be rejected). */
+const optionalText = z
+  .string()
+  .max(60)
+  .optional()
+  .transform((value) => value || undefined);
+
 export const receiptSchema = z.object({
   ...baseFields,
+  lot_code: optionalText,
+  expires_on: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use uma data válida.")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   qty: z.coerce.number({ error: "Informe a quantidade." }).int().positive("Quantidade deve ser maior que zero."),
 });
 
@@ -61,6 +74,8 @@ export const movementFormSchema = z.object({
   reason: z.string().max(240).optional(),
   reference_id: z.string().max(120).optional(),
   reason_code: stockReasonSchema.optional(),
+  lot_code: z.string().max(60).optional(),
+  expires_on: z.string().optional(),
   qty: z.number().int().optional(),
   qty_delta: z.number().int().optional(),
 });

@@ -16,10 +16,12 @@ from app.api.security import get_current_user, require_permission
 from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.domain.errors import DomainError
+from app.domain.lots import LotSpec
 from app.domain.stock_engine import apply_move
 from app.models.entities import SKU, StockBalance, StockMove, User
 from app.models.enums import MoveType
 from app.schemas.stock import (
+    LotAllocationOut,
     StockAdjustmentIn,
     StockBalanceListOut,
     StockBalanceOut,
@@ -55,6 +57,12 @@ def build_move_out(move: StockMove, balance_after: int) -> StockMoveOut:
         reason_code=move.reason_code,
         reference_id=move.reference_id,
         balance_after=balance_after,
+        lots=[
+            LotAllocationOut(
+                lot_id=a.lot_id, code=a.code, expires_on=a.expires_on, qty=a.qty
+            )
+            for a in getattr(move, "allocated_lots", [])
+        ],
     )
 
 
@@ -88,6 +96,7 @@ async def create_receipt(
             qty_delta=payload.qty,
             move_type=MoveType.RECEIPT,
             unit_cost=payload.unit_cost,
+            lot=LotSpec(code=payload.lot_code, expires_on=payload.expires_on),
             reason=payload.reason,
             reference_id=payload.reference_id,
             occurred_at=payload.occurred_at,
@@ -155,6 +164,7 @@ async def create_issue(
             move_type=MoveType.ISSUE,
             reason=payload.reason,
             reason_code=payload.reason_code,
+            lot=LotSpec(lot_id=payload.lot_id),
             reference_id=payload.reference_id,
             occurred_at=payload.occurred_at,
             location_id=payload.location_id,
@@ -221,6 +231,11 @@ async def create_adjustment(
             move_type=MoveType.ADJUSTMENT,
             reason=payload.reason,
             reason_code=payload.reason_code,
+            lot=LotSpec(
+                code=payload.lot_code,
+                expires_on=payload.expires_on,
+                lot_id=payload.lot_id,
+            ),
             reference_id=payload.reference_id,
             occurred_at=payload.occurred_at,
             location_id=payload.location_id,

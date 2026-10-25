@@ -46,3 +46,20 @@ describe("reason_code", () => {
     expect(receiptSchema.parse({ ...base, reason_code: "THEFT" })).not.toHaveProperty("reason_code");
   });
 });
+
+describe("receipt lot fields", () => {
+  const base = { branch_id: 1, sku_id: 2, qty: 3 };
+
+  it("passes a lot and expiry through and drops empty inputs", () => {
+    const filled = receiptSchema.parse({ ...base, lot_code: "L-9", expires_on: "2026-12-01" });
+    expect(filled).toMatchObject({ lot_code: "L-9", expires_on: "2026-12-01" });
+
+    const blank = receiptSchema.parse({ ...base, lot_code: "", expires_on: "" });
+    expect(blank.lot_code).toBeUndefined();
+    expect(blank.expires_on).toBeUndefined();
+  });
+
+  it("rejects a malformed expiry", () => {
+    expect(receiptSchema.safeParse({ ...base, expires_on: "01/12/2026" }).success).toBe(false);
+  });
+});
