@@ -24,12 +24,17 @@ async def _get(session: AsyncSession, model: Any, entity_id: int, label: str):
 
 
 async def _on_hand(session: AsyncSession, *sku_filters) -> int:
-    total = await session.scalar(
-        select(func.coalesce(func.sum(StockBalance.on_hand), 0))
+    """Units on hand, with the balance rows locked until commit.
+
+    A receipt racing the archive waits for the lock instead of slipping in unseen.
+    """
+    balances = await session.scalars(
+        select(StockBalance)
         .join(SKU, SKU.id == StockBalance.sku_id)
         .where(*sku_filters)
+        .with_for_update(of=StockBalance)
     )
-    return int(total or 0)
+    return sum(balance.on_hand for balance in balances)
 
 
 def _require_force(label: str, units: int, reason: str | None, force: bool) -> None:

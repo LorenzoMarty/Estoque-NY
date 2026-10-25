@@ -20,13 +20,16 @@ router = APIRouter(prefix="/catalog/skus", tags=["skus"])
 
 
 async def _validate_product(session: AsyncSession, product_id: int) -> None:
-    product_exists = await session.scalar(
-        select(Product.id).where(Product.id == product_id)
-    )
-    if product_exists is None:
+    product = await session.get(Product, product_id)
+    if product is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"product {product_id} not found",
+        )
+    if product.archived_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="cannot add a sku to an archived product; restore it first",
         )
 
 

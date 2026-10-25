@@ -1,8 +1,8 @@
-import { Button, Group, Modal, SegmentedControl, Table, Text, TextInput } from "@mantine/core";
+import { Button, Group, Modal, SegmentedControl, Switch, Table, Text, TextInput } from "@mantine/core";
 import { QueryState } from "../../shared/ui/QueryState";
 import { notifications } from "@mantine/notifications";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { Download, LayoutGrid, List, Package, Pencil, Plus, Search, Upload } from "lucide-react";
+import { Archive, ArchiveRestore, Download, LayoutGrid, List, Package, Pencil, Plus, Search, Upload } from "lucide-react";
 import { useMemo, useState } from "react";
 import SpotlightCard from "../../shared/reactbits/SpotlightCard";
 import { STOCK_STATUS_META, stockStatus, summarizeStock } from "../../shared/stock";
@@ -11,7 +11,8 @@ import type { Product } from "../../shared/types/stock";
 import { DataTable } from "../../shared/ui/DataTable";
 import { PageHeader } from "../../shared/ui/PageHeader";
 import { StatusPill } from "../../shared/ui/StatusPill";
-import { useProductsQuery, useProductStockQuery } from "./api";
+import { ArchiveProductModal } from "./ArchiveProductModal";
+import { useProductsQuery, useProductStockQuery, useRestoreProduct } from "./api";
 import { downloadCatalogCsv } from "./importApi";
 import { ImportCatalogModal } from "./ImportCatalogModal";
 import { ProductForm } from "./ProductForm";
@@ -45,7 +46,13 @@ export function ProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
-  const { data: products, isLoading, isError, refetch } = useProductsQuery({ q: search || undefined });
+  const [showArchived, setShowArchived] = useState(false);
+  const [archiving, setArchiving] = useState<Product | null>(null);
+  const restore = useRestoreProduct();
+  const { data: products, isLoading, isError, refetch } = useProductsQuery({
+    q: search || undefined,
+    archived: showArchived,
+  });
   const { data: stockByProduct } = useProductStockQuery();
 
   const rows: ProductRow[] = useMemo(
@@ -80,14 +87,30 @@ export function ProductsPage() {
         columnHelper.display({
           id: "actions",
           header: "Ações",
-          cell: (info) => (
-            <Button size="xs" variant="subtle" leftSection={<Pencil size={14} />} onClick={() => setEditing(info.row.original)}>
-              Editar
-            </Button>
-          ),
+          cell: (info) =>
+            showArchived ? (
+              <Button
+                size="xs"
+                variant="subtle"
+                leftSection={<ArchiveRestore size={14} />}
+                loading={restore.isPending && restore.variables === info.row.original.id}
+                onClick={() => restore.mutate(info.row.original.id)}
+              >
+                Restaurar
+              </Button>
+            ) : (
+              <Group gap="xs">
+                <Button size="xs" variant="subtle" leftSection={<Pencil size={14} />} onClick={() => setEditing(info.row.original)}>
+                  Editar
+                </Button>
+                <Button size="xs" variant="subtle" color="red" leftSection={<Archive size={14} />} onClick={() => setArchiving(info.row.original)}>
+                  Arquivar
+                </Button>
+              </Group>
+            ),
         }),
       ]),
-    []
+    [showArchived, restore]
   );
 
   const table = useTable({ features: tableFeatureSet, columns, data: rows.length ? rows : EMPTY_ROWS });
@@ -122,6 +145,11 @@ export function ProductsPage() {
           value={search}
           onChange={(event) => setSearch(event.currentTarget.value)}
           w={{ base: "100%", sm: 420 }}
+        />
+        <Switch
+          label="Mostrar arquivados"
+          checked={showArchived}
+          onChange={(event) => setShowArchived(event.currentTarget.checked)}
         />
         <SegmentedControl
           aria-label="Modo de visualização"
@@ -188,6 +216,7 @@ export function ProductsPage() {
       </QueryState>
 
       <ImportCatalogModal opened={importing} onClose={() => setImporting(false)} />
+      <ArchiveProductModal product={archiving} onClose={() => setArchiving(null)} />
 
       <Modal opened={creating} onClose={() => setCreating(false)} title="Novo produto" size="xl">
         <ProductForm onSuccess={() => setCreating(false)} />

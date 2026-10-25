@@ -473,6 +473,7 @@ async def export_catalog_rows(session: AsyncSession):
         .join(StockBalance, StockBalance.sku_id == SKU.id, isouter=True)
         .join(Branch, Branch.id == StockBalance.branch_id, isouter=True)
         .join(Location, Location.id == StockBalance.location_id, isouter=True)
+        .where(SKU.archived_at.is_(None), Product.archived_at.is_(None))
         .order_by(SKU.sku_code, Branch.name, Location.name)
     )
     for sku, product, brand, category, branch, location, on_hand in (
