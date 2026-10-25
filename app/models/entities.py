@@ -822,6 +822,8 @@ class AuditLog(Base):
     action: Mapped[str] = mapped_column(String(150), nullable=False)
     resource_type: Mapped[str] = mapped_column(String(100), nullable=False)
     resource_id: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # Branch the action touched, when it has one (no FK: rows outlive the branch).
+    branch_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
     before_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     after_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     meta_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
