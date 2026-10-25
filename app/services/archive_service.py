@@ -103,6 +103,10 @@ async def restore_product(session: AsyncSession, product_id: int) -> Product:
     product = await _get(session, Product, product_id, "product")
     if product.archived_at is None:
         raise ConflictError(f"product {product_id} is not archived")
+    if product.category_id is not None:
+        category = await session.get(Category, product.category_id)
+        if category is not None and category.archived_at is not None:
+            raise ConflictError("restore the category first")
     for sku in await session.scalars(
         select(SKU).where(
             SKU.product_id == product_id, SKU.archived_at == product.archived_at

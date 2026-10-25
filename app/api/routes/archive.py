@@ -8,7 +8,7 @@ from app.api.errors import domain_error_to_http
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
 from app.domain.errors import DomainError
-from app.models.entities import User
+from app.models.entities import SKU, Category, Product, User
 from app.schemas.catalog import CategoryOut
 from app.schemas.product import ProductOut
 from app.schemas.sku import SKUOut
@@ -28,6 +28,7 @@ async def _run(
     action: str,
     resource: str,
     out,
+    model,
     entity_id: int,
     request: Request,
     user: User | None,
@@ -35,6 +36,10 @@ async def _run(
     op: Callable[[], Awaitable],
 ):
     try:
+        current = await session.get(model, entity_id)
+        before = (
+            out.model_validate(current).model_dump(mode="json") if current else None
+        )
         entity = await op()
         await write_audit_log(
             session,
@@ -43,7 +48,7 @@ async def _run(
             action=f"{resource}.{action}",
             resource_type=resource,
             resource_id=entity_id,
-            before=None,
+            before=before,
             after=out.model_validate(entity).model_dump(mode="json"),
         )
         await session.commit()
@@ -54,7 +59,9 @@ async def _run(
     return out.model_validate(entity)
 
 
-def _register(path: str, resource: str, out, perm: str, archive, restore) -> None:
+def _register(
+    path: str, resource: str, out, model, perm: str, archive, restore
+) -> None:
     """Adds POST /catalog/<path>/{id}/archive and /restore, audited."""
 
     @router.post(
@@ -74,6 +81,7 @@ def _register(path: str, resource: str, out, perm: str, archive, restore) -> Non
             "archive",
             resource,
             out,
+            model,
             entity_id,
             request,
             user,
@@ -97,6 +105,7 @@ def _register(path: str, resource: str, out, perm: str, archive, restore) -> Non
             "restore",
             resource,
             out,
+            model,
             entity_id,
             request,
             user,
@@ -109,6 +118,7 @@ _register(
     "products",
     "product",
     ProductOut,
+    Product,
     "catalog.product.update",
     lambda s, i, p: archive_service.archive_product(
         s, i, reason=p.reason, force=p.force
@@ -119,6 +129,7 @@ _register(
     "skus",
     "sku",
     SKUOut,
+    SKU,
     "catalog.sku.update",
     lambda s, i, p: archive_service.archive_sku(s, i, reason=p.reason, force=p.force),
     archive_service.restore_sku,
@@ -127,6 +138,7 @@ _register(
     "categories",
     "category",
     CategoryOut,
+    Category,
     "catalog.category.create",  # no category.update permission exists
     lambda s, i, p: archive_service.archive_category(s, i, reason=p.reason),
     archive_service.restore_category,
