@@ -222,3 +222,45 @@ def test_moving_average_cost_edges():
     assert moving_average_cost(-3, d("10"), 4, d("7.5")) == d("7.50")  # negative stock
     assert moving_average_cost(3, d("10.00"), 1, d("11")) == d("10.25")
     assert moving_average_cost(1, d("1.00"), 2, d("1.01")) == d("1.01")  # rounds
+
+
+@pytest.mark.asyncio
+async def test_negative_balances_do_not_offset_stock_in_the_average(
+    monkeypatch, client
+):
+    monkeypatch.setenv("ALLOW_NEGATIVE_STOCK", "true")
+    from app.core.config import get_settings
+
+    get_settings.cache_clear()
+    headers, branch_id, loc_a, sku_id = await _setup(client)  # cost 10.00
+    # A second branch: SQLite's unique (branch, sku) index forbids two locations here.
+    other_branch, other_loc = await create_branch(client, headers, "Filial B")
+    assert (
+        await receipt(client, headers, branch_id, loc_a, sku_id, 10)
+    ).status_code == 201
+    issue = await client.post(
+        "/stock/issues",
+        json={
+            "branch_id": other_branch,
+            "location_id": other_loc,
+            "sku_id": sku_id,
+            "qty": 4,
+        },
+        headers=headers,
+    )
+    assert issue.status_code == 201, issue.text  # the other branch is now at -4
+
+    resp = await client.post(
+        "/stock/receipts",
+        json={
+            "branch_id": branch_id,
+            "location_id": loc_a,
+            "sku_id": sku_id,
+            "qty": 10,
+            "unit_cost": "20.00",
+        },
+        headers=headers,
+    )
+    assert resp.status_code == 201
+    # (10*10 + 10*20) / 20; counting the -4 would give 16.25
+    assert await _cost(client, headers, sku_id) == "15.00"
