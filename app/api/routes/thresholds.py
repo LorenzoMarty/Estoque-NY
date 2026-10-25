@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query, Request
 from pydantic import Field, model_validator
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import domain_error_to_http
@@ -74,19 +75,32 @@ async def upsert_threshold(
     except NotFoundError as exc:
         raise domain_error_to_http(exc) from exc
 
-    threshold = await session.scalar(
-        select(StockThreshold).where(
-            StockThreshold.branch_id == payload.branch_id,
-            StockThreshold.sku_id == payload.sku_id,
+    async def find() -> StockThreshold | None:
+        return await session.scalar(
+            select(StockThreshold).where(
+                StockThreshold.branch_id == payload.branch_id,
+                StockThreshold.sku_id == payload.sku_id,
+            )
         )
-    )
+
+    threshold = await find()
     before = ThresholdOut.model_validate(threshold).model_dump() if threshold else None
     if threshold is None:
         threshold = StockThreshold(branch_id=payload.branch_id, sku_id=payload.sku_id)
         session.add(threshold)
     threshold.min_qty = payload.min_qty
     threshold.max_qty = payload.max_qty
-    await session.flush()
+    try:
+        await session.flush()
+    except IntegrityError:
+        # A concurrent PUT created the row first: update that one instead.
+        await session.rollback()
+        threshold = await find()
+        assert threshold is not None
+        before = ThresholdOut.model_validate(threshold).model_dump()
+        threshold.min_qty = payload.min_qty
+        threshold.max_qty = payload.max_qty
+        await session.flush()
     await write_audit_log(
         session,
         request=request,

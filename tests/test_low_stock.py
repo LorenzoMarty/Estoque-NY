@@ -125,3 +125,36 @@ async def test_email_is_skipped_without_smtp(client):
     from app.core.notify import send_email
 
     assert await send_email("subject", "body") is False
+
+
+async def test_failed_email_keeps_the_alert_pending_for_a_retry(client, monkeypatch):
+    headers = await register_and_login(client)
+    branch_id, _ = await create_branch(client, headers)
+    sku_id = await create_sku(client, headers, sku_code="LOW-6")
+    await _set(client, headers, branch_id, sku_id, 5)
+    outcomes = [False, True]  # SMTP is down, then back up
+
+    async def flaky_email(subject, body):
+        return outcomes.pop(0)
+
+    monkeypatch.setattr(low_stock_service, "send_email", flaky_email)
+    monkeypatch.setattr(low_stock_service, "email_configured", lambda: True)
+    today = date(2026, 10, 24)
+
+    assert await low_stock_service.send_low_stock_alert(today) == 0  # not marked
+    assert await low_stock_service.send_low_stock_alert(today) == 1  # retried, sent
+    assert await low_stock_service.send_low_stock_alert(today) == 0  # now done
+
+
+async def test_repeating_a_put_with_new_values_updates_in_place(client):
+    headers = await register_and_login(client)
+    branch_id, _ = await create_branch(client, headers)
+    sku_id = await create_sku(client, headers, sku_code="LOW-7")
+
+    first = await _set(client, headers, branch_id, sku_id, 5)
+    # same key, new values: update in place (the IntegrityError race fallback itself is
+    # not exercised here; it needs two simultaneous requests)
+    second = await _set(client, headers, branch_id, sku_id, 7, 20)
+
+    assert second.status_code == 200 and second.json()["id"] == first.json()["id"]
+    assert (second.json()["min_qty"], second.json()["max_qty"]) == (7, 20)

@@ -9,7 +9,7 @@ from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_sessionmaker
-from app.core.notify import send_email
+from app.core.notify import email_configured, send_email
 from app.models.entities import SKU, StockBalance, StockThreshold
 
 logger = logging.getLogger("app.low_stock")
@@ -99,7 +99,8 @@ def _message(rows: list[LowStockRow]) -> str:
 async def send_low_stock_alert(today: date | None = None) -> int:
     """Alert on SKUs below minimum that were not alerted today; return how many.
 
-    The alert goes by e-mail when SMTP is configured, and always to the log.
+    The alert goes by e-mail when SMTP is configured, and always to the log. If the
+    e-mail fails the SKUs are not marked, so the alert is retried instead of lost.
     """
     today = today or datetime.now(LOCAL_TZ).date()
     async with get_sessionmaker()() as session:
@@ -118,7 +119,11 @@ async def send_low_stock_alert(today: date | None = None) -> int:
             return 0
         body = _message(rows)
         logger.warning("low stock alert\n%s", body)
-        await send_email(f"Estoque baixo: {len(rows)} item(ns)", body)
+        sent = await send_email(f"Estoque baixo: {len(rows)} item(ns)", body)
+        if email_configured() and not sent:
+            # Leave last_alert_on alone: the next run today (or tomorrow) tries again.
+            logger.error("alert e-mail failed; %d item(s) stay pending", len(rows))
+            return 0
         await _mark_alerted(session, [r.threshold_id for r in rows], today)
         return len(rows)
 

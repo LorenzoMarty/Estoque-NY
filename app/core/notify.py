@@ -17,10 +17,18 @@ def _send(subject: str, body: str) -> None:
     message["To"] = settings.alert_email_to
     message.set_content(body)
     with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
-        smtp.starttls()
+        smtp.ehlo()
+        if smtp.has_extn("starttls"):
+            smtp.starttls()
+            smtp.ehlo()
         if settings.smtp_user and settings.smtp_password:
             smtp.login(settings.smtp_user, settings.smtp_password)
         smtp.send_message(message)
+
+
+def email_configured() -> bool:
+    settings = get_settings()
+    return bool(settings.smtp_host and settings.alert_email_to)
 
 
 async def send_email(subject: str, body: str) -> bool:
@@ -29,8 +37,7 @@ async def send_email(subject: str, body: str) -> bool:
     Failures are logged, not raised: the alert is also in the log and a mail outage
     must not stop the job from recording that it ran.
     """
-    settings = get_settings()
-    if not (settings.smtp_host and settings.alert_email_to):
+    if not email_configured():
         logger.info("e-mail not configured; alert only logged")
         return False
     try:
