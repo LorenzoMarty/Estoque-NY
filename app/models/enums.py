@@ -34,6 +34,13 @@ class TransferStatus(StrEnum):
     CANCELLED = "CANCELLED"
 
 
+class PurchaseOrderStatus(StrEnum):
+    OPEN = "OPEN"  # nothing received yet
+    PARTIAL = "PARTIAL"  # some lines received, some outstanding
+    RECEIVED = "RECEIVED"
+    CANCELLED = "CANCELLED"
+
+
 class InventoryCountStatus(StrEnum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"

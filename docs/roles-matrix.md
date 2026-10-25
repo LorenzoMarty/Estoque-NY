@@ -74,6 +74,14 @@ The existing global roles (`admin`, `stock_operator`, `viewer`) are unchanged.
 | `stock.inventory.close` | ✓ | ✓ |  |  |
 | `stock.inventory.post` | ✓ | ✓ |  |  |
 | `stock.inventory.cancel` | ✓ | ✓ |  |  |
+| `stock.supplier.create` | ✓ |  |  |  |
+| `stock.supplier.read` | ✓ | ✓ | ✓ | ✓ |
+| `stock.supplier.update` | ✓ |  |  |  |
+| `stock.supplier.delete` | ✓ |  |  |  |
+| `stock.purchase.create` | ✓ | ✓ |  |  |
+| `stock.purchase.read` | ✓ | ✓ | ✓ | ✓ |
+| `stock.purchase.receive` | ✓ | ✓ |  |  |
+| `stock.purchase.cancel` | ✓ | ✓ |  |  |
 | `marketing.channel.create` | ✓ |  |  |  |
 | `marketing.channel.read` | ✓ |  |  | ✓ |
 | `marketing.channel.update` | ✓ |  |  |  |

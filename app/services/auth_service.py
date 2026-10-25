@@ -58,6 +58,8 @@ async def ensure_rbac_seed(session: AsyncSession) -> None:
             key.startswith("stock.")
             and not key.startswith("stock.branch.")
             and not key.startswith("stock.location.")
+            and not key.startswith(("stock.supplier.create", "stock.supplier.update"))
+            and key != "stock.supplier.delete"
         )
         or key.startswith("catalog.product.")
         or key.startswith("catalog.sku.")

@@ -23,6 +23,7 @@ const columns = columnHelper.columns([
   columnHelper.accessor("balance_after", { header: "Saldo após" }),
   columnHelper.accessor("reason", { header: "Motivo", cell: (info) => info.getValue() || "—" }),
   columnHelper.accessor("reference_id", { header: "Referência", cell: (info) => info.getValue() || "—" }),
+  columnHelper.accessor("supplier_name", { header: "Fornecedor", cell: (info) => info.getValue() || "—" }),
 ]);
 const EMPTY_ROWS: StockMove[] = [];
 

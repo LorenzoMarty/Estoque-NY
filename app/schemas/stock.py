@@ -92,6 +92,9 @@ class StockMoveOut(SchemaBase):
     reference_id: str | None
     balance_after: int
     lots: list[LotAllocationOut] = []
+    supplier_id: int | None = None
+    supplier_name: str | None = None
+    purchase_order_id: int | None = None
 
 
 class StockBalanceOut(SchemaBase):

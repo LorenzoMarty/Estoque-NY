@@ -18,7 +18,7 @@ from app.core.db import get_session
 from app.domain.errors import DomainError
 from app.domain.lots import LotSpec
 from app.domain.stock_engine import apply_move
-from app.models.entities import SKU, StockBalance, StockMove, User
+from app.models.entities import SKU, StockBalance, StockMove, Supplier, User
 from app.models.enums import MoveType
 from app.schemas.stock import (
     LotAllocationOut,
@@ -57,6 +57,8 @@ def build_move_out(move: StockMove, balance_after: int) -> StockMoveOut:
         reason_code=move.reason_code,
         reference_id=move.reference_id,
         balance_after=balance_after,
+        supplier_id=move.supplier_id,
+        purchase_order_id=move.purchase_order_id,
         lots=[
             LotAllocationOut(
                 lot_id=a.lot_id, code=a.code, expires_on=a.expires_on, qty=a.qty
@@ -409,6 +411,15 @@ async def list_moves(
                 detail="invalid move row",
             )
         items.append(build_move_out(move, int(row.balance_after)))
+    supplier_ids = {i.supplier_id for i in items if i.supplier_id is not None}
+    if supplier_ids:
+        found = await session.execute(
+            select(Supplier.id, Supplier.name).where(Supplier.id.in_(supplier_ids))
+        )
+        names: dict[int, str] = {row.id: row.name for row in found}
+        for item in items:
+            if item.supplier_id is not None:
+                item.supplier_name = names.get(item.supplier_id)
     return StockMoveListOut(
         items=items,
         meta=page_meta(total=int(total), page=params.page, page_size=params.page_size),
