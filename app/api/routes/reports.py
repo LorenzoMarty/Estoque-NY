@@ -33,6 +33,7 @@ from app.schemas.report import (
     MarginRow,
     MarketingDashboardSummary,
     PromotionSKURow,
+    ShrinkageRow,
     StockABCRow,
     StockTurnoverRow,
     StockValuationRow,
@@ -170,6 +171,66 @@ async def stock_margin(
     return {
         "items": items,
         "meta": page_meta(total=int(total), page=page, page_size=page_size),
+    }
+
+
+@router.get(
+    "/shrinkage",
+    dependencies=[Depends(require_permission("reports.read", branch_scoped=True))],
+)
+async def stock_shrinkage(
+    branch_id: int | None = Query(default=None),
+    date_from: datetime | None = Query(default=None),
+    date_to: datetime | None = Query(default=None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
+    scope: BranchScope = Depends(get_branch_scope),
+    session: AsyncSession = Depends(get_session),
+) -> dict:
+    """Units and cost value that left stock, by branch and reason code.
+
+    Counts the outgoing moves (negative qty) that carry a reason code; value uses the
+    SKU's current cost. `date_from` is inclusive and `date_to` exclusive.
+    """
+    units = func.sum(-StockMove.qty)
+    stmt = (
+        select(
+            StockMove.branch_id,
+            StockMove.reason_code,
+            func.count().label("moves"),
+            units.label("units"),
+            func.sum(-StockMove.qty * SKU.cost).label("value"),
+        )
+        .join(SKU, SKU.id == StockMove.sku_id)
+        .where(StockMove.reason_code.is_not(None), StockMove.qty < 0)
+        .group_by(StockMove.branch_id, StockMove.reason_code)
+    )
+    if date_from is not None:
+        stmt = stmt.where(StockMove.occurred_at >= date_from)
+    if date_to is not None:
+        stmt = stmt.where(StockMove.occurred_at < date_to)
+    stmt = scope.apply(stmt, StockMove.branch_id, branch_id)
+
+    rows = (await session.execute(stmt.order_by(desc(units)))).all()
+    items = [
+        ShrinkageRow(
+            branch_id=row.branch_id,
+            reason_code=row.reason_code,
+            moves=row.moves,
+            units=int(row.units),
+            value=row.value,
+        )
+        for row in rows
+    ]
+    start = (page - 1) * page_size
+    return {
+        "items": [i.model_dump(mode="json") for i in items[start : start + page_size]],
+        "totals": {
+            "moves": sum(i.moves for i in items),
+            "units": sum(i.units for i in items),
+            "value": str(sum((i.value for i in items), Decimal("0"))),
+        },
+        "meta": page_meta(total=len(items), page=page, page_size=page_size),
     }
 
 

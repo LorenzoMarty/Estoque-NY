@@ -21,6 +21,14 @@ class StockValuationRow(SchemaBase):
     valuation: Decimal
 
 
+class ShrinkageRow(SchemaBase):
+    branch_id: int
+    reason_code: str
+    moves: int
+    units: int
+    value: Decimal
+
+
 class MarginRow(SchemaBase):
     group_id: int | None
     name: str | None

@@ -15,6 +15,18 @@ class MoveType(StrEnum):
     TRANSFER_RECEIVE = "TRANSFER_RECEIVE"
 
 
+class StockReason(StrEnum):
+    """Why stock left outside a sale; the shrinkage report groups by it (#29)."""
+
+    BREAKAGE = "BREAKAGE"
+    THEFT = "THEFT"
+    EXPIRY = "EXPIRY"
+    DAMAGE = "DAMAGE"
+    SAMPLE = "SAMPLE"
+    COUNT_CORRECTION = "COUNT_CORRECTION"
+    OTHER = "OTHER"
+
+
 class TransferStatus(StrEnum):
     DRAFT = "DRAFT"
     SHIPPED = "SHIPPED"

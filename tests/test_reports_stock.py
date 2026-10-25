@@ -191,3 +191,87 @@ async def test_margin_report_requires_auth_and_valid_group(client):
     headers = await register_and_login(client)
     bad = await client.get("/reports/stock/margin?group_by=bogus", headers=headers)
     assert bad.status_code in (400, 422)
+
+
+async def _tagged_scenario(client):
+    headers = await register_and_login(client)
+    branch_id, location_id = await create_branch(client, headers)
+    sku_id = await create_sku(client, headers, sku_code="SHR-1")  # cost 10.00
+    await receipt(client, headers, branch_id, location_id, sku_id, 100)
+
+    async def issue(qty, code=None):
+        body = {
+            "branch_id": branch_id,
+            "location_id": location_id,
+            "sku_id": sku_id,
+            "qty": qty,
+        }
+        if code:
+            body["reason_code"] = code
+        assert (
+            await client.post("/stock/issues", json=body, headers=headers)
+        ).status_code == 201
+
+    async def adjust(delta, code):
+        resp = await client.post(
+            "/stock/adjustments",
+            json={
+                "branch_id": branch_id,
+                "location_id": location_id,
+                "sku_id": sku_id,
+                "qty_delta": delta,
+                "reason_code": code,
+            },
+            headers=headers,
+        )
+        assert resp.status_code == 201, resp.text
+
+    await issue(3, "BREAKAGE")
+    await issue(2, "THEFT")
+    await issue(1)  # untagged: not shrinkage
+    await adjust(-4, "DAMAGE")
+    await adjust(5, "COUNT_CORRECTION")  # a gain, not a loss
+    return headers, branch_id
+
+
+@pytest.mark.asyncio
+async def test_shrinkage_report_totals_equal_the_tagged_outgoing_moves(client):
+    headers, branch_id = await _tagged_scenario(client)
+
+    body = (await client.get("/reports/stock/shrinkage", headers=headers)).json()
+
+    by_reason = {r["reason_code"]: (r["units"], r["value"]) for r in body["items"]}
+    assert by_reason == {
+        "DAMAGE": (4, "40.00"),
+        "BREAKAGE": (3, "30.00"),
+        "THEFT": (2, "20.00"),
+    }
+    assert body["totals"] == {"moves": 3, "units": 9, "value": "90.00"}
+    assert {r["branch_id"] for r in body["items"]} == {branch_id}
+
+    moves = (await client.get("/stock/moves?page_size=200", headers=headers)).json()
+    tagged = [m for m in moves["items"] if m["reason_code"] and m["qty"] < 0]
+    assert sum(-m["qty"] for m in tagged) == body["totals"]["units"]
+
+
+@pytest.mark.asyncio
+async def test_shrinkage_report_filters_by_period_and_rejects_unknown_reasons(client):
+    headers, branch_id = await _tagged_scenario(client)
+
+    past = await client.get(
+        "/reports/stock/shrinkage?date_to=2000-01-01T00:00:00Z", headers=headers
+    )
+    assert past.json()["items"] == [] and past.json()["totals"]["units"] == 0
+
+    bad = await client.post(
+        "/stock/issues",
+        json={
+            "branch_id": branch_id,
+            "sku_id": 1,
+            "qty": 1,
+            "reason_code": "BOGUS",
+        },
+        headers=headers,
+    )
+    assert bad.status_code in (400, 422)
+    assert (await client.get("/reports/stock/shrinkage")).status_code == 401
