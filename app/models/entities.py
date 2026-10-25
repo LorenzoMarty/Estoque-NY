@@ -35,6 +35,15 @@ def _utc_now() -> datetime:
     return datetime.now(UTC)
 
 
+class Archivable:
+    """Soft delete: history stays, but pickers and the public API skip the row."""
+
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )
+    archive_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+
 class Branch(Base):
     __tablename__ = "branches"
 
@@ -72,7 +81,7 @@ class Location(Base):
     )
 
 
-class Category(Base):
+class Category(Archivable, Base):
     __tablename__ = "categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -98,7 +107,7 @@ class Brand(Base):
     )
 
 
-class Product(Base):
+class Product(Archivable, Base):
     __tablename__ = "products"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -142,7 +151,7 @@ class Product(Base):
     )
 
 
-class SKU(Base):
+class SKU(Archivable, Base):
     __tablename__ = "skus"
     __table_args__ = (Index("ix_skus_product_id", "product_id"),)
 

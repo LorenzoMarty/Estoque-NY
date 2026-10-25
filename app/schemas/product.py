@@ -60,6 +60,8 @@ class ProductOut(SchemaBase):
     published: bool
     image_url: str | None
     created_at: datetime
+    archived_at: datetime | None
+    archive_reason: str | None
 
 
 class ProductListOut(SchemaBase):

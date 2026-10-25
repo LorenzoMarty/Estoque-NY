@@ -138,10 +138,13 @@ async def list_products(
     active: bool | None = Query(default=None),
     category_id: int | None = Query(default=None),
     brand_id: int | None = Query(default=None),
+    archived: bool = Query(default=False),
     params: PaginationParams = Depends(pagination_params),
     session: AsyncSession = Depends(get_session),
 ) -> ProductListOut:
-    stmt = select(Product)
+    stmt = select(Product).where(
+        Product.archived_at.is_not(None) if archived else Product.archived_at.is_(None)
+    )
     if active is not None:
         stmt = stmt.where(Product.active == active)
     if category_id is not None:

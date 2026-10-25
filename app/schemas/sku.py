@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -58,6 +59,8 @@ class SKUOut(SchemaBase):
     origin: str | None
     restricted: bool
     active: bool
+    archived_at: datetime | None
+    archive_reason: str | None
 
 
 class SKUListOut(SchemaBase):
