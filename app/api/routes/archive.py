@@ -139,7 +139,7 @@ _register(
     "category",
     CategoryOut,
     Category,
-    "catalog.category.create",  # no category.update permission exists
+    "catalog.category.update",
     lambda s, i, p: archive_service.archive_category(s, i, reason=p.reason),
     archive_service.restore_category,
 )

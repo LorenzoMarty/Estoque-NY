@@ -205,3 +205,71 @@ async def test_archive_audit_log_keeps_the_previous_state(client):
     entry = next(i for i in logs.json()["items"] if i["action"] == "product.archive")
     assert entry["before_json"]["archived_at"] is None
     assert entry["after_json"]["archived_at"] is not None
+
+
+async def test_no_new_stock_can_enter_an_archived_sku_but_it_can_leave(client):
+    headers = await register_and_login(client)
+    branch_id, location_id = await create_branch(client, headers)
+    product_id = await _product(client, headers, "Saida")
+    sku_id = await _sku(client, headers, product_id, "S-OUT", price="5.00")
+    await receipt(client, headers, branch_id, location_id, sku_id, 5)
+    archived = await client.post(
+        f"/catalog/skus/{sku_id}/archive",
+        json={"force": True, "reason": "discontinued"},
+        headers=headers,
+    )
+    assert archived.status_code == 200
+
+    incoming = await receipt(client, headers, branch_id, location_id, sku_id, 1)
+    assert incoming.status_code == 422 and "archived sku" in incoming.text
+
+    issue = await client.post(
+        "/stock/issues",
+        json={
+            "branch_id": branch_id,
+            "location_id": location_id,
+            "sku_id": sku_id,
+            "qty": 2,
+        },
+        headers=headers,
+    )
+    assert (
+        issue.status_code == 201
+    )  # the leftover stock can still be sold or written off
+
+
+async def test_a_sku_cannot_be_added_to_an_archived_product(client):
+    headers = await register_and_login(client)
+    product_id = await _product(client, headers, "Velho")
+    await client.post(
+        f"/catalog/products/{product_id}/archive", json={}, headers=headers
+    )
+
+    resp = await client.post(
+        "/catalog/skus",
+        json={"product_id": product_id, "sku_code": "S-NEW", "cost": "1", "price": "2"},
+        headers=headers,
+    )
+    assert resp.status_code == 409 and "restore it first" in resp.text
+
+
+async def test_catalog_csv_export_skips_archived_items(client):
+    headers = await register_and_login(client)
+    keep = await _product(client, headers, "Fica")
+    gone = await _product(client, headers, "Some")
+    await _sku(client, headers, keep, "S-KEEP")
+    await _sku(client, headers, gone, "S-GONE")
+    await client.post(f"/catalog/products/{gone}/archive", json={}, headers=headers)
+
+    export = await client.get("/data/export/catalog.csv", headers=headers)
+
+    assert "S-KEEP" in export.text and "S-GONE" not in export.text
+
+
+async def test_category_archive_has_its_own_permission_and_managers_hold_it():
+    from app.core.permissions import ALL_PERMISSIONS
+    from app.core.role_matrix import ROLE_PERMISSIONS
+
+    assert "catalog.category.update" in ALL_PERMISSIONS
+    assert "catalog.category.update" in ROLE_PERMISSIONS["manager"]
+    assert "catalog.category.update" not in ROLE_PERMISSIONS["seller"]

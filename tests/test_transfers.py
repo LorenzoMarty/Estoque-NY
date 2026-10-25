@@ -144,3 +144,26 @@ async def test_create_transfer_validations(client):
     assert same.status_code == 400
     wrong_location = await post(from_location_id=dest_location)
     assert wrong_location.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_a_transfer_in_transit_still_lands_when_its_sku_gets_archived(client):
+    setup = await _setup(client)
+    headers, _, _, dest_branch, _, sku_id = setup
+    transfer_id = (await _create_transfer(client, headers, setup, qty=4)).json()["id"]
+    assert (
+        await client.post(f"/stock/transfers/{transfer_id}/ship", headers=headers)
+    ).status_code == 200
+
+    archived = await client.post(
+        f"/catalog/skus/{sku_id}/archive",
+        json={"force": True, "reason": "discontinued"},
+        headers=headers,
+    )
+    assert archived.status_code == 200
+
+    received = await client.post(
+        f"/stock/transfers/{transfer_id}/receive", headers=headers
+    )
+    assert received.status_code == 200 and received.json()["status"] == "RECEIVED"
+    assert await on_hand(client, headers, dest_branch, sku_id) == 4

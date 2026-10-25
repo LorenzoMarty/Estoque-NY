@@ -341,7 +341,9 @@ def test_migration_renames_cover_exactly_the_legacy_keys():
         for k in ALL_PERMISSIONS
         if k.startswith(("catalog.", "stock.branch.", "stock.location."))
     }
-    assert new == migrated_domain
+    # permissions defined after that migration are created by the RBAC seed instead
+    added_later = {"catalog.category.update"}
+    assert new == migrated_domain - added_later
 
 
 def test_migration_upgrade_keeps_permission_ids_and_role_links():

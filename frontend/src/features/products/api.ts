@@ -9,6 +9,7 @@ import type { ProductFormValues } from "./schema";
 export interface ProductsFilters {
   q?: string;
   active?: boolean;
+  archived?: boolean;
 }
 
 export function useProductsQuery(filters: ProductsFilters) {
@@ -18,6 +19,7 @@ export function useProductsQuery(filters: ProductsFilters) {
       const params = new URLSearchParams({ page: "1", page_size: "200", sort: "name", order: "asc" });
       if (filters.q) params.set("q", filters.q);
       if (filters.active != null) params.set("active", String(filters.active));
+      if (filters.archived) params.set("archived", "true");
       const page = await apiClient.get<Paginated<Product>>(`/catalog/products?${params.toString()}`);
       return page.items;
     },
@@ -38,6 +40,31 @@ export function useUpdateProduct(id: number) {
   return useMutation({
     mutationFn: (values: ProductFormValues) => apiClient.patch<Product>(`/catalog/products/${id}`, values),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+  });
+}
+
+function useInvalidateCatalog() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all(
+      ["products", "skus", "stock-balances", "low-stock"].map((key) => queryClient.invalidateQueries({ queryKey: [key] }))
+    );
+}
+
+export function useArchiveProduct() {
+  const invalidate = useInvalidateCatalog();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: number; reason?: string; force?: boolean }) =>
+      apiClient.post<Product>(`/catalog/products/${id}/archive`, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRestoreProduct() {
+  const invalidate = useInvalidateCatalog();
+  return useMutation({
+    mutationFn: (id: number) => apiClient.post<Product>(`/catalog/products/${id}/restore`, {}),
+    onSuccess: invalidate,
   });
 }
 

@@ -45,6 +45,7 @@ The existing global roles (`admin`, `stock_operator`, `viewer`) are unchanged.
 | `stock.location.delete` |  |  |  |  |
 | `catalog.category.create` | ✓ |  |  |  |
 | `catalog.category.read` | ✓ | ✓ | ✓ | ✓ |
+| `catalog.category.update` | ✓ |  |  |  |
 | `catalog.brand.create` | ✓ |  |  |  |
 | `catalog.brand.read` | ✓ | ✓ | ✓ | ✓ |
 | `catalog.brand.update` | ✓ |  |  |  |

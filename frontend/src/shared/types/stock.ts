@@ -51,6 +51,8 @@ export interface Product {
   published: boolean;
   image_url: string | null;
   created_at: string;
+  archived_at?: string | null;
+  archive_reason?: string | null;
 }
 
 export interface Sku {

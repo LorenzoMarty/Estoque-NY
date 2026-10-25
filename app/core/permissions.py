@@ -9,6 +9,7 @@ ALL_PERMISSIONS = [
     "stock.location.delete",
     "catalog.category.create",
     "catalog.category.read",
+    "catalog.category.update",
     "catalog.brand.create",
     "catalog.brand.read",
     "catalog.brand.update",

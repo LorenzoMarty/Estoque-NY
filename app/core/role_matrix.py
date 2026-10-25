@@ -44,6 +44,7 @@ _MANAGER = (
     _STOCKKEEPER
     | {
         "catalog.category.create",
+        "catalog.category.update",
         "catalog.brand.create",
         "catalog.brand.update",
         "catalog.product.create",
