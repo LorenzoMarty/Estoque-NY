@@ -30,7 +30,7 @@
     "@hookform/resolvers": "^5.9.1",
     "@mantine/charts": "^9.7.3",
     "@mantine/core": "^9.7.3",
-    "@mantine/hooks": "^9.7.3",
+    "@mantine/hooks": "^9.7.4",
     "@mantine/notifications": "^9.7.3",
     "@sentry/react": "^11.8.0",
     "@tanstack/react-query": "^5.104.5",
