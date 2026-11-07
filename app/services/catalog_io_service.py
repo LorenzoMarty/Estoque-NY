@@ -23,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.errors import ConflictError, ValidationError
+from app.domain.slugs import unique_slug
 from app.domain.stock_engine import apply_move
 from app.models.entities import (
     SKU,
@@ -362,6 +363,7 @@ async def _plan_and_apply(
                 category = await _named(session, Category, categories, row.category)
                 product = Product(
                     name=row.product_name,
+                    slug=await unique_slug(session, row.product_name),
                     brand=row.brand or None,
                     brand_id=brand.id if brand else None,
                     category_id=category.id if category else None,

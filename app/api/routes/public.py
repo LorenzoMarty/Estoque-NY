@@ -143,9 +143,12 @@ async def public_catalog(
         sectors.setdefault(category_name or FALLBACK_SECTOR, []).append(
             PublicProductOut(
                 id=product.id,
+                slug=product.slug,
                 brand=brand_name or product.brand,
                 name=product.name,
                 description=product.description,
+                description_es=product.description_es or product.description,
+                description_en=product.description_en or product.description,
                 price_usd=None if low is None else Decimal(low).quantize(_CENTS),
                 price_is_from=low is not None and low != high,
                 featured=product.featured,
