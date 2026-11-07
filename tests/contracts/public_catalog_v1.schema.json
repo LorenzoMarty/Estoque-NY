@@ -30,6 +30,11 @@
     },
     "PublicProductOut": {
       "properties": {
+        "best_seller": {
+          "default": false,
+          "title": "Best Seller",
+          "type": "boolean"
+        },
         "brand": {
           "anyOf": [
             {

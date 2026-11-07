@@ -16,6 +16,7 @@ from app.schemas.public import (
     PublicProductOut,
     PublicSectorOut,
 )
+from app.services.best_sellers import public_best_seller_ids
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -105,6 +106,7 @@ async def public_catalog(
         )
     ).all()
     product_ids = [product.id for product, _, _ in rows]
+    best = await public_best_seller_ids(session)
 
     priced = case((SKU.price > 0, SKU.price))
     prices = {
@@ -151,6 +153,7 @@ async def public_catalog(
                 featured=product.featured,
                 image_url=product.image_url,
                 in_stock=product.id in stocked,
+                best_seller=product.id in best,
             )
         )
 

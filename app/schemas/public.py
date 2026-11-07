@@ -13,6 +13,8 @@ class PublicProductOut(SchemaBase):
     featured: bool
     image_url: str | None
     in_stock: bool
+    # Top sellers of the last 30 days across all branches (from the sales ledger).
+    best_seller: bool = False
 
 
 class PublicBranchOut(SchemaBase):
