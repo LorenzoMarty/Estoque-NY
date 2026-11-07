@@ -4,18 +4,21 @@ Functions flush but never commit: the caller owns the transaction, so a failed l
 rolls the whole sale (and its stock moves) back.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.errors import BusinessRuleError, NotFoundError
-from app.domain.lots import LotSpec
+from app.domain.lots import LOCAL_TZ, LotSpec
 from app.domain.stock_engine import apply_move
 from app.models.entities import (
     SKU,
+    Branch,
     Customer,
+    DailyClose,
     Lot,
     LotAllocation,
     Sale,
@@ -26,6 +29,39 @@ from app.models.enums import MoveType
 
 COMPLETED = "COMPLETED"
 VOIDED = "VOIDED"
+
+
+async def branch_tz(session: AsyncSession, branch_id: int) -> ZoneInfo:
+    name = await session.scalar(select(Branch.timezone).where(Branch.id == branch_id))
+    try:
+        return ZoneInfo(name) if name else LOCAL_TZ
+    except Exception:  # unknown zone name stored on the branch
+        return LOCAL_TZ
+
+
+def day_bounds(day: date, tz: ZoneInfo) -> tuple[datetime, datetime]:
+    """UTC start (inclusive) and end (exclusive) of a branch-local calendar day."""
+    start = datetime.combine(day, time.min, tzinfo=tz)
+    return start.astimezone(UTC), (start + timedelta(days=1)).astimezone(UTC)
+
+
+async def assert_day_open(
+    session: AsyncSession, branch_id: int, when: datetime, override: bool
+) -> None:
+    """Sales and voids dated in a closed day need an explicit, audited override."""
+    if override:
+        return
+    tz = await branch_tz(session, branch_id)
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    closed = await session.scalar(
+        select(DailyClose.id).where(
+            DailyClose.branch_id == branch_id,
+            DailyClose.day == when.astimezone(tz).date(),
+        )
+    )
+    if closed:
+        raise BusinessRuleError(f"day {when.astimezone(tz).date()} is closed")
 
 
 async def create_sale(
@@ -39,7 +75,10 @@ async def create_sale(
     source: str = "manual",
     external_id: str | None = None,
     created_by: int | None = None,
+    override_closed_day: bool = False,
 ) -> Sale:
+    when = sold_at or datetime.now(UTC)
+    await assert_day_open(session, branch_id, when, override_closed_day)
     if customer_id is not None:
         customer = await session.get(Customer, customer_id)
         if customer is None or customer.anonymized_at:
@@ -85,11 +124,16 @@ async def create_sale(
 
 
 async def void_sale(
-    session: AsyncSession, sale: Sale, reason: str, user_id: int | None
+    session: AsyncSession,
+    sale: Sale,
+    reason: str,
+    user_id: int | None,
+    override_closed_day: bool = False,
 ) -> Sale:
     """Put every line's stock back (into the same lots) and mark the sale voided."""
     if sale.status == VOIDED:
         raise BusinessRuleError("sale is already voided")
+    await assert_day_open(session, sale.branch_id, sale.sold_at, override_closed_day)
     lines = await session.scalars(select(SaleItem).where(SaleItem.sale_id == sale.id))
     for line in lines.all():
         if line.issue_move_id is None:

@@ -98,6 +98,8 @@ The existing global roles (`admin`, `stock_operator`, `viewer`) are unchanged.
 | `sales.sale.read` | ✓ | ✓ | ✓ | ✓ |
 | `sales.sale.void` | ✓ |  |  |  |
 | `sales.sale.import` | ✓ |  |  |  |
+| `sales.day.close` | ✓ |  |  |  |
+| `sales.sale.override_closed_day` | ✓ |  |  |  |
 | `audit.read` | ✓ |  |  | ✓ |
 | `reports.read` | ✓ |  |  | ✓ |
 | `reports.marketing.read` | ✓ |  |  | ✓ |

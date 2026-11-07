@@ -1029,3 +1029,29 @@ class SaleItem(Base):
     issue_move_id: Mapped[int | None] = mapped_column(
         ForeignKey("stock_moves.id", ondelete="SET NULL")
     )
+
+
+class DailyClose(Base):
+    """A branch day closed for editing (issue #35); sales dated in it are locked."""
+
+    __tablename__ = "daily_closes"
+    __table_args__ = (
+        UniqueConstraint("branch_id", "day", name="uq_daily_closes_branch_day"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.id", ondelete="CASCADE"), nullable=False
+    )
+    day: Mapped[date] = mapped_column(Date, nullable=False)
+    closed_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    closed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+    # The report as it stood at closing time.
+    summary: Mapped[dict] = mapped_column(JSON, nullable=False)
