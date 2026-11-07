@@ -6,6 +6,9 @@ pytestmark = pytest.mark.asyncio
 
 ITEM_KEYS = {
     "id",
+    "slug",
+    "description_es",
+    "description_en",
     "brand",
     "name",
     "description",

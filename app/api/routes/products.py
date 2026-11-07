@@ -10,6 +10,7 @@ from app.api.pagination import (
 )
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
+from app.domain.slugs import unique_slug
 from app.models.entities import Brand, Category, Product, User
 from app.schemas.product import ProductCreate, ProductListOut, ProductOut, ProductUpdate
 from app.services.audit_service import write_audit_log
@@ -61,7 +62,10 @@ async def create_product(
 
     product = Product(
         name=payload.name,
+        slug=await unique_slug(session, payload.name),
         description=payload.description,
+        description_es=payload.description_es,
+        description_en=payload.description_en,
         category_id=payload.category_id,
         brand_id=payload.brand_id,
         brand=payload.brand,

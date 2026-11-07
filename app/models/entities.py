@@ -144,6 +144,11 @@ class Product(Archivable, Base):
         server_default=text("false"),
     )
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # URL key for the site; set once at creation and never rewritten on rename.
+    slug: Mapped[str | None] = mapped_column(String(220), unique=True, nullable=True)
+    # `description` is the pt text; es/en fall back to it in the public API.
+    description_es: Mapped[str | None] = mapped_column(Text, nullable=True)
+    description_en: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

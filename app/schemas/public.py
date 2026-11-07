@@ -5,9 +5,12 @@ from app.schemas.base import SchemaBase
 
 class PublicProductOut(SchemaBase):
     id: int
+    slug: str | None
     brand: str | None
     name: str
     description: str | None
+    description_es: str | None
+    description_en: str | None
     price_usd: Decimal | None
     price_is_from: bool
     featured: bool

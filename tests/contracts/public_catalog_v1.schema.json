@@ -52,6 +52,28 @@
           ],
           "title": "Description"
         },
+        "description_en": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Description En"
+        },
+        "description_es": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Description Es"
+        },
         "featured": {
           "title": "Featured",
           "type": "boolean"
@@ -97,13 +119,27 @@
             }
           ],
           "title": "Price Usd"
+        },
+        "slug": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Slug"
         }
       },
       "required": [
         "id",
+        "slug",
         "brand",
         "name",
         "description",
+        "description_es",
+        "description_en",
         "price_usd",
         "price_is_from",
         "featured",
