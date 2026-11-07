@@ -14,6 +14,8 @@ ITEM_KEYS = {
     "featured",
     "image_url",
     "in_stock",
+    "is_new",
+    "collections",
 }
 
 
@@ -243,3 +245,21 @@ async def test_brand_comes_from_the_registered_brand_before_the_legacy_field(cli
 
     assert products["Via cadastro"]["brand"] == "Dior"
     assert products["Via campo legado"]["brand"] == "Chanel"
+
+
+async def test_is_new_and_collections_are_editable_and_published(client):
+    headers = await register_and_login(client)
+    product = await _product(client, headers, "Novo")
+    await _sku(client, headers, product, "N-1", price="5.00")
+    await _publish(
+        client,
+        headers,
+        product,
+        is_new=True,
+        collections=[" Winter ", "gifts", "winter"],
+    )
+
+    item = (await client.get("/public/v1/catalog")).json()["sectors"][0]["products"][0]
+
+    assert item["is_new"] is True
+    assert item["collections"] == ["gifts", "winter"]

@@ -66,6 +66,8 @@ async def create_product(
         brand_id=payload.brand_id,
         brand=payload.brand,
         active=payload.active,
+        is_new=payload.is_new,
+        collections=payload.collections,
     )
     session.add(product)
     await session.flush()

@@ -11,6 +11,8 @@ class PublicProductOut(SchemaBase):
     price_usd: Decimal | None
     price_is_from: bool
     featured: bool
+    is_new: bool = False
+    collections: list[str] = []
     image_url: str | None
     in_stock: bool
 

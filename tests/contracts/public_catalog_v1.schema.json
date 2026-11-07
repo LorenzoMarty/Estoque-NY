@@ -41,6 +41,14 @@
           ],
           "title": "Brand"
         },
+        "collections": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Collections",
+          "type": "array"
+        },
         "description": {
           "anyOf": [
             {
@@ -73,6 +81,11 @@
         },
         "in_stock": {
           "title": "In Stock",
+          "type": "boolean"
+        },
+        "is_new": {
+          "default": false,
+          "title": "Is New",
           "type": "boolean"
         },
         "name": {
