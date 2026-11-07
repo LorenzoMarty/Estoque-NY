@@ -14,6 +14,7 @@ ITEM_KEYS = {
     "featured",
     "image_url",
     "in_stock",
+    "best_seller",
 }
 
 
