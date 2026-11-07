@@ -161,6 +161,22 @@ async def public_catalog(
         )
     )
 
+    where_stocked: dict[int, set[str]] = {}
+    for product_id, branch_name in await session.execute(
+        select(SKU.product_id, Branch.public_name)
+        .join(StockBalance, StockBalance.sku_id == SKU.id)
+        .join(Branch, Branch.id == StockBalance.branch_id)
+        .where(
+            SKU.active.is_(True),
+            SKU.archived_at.is_(None),
+            SKU.product_id.in_(product_ids),
+            StockBalance.on_hand > 0,
+            Branch.public_name.is_not(None),
+        )
+        .distinct()
+    ):
+        where_stocked.setdefault(product_id, set()).add(branch_name)
+
     # Offers are read at request time (cached 60 s), so start/end dates take
     # effect without a deploy.
     now = datetime.now(UTC)
@@ -194,6 +210,7 @@ async def public_catalog(
                 featured=product.featured,
                 image_url=product.image_url,
                 in_stock=product.id in stocked,
+                available_at=sorted(where_stocked.get(product.id, ())),
                 promotion=None
                 if offer is None
                 else PublicPromotionOut(
