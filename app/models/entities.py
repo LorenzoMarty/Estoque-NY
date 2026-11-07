@@ -512,6 +512,15 @@ class InventoryCount(Base):
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
+    # Blind count: the counter never sees the expected qty while the count is OPEN.
+    blind: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=text("false")
+    )
+    # A CLOSED count with divergences must be approved before it can be posted.
+    approved_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class InventoryCountLine(Base):
