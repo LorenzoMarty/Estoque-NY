@@ -97,6 +97,17 @@
             }
           ],
           "title": "Price Usd"
+        },
+        "promotion": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PublicPromotionOut"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -111,6 +122,77 @@
         "in_stock"
       ],
       "title": "PublicProductOut",
+      "type": "object"
+    },
+    "PublicPromotionOut": {
+      "description": "Active offer. `price_usd` is the discounted price (null if custom).",
+      "properties": {
+        "discount_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Discount Type"
+        },
+        "discount_value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Discount Value"
+        },
+        "ends_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ends At"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "price_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Price Usd"
+        }
+      },
+      "required": [
+        "name",
+        "discount_type",
+        "discount_value",
+        "price_usd",
+        "ends_at"
+      ],
+      "title": "PublicPromotionOut",
       "type": "object"
     },
     "PublicSectorOut": {

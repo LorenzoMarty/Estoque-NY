@@ -1,6 +1,17 @@
+from datetime import datetime
 from decimal import Decimal
 
 from app.schemas.base import SchemaBase
+
+
+class PublicPromotionOut(SchemaBase):
+    """Active offer. `price_usd` is the discounted price (null if custom)."""
+
+    name: str
+    discount_type: str | None
+    discount_value: Decimal | None
+    price_usd: Decimal | None
+    ends_at: datetime | None
 
 
 class PublicProductOut(SchemaBase):
@@ -13,6 +24,7 @@ class PublicProductOut(SchemaBase):
     featured: bool
     image_url: str | None
     in_stock: bool
+    promotion: PublicPromotionOut | None = None
 
 
 class PublicBranchOut(SchemaBase):
