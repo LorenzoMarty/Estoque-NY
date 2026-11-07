@@ -24,6 +24,20 @@ ImageUrl = Annotated[
 ]
 
 
+def _clean_collections(value: list[str] | None) -> list[str] | None:
+    if value is None:
+        return None
+    tags = [tag.strip().lower() for tag in value if tag.strip()]
+    return sorted(set(tags))
+
+
+Collections = Annotated[
+    list[Annotated[str, Field(max_length=40)]] | None,
+    Field(max_length=20),
+    AfterValidator(_clean_collections),
+]
+
+
 class ProductCreate(SchemaBase):
     name: str
     description: str | None = None
@@ -32,6 +46,8 @@ class ProductCreate(SchemaBase):
     brand: str | None = None
     active: bool = True
     featured: bool = False
+    is_new: bool = False
+    collections: Collections = None
     published: bool = False
     image_url: ImageUrl = None
 
@@ -44,6 +60,8 @@ class ProductUpdate(SchemaBase):
     brand: str | None = None
     active: bool | None = None
     featured: bool | None = None
+    is_new: bool | None = None
+    collections: Collections = None
     published: bool | None = None
     image_url: ImageUrl = None
 
@@ -57,6 +75,8 @@ class ProductOut(SchemaBase):
     brand: str | None
     active: bool
     featured: bool
+    is_new: bool
+    collections: list[str] | None
     published: bool
     image_url: str | None
     created_at: datetime
