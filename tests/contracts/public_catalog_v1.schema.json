@@ -30,6 +30,14 @@
     },
     "PublicProductOut": {
       "properties": {
+        "available_at": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Available At",
+          "type": "array"
+        },
         "brand": {
           "anyOf": [
             {

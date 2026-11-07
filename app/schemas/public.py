@@ -25,6 +25,8 @@ class PublicProductOut(SchemaBase):
     image_url: str | None
     in_stock: bool
     promotion: PublicPromotionOut | None = None
+    # Public names of branches that have the item; never quantities.
+    available_at: list[str] = []
 
 
 class PublicBranchOut(SchemaBase):

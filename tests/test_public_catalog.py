@@ -15,6 +15,7 @@ ITEM_KEYS = {
     "image_url",
     "in_stock",
     "promotion",
+    "available_at",
 }
 
 
