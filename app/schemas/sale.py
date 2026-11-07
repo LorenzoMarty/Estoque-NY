@@ -19,10 +19,13 @@ class SaleIn(SchemaBase):
     customer_id: int | None = None
     items: list[SaleItemIn] = Field(..., min_length=1)
     sold_at: datetime | None = None
+    # Needs sales.sale.override_closed_day; the audit log records it.
+    override_closed_day: bool = False
 
 
 class VoidIn(SchemaBase):
     reason: str = Field(..., min_length=3, max_length=255)
+    override_closed_day: bool = False
 
 
 class SaleItemOut(SchemaBase):

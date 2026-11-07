@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import domain_error_to_http
 from app.api.security import get_current_user, require_permission
+from app.core.auth import _has_permission
 from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.core.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, page_meta
@@ -28,6 +29,30 @@ from app.services.idempotency_service import (
 )
 
 router = APIRouter(prefix="/sales", tags=["sales"])
+
+
+OVERRIDE_KEY = "sales.sale.override_closed_day"
+
+
+async def may_override(
+    session: AsyncSession, scope: BranchScope, user: User | None, branch_id: int
+) -> bool:
+    """Whether the caller may touch a closed day in this branch (admin, or role)."""
+    if user is None or scope.unrestricted:
+        return True
+    role_keys = scope.roles.get(branch_id)
+    if role_keys is not None:
+        return OVERRIDE_KEY in role_keys
+    return await _has_permission(session, user.id, OVERRIDE_KEY)
+
+
+async def require_override(
+    session: AsyncSession, scope: BranchScope, user: User | None, branch_id: int
+) -> None:
+    if not await may_override(session, scope, user, branch_id):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, f"missing permission: {OVERRIDE_KEY}"
+        )
 
 
 async def sale_out(session: AsyncSession, sale: Sale) -> SaleOut:
@@ -64,6 +89,8 @@ async def register_sale(
     session: AsyncSession = Depends(get_session),
 ) -> Any:
     scope.require(payload.branch_id)
+    if payload.override_closed_day:
+        await require_override(session, scope, user, payload.branch_id)
     idempotency = await begin_idempotency(request, payload.model_dump(mode="json"))
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
@@ -78,6 +105,7 @@ async def register_sale(
             customer_id=payload.customer_id,
             sold_at=payload.sold_at,
             created_by=user.id if user else None,
+            override_closed_day=payload.override_closed_day,
         )
         result = await sale_out(session, sale)
         await write_audit_log(
@@ -87,7 +115,8 @@ async def register_sale(
             action="sales.sale.create",
             resource_type="sale",
             resource_id=sale.id,
-            after=result.model_dump(mode="json"),
+            after=result.model_dump(mode="json")
+            | {"override_closed_day": payload.override_closed_day},
             branch_id=sale.branch_id,
         )
         await session.commit()
@@ -179,8 +208,16 @@ async def void_sale_route(
 ) -> Any:
     """Cancel a sale and put its stock back (same lots, same location)."""
     sale = await _scoped_sale(session, scope, sale_id)
+    if payload.override_closed_day:
+        await require_override(session, scope, user, sale.branch_id)
     try:
-        await void_sale(session, sale, payload.reason, user.id if user else None)
+        await void_sale(
+            session,
+            sale,
+            payload.reason,
+            user.id if user else None,
+            payload.override_closed_day,
+        )
         result = await sale_out(session, sale)
         await write_audit_log(
             session,
@@ -189,7 +226,11 @@ async def void_sale_route(
             action="sales.sale.void",
             resource_type="sale",
             resource_id=sale.id,
-            after={"status": sale.status, "reason": payload.reason},
+            after={
+                "status": sale.status,
+                "reason": payload.reason,
+                "override_closed_day": payload.override_closed_day,
+            },
             branch_id=sale.branch_id,
         )
         await session.commit()
