@@ -8,6 +8,7 @@ from app.api.routes import (
     lots,
     public,
     sales,
+    sales_import,
     thresholds,
 )
 from app.modules import (
@@ -39,6 +40,7 @@ api_router.include_router(thresholds.router)
 api_router.include_router(lots.router)
 api_router.include_router(customers.router)
 api_router.include_router(sales.router)
+api_router.include_router(sales_import.router)
 api_router.include_router(stock.router)
 api_router.include_router(transfers.router)
 api_router.include_router(inventory.router)

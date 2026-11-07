@@ -61,6 +61,7 @@ ALL_PERMISSIONS = [
     "sales.sale.create",
     "sales.sale.read",
     "sales.sale.void",
+    "sales.sale.import",
     "audit.read",
     "reports.read",
     "reports.marketing.read",

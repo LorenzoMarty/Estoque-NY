@@ -9,13 +9,18 @@ import inspect
 
 from fastapi.routing import APIRoute
 
-from app.api.routes import archive, customers, data_io
+from app.api.routes import archive, customers, data_io, sales_import
 from app.main import create_app
 
 WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 # Shared helpers that write the audit entry on behalf of several endpoints.
-HELPERS = [archive._run, data_io._audit_and_commit, customers._audit]
+HELPERS = [
+    archive._run,
+    data_io._audit_and_commit,
+    customers._audit,
+    sales_import._run_import,
+]
 
 # Routes that change no business data. Add here only with a reason.
 EXEMPT = {
