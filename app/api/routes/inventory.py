@@ -17,11 +17,13 @@ from app.core.branch_scope import BranchScope, get_branch_scope
 from app.core.db import get_session
 from app.domain.errors import DomainError
 from app.domain.inventory_service import (
+    approve_inventory_count,
     cancel_inventory_count,
     close_inventory_count,
     create_inventory_count,
     patch_inventory_lines,
     post_inventory_count,
+    recount_inventory_count,
 )
 from app.models.entities import InventoryCount, InventoryCountLine, User
 from app.models.enums import InventoryCountStatus
@@ -31,6 +33,7 @@ from app.schemas.inventory import (
     InventoryCountListOut,
     InventoryCountOut,
     InventoryCountPatchLinesIn,
+    InventoryRecountIn,
 )
 from app.services.audit_service import write_audit_log
 from app.services.idempotency_service import (
@@ -40,6 +43,14 @@ from app.services.idempotency_service import (
 )
 
 router = APIRouter(prefix="/stock/inventory-counts", tags=["stock-inventory"])
+
+
+def _line_out(count: InventoryCount, line: InventoryCountLine) -> InventoryCountLineOut:
+    out = InventoryCountLineOut.model_validate(line)
+    if count.blind and count.status == InventoryCountStatus.OPEN:
+        out.system_qty = None
+        out.diff_qty = None
+    return out
 
 
 async def _to_inventory_out(
@@ -65,7 +76,10 @@ async def _to_inventory_out(
         posted_at=count.posted_at,
         cancelled_at=count.cancelled_at,
         created_by=count.created_by,
-        lines=[InventoryCountLineOut.model_validate(line) for line in lines],
+        blind=count.blind,
+        approved_by=count.approved_by,
+        approved_at=count.approved_at,
+        lines=[_line_out(count, line) for line in lines],
     )
 
 
@@ -297,6 +311,87 @@ async def post_count(
         status_code=status.HTTP_200_OK,
         response_body=result.model_dump(mode="json"),
     )
+    return result
+
+
+@router.post(
+    "/{count_id}/approve",
+    response_model=InventoryCountOut,
+    dependencies=[
+        Depends(require_permission("stock.inventory.approve", branch_scoped=True))
+    ],
+)
+async def approve_count(
+    count_id: int,
+    request: Request,
+    current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
+    session: AsyncSession = Depends(get_session),
+) -> Any:
+    await _require_count_access(session, scope, count_id)
+    try:
+        count = await approve_inventory_count(
+            session=session,
+            count_id=count_id,
+            user_id=current_user.id if current_user else None,
+        )
+        result = await _to_inventory_out(session, count)
+        await write_audit_log(
+            session,
+            request=request,
+            user_id=current_user.id if current_user else None,
+            action="stock.inventory.approve",
+            resource_type="inventory_count",
+            resource_id=count.id,
+            before=None,
+            after={
+                "divergences": [
+                    {"sku_id": line.sku_id, "diff_qty": line.diff_qty}
+                    for line in result.lines
+                    if line.diff_qty
+                ]
+            },
+        )
+        await session.commit()
+    except DomainError as exc:
+        raise domain_error_to_http(exc) from exc
+    return result
+
+
+@router.post(
+    "/{count_id}/recount",
+    response_model=InventoryCountOut,
+    dependencies=[
+        Depends(require_permission("stock.inventory.update", branch_scoped=True))
+    ],
+)
+async def recount_count(
+    count_id: int,
+    payload: InventoryRecountIn,
+    request: Request,
+    current_user: User | None = Depends(get_current_user),
+    scope: BranchScope = Depends(get_branch_scope),
+    session: AsyncSession = Depends(get_session),
+) -> Any:
+    await _require_count_access(session, scope, count_id)
+    try:
+        count = await recount_inventory_count(
+            session=session, count_id=count_id, sku_ids=payload.sku_ids
+        )
+        result = await _to_inventory_out(session, count)
+        await write_audit_log(
+            session,
+            request=request,
+            user_id=current_user.id if current_user else None,
+            action="stock.inventory.recount",
+            resource_type="inventory_count",
+            resource_id=count.id,
+            before={"status": InventoryCountStatus.CLOSED.value},
+            after={"status": count.status.value, "sku_ids": payload.sku_ids},
+        )
+        await session.commit()
+    except DomainError as exc:
+        raise domain_error_to_http(exc) from exc
     return result
 
 
