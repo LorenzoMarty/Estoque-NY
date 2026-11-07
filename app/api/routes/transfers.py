@@ -28,6 +28,7 @@ from app.schemas.transfer import (
     TransferItemOut,
     TransferListOut,
     TransferOut,
+    TransferReceiveIn,
 )
 from app.services.audit_service import write_audit_log
 from app.services.idempotency_service import (
@@ -64,12 +65,14 @@ async def _to_transfer_out(
         created_at=transfer.created_at,
         shipped_at=transfer.shipped_at,
         received_at=transfer.received_at,
+        discrepancy_reason=transfer.discrepancy_reason,
         items=[
             TransferItemOut(
                 id=item.id,
                 transfer_id=item.transfer_id,
                 sku_id=item.sku_id,
                 qty=item.qty,
+                received_qty=item.received_qty,
             )
             for item in items
         ],
@@ -306,12 +309,16 @@ async def receive_transfer_order(
     transfer_id: int,
     request: Request,
     response: Response,
+    payload: TransferReceiveIn | None = None,
     current_user: User | None = Depends(get_current_user),
     scope: BranchScope = Depends(get_branch_scope),
     session: AsyncSession = Depends(get_session),
 ) -> Any:
     await _load_for_scope(session, scope, transfer_id, side="destination")
-    idempotency = await begin_idempotency(request, {"transfer_id": transfer_id})
+    payload = payload or TransferReceiveIn()
+    idempotency = await begin_idempotency(
+        request, {"transfer_id": transfer_id, **payload.model_dump()}
+    )
     if idempotency.is_replay:
         response.status_code = idempotency.replay_status_code or status.HTTP_200_OK
         return idempotency.replay_response
@@ -321,6 +328,8 @@ async def receive_transfer_order(
             session=session,
             transfer_id=transfer_id,
             user_id=current_user.id if current_user else None,
+            received={i.sku_id: i.received_qty for i in payload.items},
+            reason=payload.reason,
         )
         result = await _to_transfer_out(session, transfer)
         await write_audit_log(
@@ -331,7 +340,15 @@ async def receive_transfer_order(
             resource_type="transfer_order",
             resource_id=transfer.id,
             before={"status": TransferStatus.SHIPPED.value},
-            after={"status": transfer.status.value},
+            after={
+                "status": transfer.status.value,
+                "discrepancies": [
+                    {"sku_id": i.sku_id, "sent": i.qty, "received": i.received_qty}
+                    for i in result.items
+                    if i.received_qty != i.qty
+                ],
+                "reason": transfer.discrepancy_reason,
+            },
         )
         await session.commit()
     except DomainError as exc:

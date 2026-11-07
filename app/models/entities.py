@@ -458,6 +458,7 @@ class TransferOrder(Base):
     )
     shipped_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    discrepancy_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class TransferOrderItem(Base):
@@ -476,6 +477,8 @@ class TransferOrderItem(Base):
         nullable=False,
     )
     qty: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Set on receipt; below qty means units were lost or damaged in transit.
+    received_qty: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
 
 class InventoryCount(Base):
