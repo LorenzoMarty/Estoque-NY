@@ -78,3 +78,11 @@ class DiscountType(StrEnum):
     PERCENT = "PERCENT"
     FIXED = "FIXED"
     CUSTOM = "CUSTOM"
+
+
+class ConsentPurpose(StrEnum):
+    """What a customer agreed to; each purpose is granted and withdrawn separately."""
+
+    MARKETING_EMAIL = "MARKETING_EMAIL"
+    MARKETING_WHATSAPP = "MARKETING_WHATSAPP"
+    DATA_PROCESSING = "DATA_PROCESSING"
