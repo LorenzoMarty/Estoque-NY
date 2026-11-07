@@ -27,6 +27,8 @@ _SELLER = {
     "sales.customer.create",
     "sales.customer.read",
     "sales.customer.update",
+    "sales.sale.create",
+    "sales.sale.read",
 } | _CATALOG_READ
 _STOCKKEEPER = _SELLER | {
     "stock.receipt.create",

@@ -968,3 +968,64 @@ class ConsentRecord(Base):
         default=_utc_now,
         server_default=func.now(),
     )
+
+
+class Sale(Base):
+    """One sale in a branch; each line issued stock (ADR 0005, issue #32)."""
+
+    __tablename__ = "sales"
+    __table_args__ = (
+        UniqueConstraint("source", "external_id", name="uq_sales_source_external_id"),
+        Index("ix_sales_branch_sold_at", "branch_id", "sold_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[int | None] = mapped_column(
+        ForeignKey("customers.id", ondelete="SET NULL")
+    )
+    # "manual" for the register screen, "import:<name>" for an external POS (#33).
+    source: Mapped[str] = mapped_column(
+        String(60), nullable=False, default="manual", server_default="manual"
+    )
+    external_id: Mapped[str | None] = mapped_column(String(120))
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="COMPLETED", server_default="COMPLETED"
+    )
+    total: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, default=Decimal("0.00"), server_default="0"
+    )
+    sold_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utc_now, index=True
+    )
+    created_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+    voided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    void_reason: Mapped[str | None] = mapped_column(String(255))
+
+
+class SaleItem(Base):
+    __tablename__ = "sale_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    sale_id: Mapped[int] = mapped_column(
+        ForeignKey("sales.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    sku_id: Mapped[int] = mapped_column(
+        ForeignKey("skus.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    qty: Mapped[int] = mapped_column(Integer, nullable=False)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    # The stock ISSUE this line produced.
+    issue_move_id: Mapped[int | None] = mapped_column(
+        ForeignKey("stock_moves.id", ondelete="SET NULL")
+    )

@@ -94,6 +94,9 @@ The existing global roles (`admin`, `stock_operator`, `viewer`) are unchanged.
 | `sales.customer.read` | ✓ | ✓ | ✓ | ✓ |
 | `sales.customer.update` | ✓ | ✓ | ✓ |  |
 | `sales.customer.delete` | ✓ |  |  |  |
+| `sales.sale.create` | ✓ | ✓ | ✓ |  |
+| `sales.sale.read` | ✓ | ✓ | ✓ | ✓ |
+| `sales.sale.void` | ✓ |  |  |  |
 | `audit.read` | ✓ |  |  | ✓ |
 | `reports.read` | ✓ |  |  | ✓ |
 | `reports.marketing.read` | ✓ |  |  | ✓ |
