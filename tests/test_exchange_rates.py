@@ -52,3 +52,18 @@ def test_late_evening_utc_is_still_the_same_sao_paulo_day():
     assert t.date().isoformat() == "2026-11-02"
     assert t.astimezone(LOCAL_TZ).date().isoformat() == "2026-11-01"
     assert LOCAL_TZ == ZoneInfo("America/Sao_Paulo")
+
+
+@pytest.mark.asyncio
+async def test_public_rates_lists_latest_per_currency_with_date(client):
+    headers = await register_and_login(client)
+    await client.post("/exchange-rates", json=_body("5.10"), headers=headers)
+    await client.post(
+        "/exchange-rates", json=_body("5.50", "2026-11-05"), headers=headers
+    )
+    await client.post("/exchange-rates", json=_body("40", cur="UYU"), headers=headers)
+
+    body = (await client.get("/public/v1/rates")).json()  # no auth
+    assert body["base"] == "USD"
+    got = {r["currency"]: (float(r["rate"]), r["as_of"]) for r in body["rates"]}
+    assert got == {"BRL": (5.5, "2026-11-05"), "UYU": (40.0, "2026-11-01")}

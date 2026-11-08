@@ -7,13 +7,23 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
-from app.models.entities import SKU, Branch, Brand, Category, Product, StockBalance
+from app.models.entities import (
+    SKU,
+    Branch,
+    Brand,
+    Category,
+    ExchangeRate,
+    Product,
+    StockBalance,
+)
 from app.schemas.public import (
     PublicBranchesOut,
     PublicBranchOut,
     PublicCatalogMeta,
     PublicCatalogOut,
     PublicProductOut,
+    PublicRateOut,
+    PublicRatesOut,
     PublicSectorOut,
 )
 
@@ -43,6 +53,32 @@ def _cached_json(request: Request, payload: BaseModel) -> Response:
     if _client_has(headers["ETag"], request.headers.get("if-none-match")):
         return Response(status_code=304, headers=headers)
     return Response(content=body, media_type="application/json", headers=headers)
+
+
+@router.get("/v1/rates", response_model=PublicRatesOut)
+async def public_rates(
+    session: AsyncSession = Depends(get_session),
+) -> PublicRatesOut:
+    """Latest USD->display rate per currency, for the site's converted prices."""
+    rows = (
+        await session.scalars(
+            select(ExchangeRate).order_by(
+                ExchangeRate.effective_date.desc(), ExchangeRate.id.desc()
+            )
+        )
+    ).all()
+    newest: dict[str, ExchangeRate] = {}
+    for r in rows:
+        newest.setdefault(r.quote_currency, r)
+    return PublicRatesOut(
+        base="USD",
+        rates=[
+            PublicRateOut(
+                currency=r.quote_currency, rate=r.rate, as_of=r.effective_date
+            )
+            for r in newest.values()
+        ],
+    )
 
 
 @router.get("/v1/branches", response_model=PublicBranchesOut)
