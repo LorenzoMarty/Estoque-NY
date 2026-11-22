@@ -1,4 +1,5 @@
 import hashlib
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
@@ -7,13 +8,24 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
-from app.models.entities import SKU, Branch, Brand, Category, Product, StockBalance
+from app.models.entities import (
+    SKU,
+    Branch,
+    Brand,
+    Category,
+    Product,
+    Promotion,
+    PromotionSKU,
+    StockBalance,
+)
+from app.models.enums import DiscountType, PromotionStatus
 from app.schemas.public import (
     PublicBranchesOut,
     PublicBranchOut,
     PublicCatalogMeta,
     PublicCatalogOut,
     PublicProductOut,
+    PublicPromotionOut,
     PublicSectorOut,
 )
 
@@ -43,6 +55,18 @@ def _cached_json(request: Request, payload: BaseModel) -> Response:
     if _client_has(headers["ETag"], request.headers.get("if-none-match")):
         return Response(status_code=304, headers=headers)
     return Response(content=body, media_type="application/json", headers=headers)
+
+
+def _promo_price(low: Decimal | None, kind, value: Decimal | None) -> Decimal | None:
+    if low is None or value is None:
+        return None
+    if kind == DiscountType.PERCENT:
+        price = Decimal(low) * (Decimal(100) - value) / Decimal(100)
+    elif kind == DiscountType.FIXED:
+        price = Decimal(low) - value
+    else:
+        return None
+    return max(price, Decimal(0)).quantize(_CENTS)
 
 
 @router.get("/v1/branches", response_model=PublicBranchesOut)
@@ -137,9 +161,28 @@ async def public_catalog(
         )
     )
 
+    # Offers are read at request time (cached 60 s), so start/end dates take
+    # effect without a deploy.
+    now = datetime.now(UTC)
+    offers: dict[int, Promotion] = {}
+    for promotion, product_id in await session.execute(
+        select(Promotion, SKU.product_id)
+        .join(PromotionSKU, PromotionSKU.promotion_id == Promotion.id)
+        .join(SKU, SKU.id == PromotionSKU.sku_id)
+        .where(
+            Promotion.status == PromotionStatus.ACTIVE,
+            (Promotion.starts_at.is_(None)) | (Promotion.starts_at <= now),
+            (Promotion.ends_at.is_(None)) | (Promotion.ends_at > now),
+            SKU.product_id.in_(product_ids),
+        )
+        .order_by(Promotion.id)
+    ):
+        offers[product_id] = promotion  # newest promotion wins
+
     sectors: dict[str, list[PublicProductOut]] = {}
     for product, category_name, brand_name in rows:
         low, high = prices.get(product.id, (None, None))
+        offer = offers.get(product.id)
         sectors.setdefault(category_name or FALLBACK_SECTOR, []).append(
             PublicProductOut(
                 id=product.id,
@@ -151,6 +194,17 @@ async def public_catalog(
                 featured=product.featured,
                 image_url=product.image_url,
                 in_stock=product.id in stocked,
+                promotion=None
+                if offer is None
+                else PublicPromotionOut(
+                    name=offer.name,
+                    discount_type=offer.discount_type,
+                    discount_value=offer.discount_value,
+                    price_usd=_promo_price(
+                        low, offer.discount_type, offer.discount_value
+                    ),
+                    ends_at=offer.ends_at,
+                ),
             )
         )
 
