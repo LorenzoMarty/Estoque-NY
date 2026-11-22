@@ -23,7 +23,7 @@ MIGRATION = (
 )
 
 LEGACY_PREFIXES = ("branch.", "location.", "category.", "brand.", "product.", "sku.")
-DOMAINS = {"catalog", "stock", "marketing", "auth", "reports", "audit"}
+DOMAINS = {"catalog", "stock", "marketing", "auth", "reports", "audit", "sales"}
 
 
 async def _register(client, email, name="User"):

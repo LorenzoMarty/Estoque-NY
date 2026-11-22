@@ -922,3 +922,49 @@ class RefreshToken(Base):
         default=_utc_now,
         server_default=func.now(),
     )
+
+
+class Customer(Base):
+    """A person we sell to. Personal data (LGPD): minimal, consent-gated."""
+
+    __tablename__ = "customers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Digits only (CPF/passport/other id); unique when given.
+    document: Mapped[str | None] = mapped_column(String(40), unique=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(255))
+    phone: Mapped[str | None] = mapped_column(String(40))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )
+    # Set when the person asked to be forgotten: PII is blanked, the id stays for sales.
+    anonymized_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ConsentRecord(Base):
+    """Append-only consent log; the latest row per purpose is the current state."""
+
+    __tablename__ = "consent_records"
+    __table_args__ = (Index("ix_consent_customer_purpose", "customer_id", "purpose"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    customer_id: Mapped[int] = mapped_column(
+        ForeignKey("customers.id", ondelete="CASCADE"), nullable=False
+    )
+    purpose: Mapped[str] = mapped_column(String(40), nullable=False)
+    granted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    # Where it was collected: "store", "site-form", "whatsapp-optin", ...
+    source: Mapped[str] = mapped_column(String(80), nullable=False)
+    recorded_by: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL")
+    )
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_utc_now,
+        server_default=func.now(),
+    )

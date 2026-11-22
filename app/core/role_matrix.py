@@ -24,6 +24,9 @@ _SELLER = {
     "stock.location.read",
     "stock.transfer.read",
     "marketing.promotion.read",
+    "sales.customer.create",
+    "sales.customer.read",
+    "sales.customer.update",
 } | _CATALOG_READ
 _STOCKKEEPER = _SELLER | {
     "stock.receipt.create",
@@ -57,7 +60,7 @@ _MANAGER = (
         "reports.marketing.read",
         "audit.read",
     }
-    | {key for key in ALL_PERMISSIONS if key.startswith("marketing.")}
+    | {key for key in ALL_PERMISSIONS if key.startswith(("marketing.", "sales."))}
 )
 # Read-only everywhere: every key that only reads.
 _AUDITOR = {key for key in ALL_PERMISSIONS if key.endswith(".read")}

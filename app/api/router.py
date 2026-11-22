@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     archive,
+    customers,
     data_io,
     health,
     lots,
@@ -35,6 +36,7 @@ api_router.include_router(skus.router)
 api_router.include_router(archive.router)
 api_router.include_router(thresholds.router)
 api_router.include_router(lots.router)
+api_router.include_router(customers.router)
 api_router.include_router(stock.router)
 api_router.include_router(transfers.router)
 api_router.include_router(inventory.router)
