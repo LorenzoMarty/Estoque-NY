@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from app.schemas.base import SchemaBase
@@ -46,3 +47,14 @@ class PublicCatalogOut(SchemaBase):
     # the next page; consumers merge sectors by name.
     sectors: list[PublicSectorOut]
     meta: PublicCatalogMeta
+
+
+class PublicRateOut(SchemaBase):
+    currency: str
+    rate: Decimal
+    as_of: date
+
+
+class PublicRatesOut(SchemaBase):
+    base: str
+    rates: list[PublicRateOut]

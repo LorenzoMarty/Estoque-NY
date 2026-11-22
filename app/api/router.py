@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.routes import (
     archive,
     data_io,
+    exchange_rates,
     health,
     lots,
     public,
@@ -33,6 +34,7 @@ api_router.include_router(catalog.router)
 api_router.include_router(products.router)
 api_router.include_router(skus.router)
 api_router.include_router(archive.router)
+api_router.include_router(exchange_rates.router)
 api_router.include_router(thresholds.router)
 api_router.include_router(lots.router)
 api_router.include_router(stock.router)
