@@ -9,6 +9,13 @@ class InventoryCountCreateIn(SchemaBase):
     location_id: int
     scope: str = "ALL"
     sku_ids: list[int] | None = None
+    blind: bool = False
+
+
+class InventoryRecountIn(SchemaBase):
+    """Reopen a CLOSED count to recount its divergent lines (all of them by default)."""
+
+    sku_ids: list[int] | None = None
 
 
 class InventoryCountLinePatchIn(SchemaBase):
@@ -24,9 +31,10 @@ class InventoryCountLineOut(SchemaBase):
     id: int
     count_id: int
     sku_id: int
-    system_qty: int
+    # None (with diff_qty) while a blind count is OPEN.
+    system_qty: int | None
     counted_qty: int | None
-    diff_qty: int
+    diff_qty: int | None
     posted: bool
 
 
@@ -40,6 +48,9 @@ class InventoryCountOut(SchemaBase):
     posted_at: datetime | None
     cancelled_at: datetime | None
     created_by: int | None
+    blind: bool = False
+    approved_by: int | None = None
+    approved_at: datetime | None = None
     lines: list[InventoryCountLineOut] = []
 
 

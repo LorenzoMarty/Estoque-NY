@@ -38,6 +38,7 @@ ALL_PERMISSIONS = [
     "stock.inventory.close",
     "stock.inventory.post",
     "stock.inventory.cancel",
+    "stock.inventory.approve",
     "marketing.channel.create",
     "marketing.channel.read",
     "marketing.channel.update",

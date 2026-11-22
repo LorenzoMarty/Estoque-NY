@@ -53,6 +53,7 @@ _MANAGER = (
         "catalog.sku.update",
         "stock.location.create",
         "stock.location.update",
+        "stock.inventory.approve",
         "reports.read",
         "reports.marketing.read",
         "audit.read",

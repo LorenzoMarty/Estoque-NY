@@ -50,6 +50,7 @@ async def create_inventory_count(
             location_id=payload.location_id,
             status=InventoryCountStatus.OPEN,
             created_by=user_id,
+            blind=payload.blind,
         )
         session.add(count)
         await session.flush()
@@ -133,6 +134,8 @@ async def close_inventory_count(
 
         count.status = InventoryCountStatus.CLOSED
         count.closed_at = datetime.now(UTC)
+        count.approved_by = None
+        count.approved_at = None
         await session.flush()
         await session.refresh(count)
 
@@ -173,6 +176,11 @@ async def post_inventory_count(
                     f"{count.id}"
                 )
 
+        if count.approved_at is None and any(line.diff_qty != 0 for line in lines):
+            raise BusinessRuleError(
+                "inventory count has divergences and needs manager approval to post"
+            )
+
         for line in lines:
             if line.diff_qty == 0:
                 line.posted = True
@@ -197,6 +205,67 @@ async def post_inventory_count(
         await session.flush()
         await session.refresh(count)
 
+    return count
+
+
+async def approve_inventory_count(
+    session: AsyncSession, *, count_id: int, user_id: int | None
+) -> InventoryCount:
+    async with _transaction_scope(session):
+        count = await _locked(session, count_id)
+        if count.status != InventoryCountStatus.CLOSED:
+            raise BusinessRuleError("only CLOSED inventory counts can be approved")
+        count.approved_by = user_id
+        count.approved_at = datetime.now(UTC)
+        await session.flush()
+        await session.refresh(count)
+    return count
+
+
+async def recount_inventory_count(
+    session: AsyncSession, *, count_id: int, sku_ids: list[int] | None
+) -> InventoryCount:
+    """CLOSED -> OPEN again, clearing the counted qty of the divergent lines."""
+    async with _transaction_scope(session):
+        count = await _locked(session, count_id)
+        if count.status != InventoryCountStatus.CLOSED:
+            raise BusinessRuleError("only CLOSED inventory counts can be recounted")
+        lines = list(
+            (
+                await session.scalars(
+                    select(InventoryCountLine).where(
+                        InventoryCountLine.count_id == count.id,
+                        InventoryCountLine.diff_qty != 0,
+                    )
+                )
+            ).all()
+        )
+        if sku_ids is not None:
+            unknown = set(sku_ids) - {line.sku_id for line in lines}
+            if unknown:
+                raise ValidationError(
+                    f"no divergence to recount for skus {sorted(unknown)}"
+                )
+            lines = [line for line in lines if line.sku_id in sku_ids]
+        if not lines:
+            raise BusinessRuleError("no divergent lines to recount")
+        for line in lines:
+            line.counted_qty = None
+        count.status = InventoryCountStatus.OPEN
+        count.closed_at = None
+        count.approved_by = None
+        count.approved_at = None
+        await session.flush()
+        await session.refresh(count)
+    return count
+
+
+async def _locked(session: AsyncSession, count_id: int) -> InventoryCount:
+    count = await session.scalar(
+        select(InventoryCount).where(InventoryCount.id == count_id).with_for_update()
+    )
+    if count is None:
+        raise NotFoundError(f"inventory count {count_id} not found")
     return count
 
 

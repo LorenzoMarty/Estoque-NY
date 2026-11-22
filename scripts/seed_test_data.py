@@ -31,6 +31,7 @@ async def _seed(args: argparse.Namespace) -> None:
 
     from app.db.session import dispose_engine, get_sessionmaker
     from app.domain.inventory_service import (
+        approve_inventory_count,
         close_inventory_count,
         create_inventory_count,
         patch_inventory_lines,
@@ -956,6 +957,9 @@ async def _seed(args: argparse.Namespace) -> None:
                     ),
                 )
                 count = await close_inventory_count(session=session, count_id=count.id)
+                await approve_inventory_count(
+                    session=session, count_id=count.id, user_id=actor_id
+                )
                 await post_inventory_count(
                     session=session, count_id=count.id, user_id=actor_id
                 )
