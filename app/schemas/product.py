@@ -27,6 +27,8 @@ ImageUrl = Annotated[
 class ProductCreate(SchemaBase):
     name: str
     description: str | None = None
+    description_es: str | None = None
+    description_en: str | None = None
     category_id: int | None = None
     brand_id: int | None = None
     brand: str | None = None
@@ -39,6 +41,8 @@ class ProductCreate(SchemaBase):
 class ProductUpdate(SchemaBase):
     name: str | None = None
     description: str | None = None
+    description_es: str | None = None
+    description_en: str | None = None
     category_id: int | None = None
     brand_id: int | None = None
     brand: str | None = None
@@ -51,7 +55,10 @@ class ProductUpdate(SchemaBase):
 class ProductOut(SchemaBase):
     id: int
     name: str
+    slug: str | None
     description: str | None
+    description_es: str | None
+    description_en: str | None
     category_id: int | None
     brand_id: int | None
     brand: str | None
