@@ -167,3 +167,67 @@ async def test_a_transfer_in_transit_still_lands_when_its_sku_gets_archived(clie
     )
     assert received.status_code == 200 and received.json()["status"] == "RECEIVED"
     assert await on_hand(client, headers, dest_branch, sku_id) == 4
+
+
+async def _ship(client, setup, qty=4):
+    headers = setup[0]
+    created = await _create_transfer(client, headers, setup, qty=qty)
+    transfer_id = created.json()["id"]
+    await client.post(f"/stock/transfers/{transfer_id}/ship", headers=headers)
+    return transfer_id
+
+
+@pytest.mark.asyncio
+async def test_receive_with_shortfall_books_adjustment_and_audit(client):
+    setup = await _setup(client)
+    headers, origin_branch, _, dest_branch, _, sku_id = setup
+    transfer_id = await _ship(client, setup, qty=4)
+    url = f"/stock/transfers/{transfer_id}/receive"
+
+    no_reason = await client.post(
+        url, json={"items": [{"sku_id": sku_id, "received_qty": 3}]}, headers=headers
+    )
+    assert no_reason.status_code == 400
+    too_many = await client.post(
+        url,
+        json={"items": [{"sku_id": sku_id, "received_qty": 5}], "reason": "x"},
+        headers=headers,
+    )
+    assert too_many.status_code == 400
+
+    ok = await client.post(
+        url,
+        json={
+            "items": [{"sku_id": sku_id, "received_qty": 3}],
+            "reason": "box crushed",
+        },
+        headers=headers,
+    )
+    assert ok.status_code == 200
+    body = ok.json()
+    assert body["discrepancy_reason"] == "box crushed"
+    assert body["items"][0]["received_qty"] == 3
+    # origin 6 + destination 3: the missing unit is booked as a loss, not invented.
+    assert await on_hand(client, headers, origin_branch, sku_id) == 6
+    assert await on_hand(client, headers, dest_branch, sku_id) == 3
+
+    audit = await client.get("/admin/audit-logs", headers=headers)
+    entry = next(
+        e for e in audit.json()["items"] if e["action"] == "stock.transfer.receive"
+    )
+    assert entry["after_json"]["discrepancies"] == [
+        {"sku_id": sku_id, "sent": 4, "received": 3}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_full_receive_keeps_total_constant(client):
+    setup = await _setup(client)
+    headers, origin_branch, _, dest_branch, _, sku_id = setup
+    transfer_id = await _ship(client, setup, qty=4)
+    ok = await client.post(f"/stock/transfers/{transfer_id}/receive", headers=headers)
+    assert ok.json()["discrepancy_reason"] is None
+    total = await on_hand(client, headers, origin_branch, sku_id) + await on_hand(
+        client, headers, dest_branch, sku_id
+    )
+    assert total == 10

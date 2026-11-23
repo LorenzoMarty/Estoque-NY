@@ -18,11 +18,24 @@ class TransferCreateIn(SchemaBase):
     note: str | None = None
 
 
+class TransferReceiveItemIn(SchemaBase):
+    sku_id: int
+    received_qty: int
+
+
+class TransferReceiveIn(SchemaBase):
+    """Omit the body to receive everything that was shipped."""
+
+    items: list[TransferReceiveItemIn] = []
+    reason: str | None = None
+
+
 class TransferItemOut(SchemaBase):
     id: int
     transfer_id: int
     sku_id: int
     qty: int
+    received_qty: int | None = None
 
 
 class TransferOut(SchemaBase):
@@ -37,6 +50,7 @@ class TransferOut(SchemaBase):
     created_at: datetime
     shipped_at: datetime | None
     received_at: datetime | None
+    discrepancy_reason: str | None = None
     items: list[TransferItemOut] = []
 
 

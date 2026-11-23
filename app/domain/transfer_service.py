@@ -134,7 +134,16 @@ async def receive_transfer(
     *,
     transfer_id: int,
     user_id: int | None,
+    received: dict[int, int] | None = None,
+    reason: str | None = None,
 ) -> TransferOrder:
+    """Receive a SHIPPED transfer; ``received`` maps sku_id to the counted qty.
+
+    A shortfall is booked as a TRANSFER_RECEIVE of the shipped qty plus an
+    ADJUSTMENT for the missing units, so the ledger shows both and the origin's
+    ship move still balances. More than shipped is rejected.
+    """
+    received = received or {}
     async with _transaction_scope(session):
         transfer = await session.scalar(
             select(TransferOrder)
@@ -158,7 +167,22 @@ async def receive_transfer(
         if not items:
             raise ValidationError("transfer has no items")
 
+        by_sku = {item.sku_id: item for item in items}
+        unknown = set(received) - set(by_sku)
+        if unknown:
+            raise ValidationError(f"skus not in transfer: {sorted(unknown)}")
+        for sku_id, qty in received.items():
+            if not 0 <= qty <= by_sku[sku_id].qty:
+                raise ValidationError(
+                    f"received_qty for sku {sku_id} must be between 0 and "
+                    f"{by_sku[sku_id].qty}"
+                )
+        short = any(received.get(i.sku_id, i.qty) < i.qty for i in items)
+        if short and not (reason and reason.strip()):
+            raise ValidationError("a reason is required when receiving less")
+
         for item in items:
+            item.received_qty = received.get(item.sku_id, item.qty)
             await apply_move(
                 session=session,
                 branch_id=transfer.to_branch_id,
@@ -170,6 +194,20 @@ async def receive_transfer(
                 transfer_id=transfer.id,
                 created_by=user_id,
             )
+            if item.received_qty < item.qty:
+                await apply_move(
+                    session=session,
+                    branch_id=transfer.to_branch_id,
+                    sku_id=item.sku_id,
+                    qty_delta=item.received_qty - item.qty,
+                    move_type=MoveType.ADJUSTMENT,
+                    reason=f"TRANSFER_DISCREPANCY: {reason}",
+                    reason_code="OTHER",
+                    location_id=transfer.to_location_id,
+                    transfer_id=transfer.id,
+                    created_by=user_id,
+                )
+        transfer.discrepancy_reason = reason.strip() if short and reason else None
 
         transfer.status = TransferStatus.RECEIVED
         transfer.received_at = datetime.now(UTC)
