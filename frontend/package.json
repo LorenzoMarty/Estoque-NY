@@ -7,6 +7,7 @@
     "dev": "vite",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
+    "gen:api": "npx --yes openapi-typescript@7.9.1 openapi.json -o src/shared/api/schema.d.ts",
     "test": "vitest run",
     "build": "npm run typecheck && npm run test && vite build && npm run check:bundle",
     "check:bundle": "node ./scripts/check-bundle-budget.mjs",
