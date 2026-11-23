@@ -617,6 +617,27 @@ class StockThreshold(Base):
     last_alert_on: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 
+class ExchangeRate(Base):
+    """Append-only USD->display rate; a past rate is never rewritten (issue #17)."""
+
+    __tablename__ = "exchange_rates"
+    __table_args__ = (
+        UniqueConstraint(
+            "base_currency",
+            "quote_currency",
+            "effective_date",
+            name="uq_exchange_rates_pair_date",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    base_currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    quote_currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    rate: Mapped[Decimal] = mapped_column(Numeric(18, 8), nullable=False)
+    source: Mapped[str] = mapped_column(String(120), nullable=False)
+    effective_date: Mapped[date] = mapped_column(Date, nullable=False)
+
+
 class Lot(Base):
     """A batch of one SKU in one branch, with its own expiry (issue #19)."""
 
