@@ -3,7 +3,10 @@ services:
     name: estoque-ny-api
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: sh -c "alembic upgrade head && gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
+    # Migrations run before the new version takes traffic; if they fail the deploy
+    # fails and the previous version keeps serving (needs a paid Render instance).
+    preDeployCommand: alembic upgrade head
+    startCommand: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     healthCheckPath: /health
     envVars:
       - key: APP_ENV
@@ -38,6 +41,9 @@ services:
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: .
+    # Every PR gets its own front URL, pointing at staging (docs/staging.md).
+    previews:
+      generation: automatic
   - type: cron
     name: estoque-ny-jobs
     env: python
