@@ -10,6 +10,7 @@ from app.api.pagination import (
 )
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
+from app.core.site_hook import notify_site_changed
 from app.models.entities import Brand, Category, Product, User
 from app.schemas.product import ProductCreate, ProductListOut, ProductOut, ProductUpdate
 from app.services.audit_service import write_audit_log
@@ -81,6 +82,7 @@ async def create_product(
     )
     await session.commit()
     await session.refresh(product)
+    notify_site_changed()
     return product
 
 
@@ -126,6 +128,7 @@ async def update_product(
     )
     await session.commit()
     await session.refresh(product)
+    notify_site_changed()
     return product
 
 

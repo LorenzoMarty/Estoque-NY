@@ -11,6 +11,7 @@ from app.api.pagination import (
 )
 from app.api.security import get_current_user, require_permission
 from app.core.db import get_session
+from app.core.site_hook import notify_site_changed
 from app.domain.errors import BusinessRuleError
 from app.models.entities import SKU, Product, SKUBarcode, User
 from app.schemas.sku import AddBarcodeIn, SKUCreate, SKUListOut, SKUOut, SKUUpdate
@@ -126,6 +127,7 @@ async def create_sku(
     )
     await session.commit()
     await session.refresh(sku)
+    notify_site_changed()
     return sku
 
 
@@ -180,6 +182,7 @@ async def update_sku(
     )
     await session.commit()
     await session.refresh(sku)
+    notify_site_changed()
     return sku
 
 

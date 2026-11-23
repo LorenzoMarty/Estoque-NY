@@ -85,3 +85,6 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      # Optional: deploy hook / revalidation URL of the site, POSTed when the catalog changes.
+      - key: SITE_REVALIDATE_URL
+        sync: false

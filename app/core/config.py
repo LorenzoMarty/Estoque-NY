@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     smtp_password: str | None = None
     smtp_from: str = "estoque@localhost"
 
+    # POSTed (empty body) when the public catalog changes: a Vercel deploy hook or a
+    # revalidation URL of the site. Unset = no call. Calls are spaced by the debounce.
+    site_revalidate_url: str | None = None
+    site_revalidate_debounce_seconds: int = Field(default=30, ge=0)
+
     cors_origins: str = "*"
     # Host header allow-list, comma-separated (e.g. "api.example.com,*.onrender.com").
     # "*" accepts any host: the safe default for dev/tests, set it in production.
