@@ -137,6 +137,14 @@ class Product(Archivable, Base):
         default=False,
         server_default=text("false"),
     )
+    is_new: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
+    # Free-form collection tags, e.g. ["winter", "gifts"].
+    collections: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     published: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,

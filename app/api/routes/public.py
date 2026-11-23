@@ -149,6 +149,8 @@ async def public_catalog(
                 price_usd=None if low is None else Decimal(low).quantize(_CENTS),
                 price_is_from=low is not None and low != high,
                 featured=product.featured,
+                is_new=product.is_new,
+                collections=product.collections or [],
                 image_url=product.image_url,
                 in_stock=product.id in stocked,
             )
