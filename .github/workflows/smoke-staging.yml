@@ -1,0 +1,28 @@
+name: Smoke staging
+
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+  # After a deploy: trigger from the deploy platform with
+  #   POST /repos/LorenzoMarty/Estoque-NY/dispatches {"event_type":"deployed"}
+  repository_dispatch:
+    types: [deployed]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Smoke (needs the SMOKE_* repo secrets)
+        env:
+          SMOKE_API_URL: ${{ secrets.SMOKE_API_URL }}
+          SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+          SMOKE_SITE_ORIGIN: ${{ secrets.SMOKE_SITE_ORIGIN }}
+        run: |
+          if [ -z "$SMOKE_API_URL" ]; then echo "SMOKE_* secrets not set; skipping"; exit 0; fi
+          python3 scripts/smoke_staging.py
